@@ -1,0 +1,251 @@
+{
+  "name": "Jira-to-Code AI Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-jira",
+      "name": "Jira Trigger",
+      "type": "n8n-nodes-base.jiraTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "jira-ticket-created",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "JIRA_CREDENTIAL_ID",
+          "name": "Jira Cloud"
+        }
+      },
+      "notes": "Jira에서 이슈 생성 시 트리거. 크리덴셜 등록 후 JIRA_CREDENTIAL_ID를 실제 ID로 교체하세요."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ticket-key",
+              "name": "ticketKey",
+              "value": "={{ $json.issue.key }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-summary",
+              "name": "ticketSummary",
+              "value": "={{ $json.issue.fields.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-description",
+              "name": "ticketDescription",
+              "value": "={{ $json.issue.fields.description }}",
+              "type": "string"
+            },
+            {
+              "id": "branch-name",
+              "name": "branchName",
+              "value": "=feature/{{ $json.issue.key.toLowerCase() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-variables",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "ref",
+        "operation": "create",
+        "owner": "={{ $env.GITHUB_OWNER }}",
+        "repository": "={{ $env.GITHUB_REPO }}",
+        "ref": "=refs/heads/{{ $json.branchName }}",
+        "sha": "main"
+      },
+      "id": "github-create-branch",
+      "name": "GitHub: Create Branch",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CREDENTIAL_ID",
+          "name": "GitHub API"
+        }
+      },
+      "notes": "feature/PROJ-123 형태로 브랜치 생성. GitHub 크리덴셜 등록 후 ID 교체 필요."
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/node/workspace && (git clone --branch {{ $('Set Variables').item.json.branchName }} --single-branch https://{{ $env.GITHUB_TOKEN }}@github.com/{{ $env.GITHUB_OWNER }}/{{ $env.GITHUB_REPO }}.git project 2>/dev/null || (cd project && git fetch origin && git checkout {{ $('Set Variables').item.json.branchName }})) && cp /home/node/workspace/AGENTS.md /home/node/workspace/project/AGENTS.md 2>/dev/null; true"
+      },
+      "id": "git-clone",
+      "name": "Git: Clone/Checkout",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "notes": "워크스페이스에 프로젝트 체크아웃"
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/node/workspace/project && opencode run --format json --agent Designer \"Jira 티켓 '{{ $('Set Variables').item.json.ticketKey }}: {{ $('Set Variables').item.json.ticketSummary }}'을 분석해. 설명: '{{ $('Set Variables').item.json.ticketDescription }}'. 이를 바탕으로 React + Tailwind CSS 기반 UI 구조를 JSON 형식으로 생성해서 design-specs.json 파일로 저장하고 git add + commit 해줘. 커밋 메시지: 'design: add UI spec for {{ $('Set Variables').item.json.ticketKey }}'\"",
+        "timeout": 300
+      },
+      "id": "opencode-designer",
+      "name": "OpenCode: Designer Agent",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "notes": "OpenCode Designer 에이전트: Jira 요구사항 → design-specs.json 생성 및 커밋"
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/node/workspace/project && opencode run --format json --agent Coder \"방금 생성된 design-specs.json 파일을 읽어. 이 디자인 명세를 구현하는 React + Tailwind CSS 코드를 src/components/ 폴더에 작성해. TypeScript를 사용하고, 각 컴포넌트별 props 인터페이스를 정의해. 코드를 git add + commit 해줘. 커밋 메시지: 'feat: implement components for {{ $('Set Variables').item.json.ticketKey }}'\"",
+        "timeout": 600
+      },
+      "id": "opencode-coder",
+      "name": "OpenCode: Coder Agent",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "notes": "OpenCode Coder 에이전트: design-specs.json → React 컴포넌트 구현 및 커밋"
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/node/workspace/project && git push origin {{ $('Set Variables').item.json.branchName }}"
+      },
+      "id": "git-push",
+      "name": "Git: Push Branch",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "resource": "pullRequest",
+        "operation": "create",
+        "owner": "={{ $env.GITHUB_OWNER }}",
+        "repository": "={{ $env.GITHUB_REPO }}",
+        "title": "=[AI] {{ $('Set Variables').item.json.ticketKey }}: {{ $('Set Variables').item.json.ticketSummary }}",
+        "body": "=## 🤖 AI 자동 생성 PR\n\n**Jira 티켓**: {{ $('Set Variables').item.json.ticketKey }}\n**요약**: {{ $('Set Variables').item.json.ticketSummary }}\n\n### 생성된 파일\n- `design-specs.json`: UI 디자인 명세\n- `src/components/`: React 컴포넌트 구현\n\n---\n*이 PR은 n8n AI Pipeline에 의해 자동 생성되었습니다.*",
+        "head": "={{ $('Set Variables').item.json.branchName }}",
+        "base": "main"
+      },
+      "id": "github-create-pr",
+      "name": "GitHub: Create PR",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [1780, 300],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CREDENTIAL_ID",
+          "name": "GitHub API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "={{ $env.SLACK_CHANNEL }}",
+        "text": "=:rocket: *AI 자동화 작업 완료*\n\n:ticket: *티켓*: {{ $('Set Variables').item.json.ticketKey }} - {{ $('Set Variables').item.json.ticketSummary }}\n:art: *디자인 명세*: design-specs.json 생성 완료\n:computer: *코드 생성*: React 컴포넌트 구현 완료\n:link: *PR*: {{ $json.html_url }}\n\n브랜치: `{{ $('Set Variables').item.json.branchName }}`",
+        "otherOptions": {}
+      },
+      "id": "slack-notify",
+      "name": "Slack: Notify",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [2000, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "SLACK_CREDENTIAL_ID",
+          "name": "Slack Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "={{ $env.SLACK_CHANNEL }}",
+        "text": "=:x: *AI 파이프라인 오류 발생*\n\n:ticket: *티켓*: {{ $('Set Variables').item.json.ticketKey }}\n:warning: *오류*: {{ $json.error.message }}\n\n수동 확인이 필요합니다.",
+        "otherOptions": {}
+      },
+      "id": "slack-error",
+      "name": "Slack: Error Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [2000, 520],
+      "credentials": {
+        "slackApi": {
+          "id": "SLACK_CREDENTIAL_ID",
+          "name": "Slack Bot"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [1780, 520]
+    }
+  ],
+  "connections": {
+    "Jira Trigger": {
+      "main": [
+        [{ "node": "Set Variables", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Variables": {
+      "main": [
+        [{ "node": "GitHub: Create Branch", "type": "main", "index": 0 }]
+      ]
+    },
+    "GitHub: Create Branch": {
+      "main": [
+        [{ "node": "Git: Clone/Checkout", "type": "main", "index": 0 }]
+      ]
+    },
+    "Git: Clone/Checkout": {
+      "main": [
+        [{ "node": "OpenCode: Designer Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenCode: Designer Agent": {
+      "main": [
+        [{ "node": "OpenCode: Coder Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenCode: Coder Agent": {
+      "main": [
+        [{ "node": "Git: Push Branch", "type": "main", "index": 0 }]
+      ]
+    },
+    "Git: Push Branch": {
+      "main": [
+        [{ "node": "GitHub: Create PR", "type": "main", "index": 0 }]
+      ]
+    },
+    "GitHub: Create PR": {
+      "main": [
+        [{ "node": "Slack: Notify", "type": "main", "index": 0 }]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [{ "node": "Slack: Error Alert", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "tags": [
+    { "name": "ai-pipeline" },
+    { "name": "automation" }
+  ]
+}

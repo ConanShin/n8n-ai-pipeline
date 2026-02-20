@@ -1,0 +1,6 @@
+.env
+n8n_data/
+workspace/*
+!workspace/AGENTS.md
+*.log
+.DS_Store

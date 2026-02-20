@@ -1,0 +1,3 @@
+provider: google
+model: antigravity-claude-sonnet-4-6
+mcpServers: {}

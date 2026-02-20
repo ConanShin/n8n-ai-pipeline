@@ -1,0 +1,61 @@
+# =============================================================================
+# n8n AI Agent Pipeline - Docker Compose
+# M-Series iMac 최적화 (Apple Silicon arm64)
+# =============================================================================
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: n8n-ai-agent
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    env_file:
+      - .env
+    environment:
+      # n8n 기본 설정
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - NODE_ENV=production
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=Asia/Seoul
+      - TZ=Asia/Seoul
+      # Execute Command 노드 타임아웃 (기본 60초 → 600초로 확장)
+      # OpenCode 에이전트 실행 시간이 길 수 있음
+      - EXECUTIONS_TIMEOUT=600
+      - EXECUTIONS_TIMEOUT_MAX=900
+      # n8n 보안 설정
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-}
+      # OpenCode LLM Provider: Anthropic은 env var, Google/Antigravity는 OAuth (auth.json 마운트)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # GitHub 설정 (에이전트 코드 push용)
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      # n8n 커뮤니티 노드 허용
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - ./opencode_config:/home/node/.config/opencode
+      - ./workspace:/home/node/workspace
+      # Google/Antigravity OAuth 토큰 (호스트에서 `opencode auth login` 후 생성됨)
+      - ${OPENCODE_AUTH_JSON:-~/.local/share/opencode/auth.json}:/home/node/.local/share/opencode/auth.json:ro
+    extra_hosts:
+      # 호스트의 로컬 서비스 접근용 (Ollama, 로컬 DB 등)
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Apple Silicon에서 메모리 제한 (필요시 조정)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
