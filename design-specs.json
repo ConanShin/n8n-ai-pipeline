@@ -1,0 +1,170 @@
+{
+  "ticket": "TEST-7000",
+  "title": "User Profile Dashboard",
+  "components": [
+    {
+      "name": "Avatar",
+      "type": "atom",
+      "description": "Circular user profile image",
+      "props": {
+        "src": { "type": "string", "required": true, "description": "Image URL" },
+        "alt": { "type": "string", "required": true, "description": "Alternative text" },
+        "size": { "type": "string", "required": false, "description": "sm, md, lg, xl" }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "rounded-full object-cover border-2 border-white shadow-sm"
+      },
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "User avatar"
+      }
+    },
+    {
+      "name": "Button",
+      "type": "atom",
+      "description": "Clickable action element",
+      "props": {
+        "label": { "type": "string", "required": true, "description": "Button text" },
+        "variant": { "type": "string", "required": false, "description": "primary, secondary, outline" },
+        "icon": { "type": "ReactNode", "required": false, "description": "Optional icon component" }
+      },
+      "layout": {
+        "display": "inline-flex",
+        "tailwind": "items-center justify-center px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+      },
+      "states": ["default", "hover", "active", "disabled"],
+      "accessibility": {
+        "role": "button"
+      }
+    },
+    {
+      "name": "StatCard",
+      "type": "molecule",
+      "description": "Displays a single statistic with label and value",
+      "props": {
+        "label": { "type": "string", "required": true, "description": "Metric name (e.g., Followers)" },
+        "value": { "type": "number|string", "required": true, "description": "Metric value" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "text-2xl font-bold text-gray-900"
+        },
+        {
+          "element": "span",
+          "tailwind": "text-sm text-gray-500 uppercase tracking-wide"
+        }
+      ]
+    },
+    {
+      "name": "ActivityItem",
+      "type": "molecule",
+      "description": "Single row in the activity feed",
+      "props": {
+        "action": { "type": "string", "required": true, "description": "Description of activity" },
+        "timestamp": { "type": "string", "required": true, "description": "Time relative to now" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0"
+      }
+    },
+    {
+      "name": "UserProfileHeader",
+      "type": "organism",
+      "description": "Top section containing user info and actions",
+      "props": {
+        "username": { "type": "string", "required": true, "description": "Display name" },
+        "handle": { "type": "string", "required": true, "description": "User handle (@user)" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-white rounded-xl shadow-sm"
+      },
+      "children": [
+        {
+          "component": "Avatar",
+          "props": { "size": "xl" }
+        },
+        {
+          "element": "div",
+          "tailwind": "text-center md:text-left flex-1"
+        },
+        {
+          "component": "Button",
+          "props": { "label": "Settings", "variant": "outline" }
+        }
+      ]
+    },
+    {
+      "name": "StatsRow",
+      "type": "organism",
+      "description": "Container for statistics cards",
+      "layout": {
+        "display": "grid",
+        "tailwind": "grid grid-cols-3 gap-4 my-6"
+      },
+      "children": [
+        { "component": "StatCard", "props": { "label": "Followers" } },
+        { "component": "StatCard", "props": { "label": "Posts" } },
+        { "component": "StatCard", "props": { "label": "Likes" } }
+      ]
+    },
+    {
+      "name": "ActivityFeed",
+      "type": "organism",
+      "description": "List of recent user activities",
+      "layout": {
+        "display": "block",
+        "tailwind": "bg-white rounded-xl shadow-sm p-6"
+      },
+      "children": [
+        {
+          "element": "h3",
+          "tailwind": "text-lg font-semibold text-gray-900 mb-4"
+        },
+        {
+          "component": "ActivityItem",
+          "repeat": true
+        }
+      ]
+    },
+    {
+      "name": "UserProfileDashboard",
+      "type": "page",
+      "description": "Main page layout aggregation",
+      "layout": {
+        "display": "block",
+        "tailwind": "max-w-4xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen"
+      },
+      "children": [
+        { "component": "UserProfileHeader" },
+        { "component": "StatsRow" },
+        { "component": "ActivityFeed" }
+      ]
+    }
+  ],
+  "colorPalette": {
+    "primary": "#3B82F6",
+    "secondary": "#64748B",
+    "background": "#F9FAFB",
+    "surface": "#FFFFFF"
+  },
+  "interactions": [
+    {
+      "trigger": "click",
+      "target": "Settings Button",
+      "action": "Navigate to settings page"
+    },
+    {
+      "trigger": "click",
+      "target": "StatCard",
+      "action": "Open detailed statistics view (optional)"
+    }
+  ]
+}
