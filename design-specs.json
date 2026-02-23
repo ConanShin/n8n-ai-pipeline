@@ -1,0 +1,120 @@
+{
+  "ticket": "TEST-5000",
+  "title": "Final E2E Test Pipeline Dashboard",
+  "description": "Interface for triggering and monitoring end-to-end pipeline tests, specifically addressing standard input configurations.",
+  "components": [
+    {
+      "name": "StatusBadge",
+      "type": "atom",
+      "description": "Displays the current state of the pipeline test (Idle, Running, Success, Failure)",
+      "props": {
+        "status": { "type": "string", "required": true, "description": "'idle' | 'running' | 'success' | 'failure'" }
+      },
+      "layout": {
+        "display": "inline-flex",
+        "tailwind": "px-3 py-1 rounded-full text-sm font-medium"
+      },
+      "states": ["idle", "running", "success", "failure"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "Current test status"
+      }
+    },
+    {
+      "name": "StdinInput",
+      "type": "atom",
+      "description": "Text area for providing standard input data for the test",
+      "props": {
+        "value": { "type": "string", "required": true, "description": "Current input value" },
+        "onChange": { "type": "function", "required": true, "description": "Handler for input changes" }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+      },
+      "accessibility": {
+        "role": "textbox",
+        "ariaLabel": "Standard input for pipeline test"
+      }
+    },
+    {
+      "name": "TriggerButton",
+      "type": "atom",
+      "description": "Button to start the E2E test",
+      "props": {
+        "disabled": { "type": "boolean", "required": false, "description": "Disable if test is running" },
+        "onClick": { "type": "function", "required": true, "description": "Handler to start test" }
+      },
+      "layout": {
+        "display": "inline-block",
+        "tailwind": "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+      },
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Start E2E Test"
+      }
+    },
+    {
+      "name": "LogViewer",
+      "type": "molecule",
+      "description": "Scrollable area to display test execution logs",
+      "props": {
+        "logs": { "type": "array", "required": true, "description": "Array of log strings" }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "bg-gray-900 text-green-400 p-4 rounded h-64 overflow-y-auto font-mono text-xs"
+      },
+      "accessibility": {
+        "role": "log",
+        "ariaLabel": "Test execution logs"
+      }
+    },
+    {
+      "name": "PipelineControlPanel",
+      "type": "organism",
+      "description": "Main control area combining input, trigger, and status",
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-4 p-6 bg-white shadow-md rounded-lg max-w-2xl mx-auto"
+      },
+      "children": [
+        "StatusBadge",
+        "StdinInput",
+        "TriggerButton",
+        "LogViewer"
+      ]
+    },
+    {
+      "name": "TestDashboardPage",
+      "type": "page",
+      "description": "Full page wrapper for the test interface",
+      "layout": {
+        "display": "block",
+        "tailwind": "min-h-screen bg-gray-50 p-8"
+      },
+      "children": [
+        "PipelineControlPanel"
+      ]
+    }
+  ],
+  "colorPalette": {
+    "primary": "#2563EB",
+    "success": "#10B981",
+    "error": "#EF4444",
+    "background": "#F9FAFB",
+    "text": "#1F2937"
+  },
+  "interactions": [
+    {
+      "trigger": "click",
+      "component": "TriggerButton",
+      "action": "Initiates the E2E test pipeline with the provided stdin data"
+    },
+    {
+      "trigger": "change",
+      "component": "StdinInput",
+      "action": "Updates the stdin payload state"
+    }
+  ]
+}
