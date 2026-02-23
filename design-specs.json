@@ -1,0 +1,120 @@
+{
+  "ticket": "TEST-46",
+  "title": "Login Page UI Improvement",
+  "description": "Add social login buttons to the login form and apply a responsive layout",
+  "components": [
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "Main container for the login screen, ensuring vertical centering and responsive padding.",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Login Page"
+      }
+    },
+    {
+      "name": "LoginForm",
+      "type": "organism",
+      "description": "The card component containing the form inputs and action buttons.",
+      "props": {
+        "onSubmit": { "type": "function", "required": true, "description": "Handler for form submission" }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg"
+      },
+      "children": [
+        "HeaderSection",
+        "EmailInputGroup",
+        "PasswordInputGroup",
+        "SubmitButton",
+        "Divider",
+        "SocialLoginGroup"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "Login credentials form"
+      }
+    },
+    {
+      "name": "SocialLoginGroup",
+      "type": "molecule",
+      "description": "Container for social login buttons arranged in a grid.",
+      "props": {
+        "providers": { "type": "array", "required": true, "description": "List of social providers" }
+      },
+      "layout": {
+        "display": "grid",
+        "tailwind": "grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6"
+      },
+      "children": [
+        "SocialButton"
+      ]
+    },
+    {
+      "name": "SocialButton",
+      "type": "atom",
+      "description": "Button component for individual social identity providers.",
+      "props": {
+        "provider": { "type": "string", "required": true, "description": "Provider name (e.g., Google, GitHub)" },
+        "icon": { "type": "element", "required": true, "description": "Provider icon" },
+        "onClick": { "type": "function", "required": true, "description": "Click handler" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      },
+      "states": ["default", "hover", "focus", "disabled"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Sign in with {provider}"
+      }
+    },
+    {
+      "name": "InputGroup",
+      "type": "molecule",
+      "description": "Reusable form field with label and input.",
+      "props": {
+        "id": { "type": "string", "required": true },
+        "label": { "type": "string", "required": true },
+        "type": { "type": "string", "required": true, "default": "text" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-1"
+      },
+      "children": [
+        "Label",
+        "Input"
+      ]
+    }
+  ],
+  "colorPalette": {
+    "background": "#F9FAFB",
+    "surface": "#FFFFFF",
+    "primary": "#4F46E5",
+    "text": "#111827",
+    "textSecondary": "#6B7280",
+    "border": "#D1D5DB"
+  },
+  "interactions": [
+    {
+      "trigger": "click",
+      "element": "SocialButton",
+      "action": "Initiate OAuth flow for selected provider"
+    },
+    {
+      "trigger": "submit",
+      "element": "LoginForm",
+      "action": "Validate inputs and send login request to API"
+    }
+  ]
+}
