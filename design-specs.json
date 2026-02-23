@@ -1,0 +1,167 @@
+{
+  "ticket": "TEST-6000",
+  "title": "Shopping Cart with Payment Integration",
+  "description": "A complete shopping cart page including product list, summary, payment form, and confirmation modal.",
+  "colorPalette": {
+    "primary": "bg-blue-600 hover:bg-blue-700 text-white",
+    "secondary": "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    "danger": "text-red-600",
+    "background": "bg-gray-50",
+    "surface": "bg-white shadow-sm rounded-lg"
+  },
+  "components": [
+    {
+      "name": "ShoppingCartPage",
+      "type": "page",
+      "description": "Main page wrapper for the shopping cart flow.",
+      "layout": {
+        "display": "block",
+        "tailwind": "min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8"
+      },
+      "children": ["CartTemplate"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Shopping Cart Page"
+      }
+    },
+    {
+      "name": "CartTemplate",
+      "type": "template",
+      "description": "Layout structure separating the cart items from the payment/summary sidebar.",
+      "layout": {
+        "display": "grid",
+        "tailwind": "max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
+      },
+      "children": ["CartItemListSection", "CartSidebarSection"]
+    },
+    {
+      "name": "CartItemListSection",
+      "type": "organism",
+      "description": "Container for the list of products in the cart.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "lg:col-span-7 flex flex-col gap-6"
+      },
+      "children": ["SectionHeader", "CartItem"]
+    },
+    {
+      "name": "CartItem",
+      "type": "molecule",
+      "description": "Individual product row with image, details, price, and quantity controls.",
+      "props": {
+        "id": { "type": "string", "required": true, "description": "Product ID" },
+        "title": { "type": "string", "required": true, "description": "Product Name" },
+        "price": { "type": "number", "required": true, "description": "Unit Price" },
+        "image": { "type": "string", "required": true, "description": "Product Image URL" },
+        "quantity": { "type": "number", "required": true, "description": "Current Quantity" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col sm:flex-row gap-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100 items-start sm:items-center"
+      },
+      "children": ["ProductThumbnail", "ProductInfo", "QuantitySelector", "RemoveButton"],
+      "interactions": [
+        { "trigger": "change", "action": "Update quantity" },
+        { "trigger": "click", "action": "Remove item from cart" }
+      ]
+    },
+    {
+      "name": "QuantitySelector",
+      "type": "molecule",
+      "description": "Input with plus/minus buttons to adjust quantity.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center border border-gray-300 rounded-md"
+      },
+      "children": ["DecreaseButton", "QuantityInput", "IncreaseButton"],
+      "accessibility": {
+        "role": "group",
+        "ariaLabel": "Adjust quantity"
+      }
+    },
+    {
+      "name": "CartSidebarSection",
+      "type": "organism",
+      "description": "Sidebar containing the order summary and payment form.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "lg:col-span-5 flex flex-col gap-6"
+      },
+      "children": ["OrderSummary", "PaymentForm"]
+    },
+    {
+      "name": "OrderSummary",
+      "type": "organism",
+      "description": "Displays subtotal, tax, shipping, and total.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col gap-4"
+      },
+      "children": ["SummaryRow", "Divider", "TotalRow"],
+      "props": {
+        "subtotal": { "type": "number", "required": true },
+        "tax": { "type": "number", "required": true },
+        "total": { "type": "number", "required": true }
+      }
+    },
+    {
+      "name": "PaymentForm",
+      "type": "organism",
+      "description": "Form for entering credit card details.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col gap-4"
+      },
+      "children": ["CardNumberInput", "ExpirationInput", "CVCInput", "CardholderNameInput", "CheckoutButton"],
+      "states": ["idle", "processing", "error", "success"],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "Payment Information"
+      }
+    },
+    {
+      "name": "OrderConfirmationModal",
+      "type": "organism",
+      "description": "Modal shown after successful payment.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      },
+      "children": ["ModalContent"],
+      "states": ["hidden", "visible"],
+      "accessibility": {
+        "role": "dialog",
+        "ariaModal": true,
+        "ariaLabel": "Order Confirmed"
+      }
+    },
+    {
+      "name": "CheckoutButton",
+      "type": "atom",
+      "description": "Primary action button to submit the order.",
+      "props": {
+        "isLoading": { "type": "boolean", "required": false },
+        "disabled": { "type": "boolean", "required": false }
+      },
+      "layout": {
+        "tailwind": "w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      },
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Complete Order"
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "trigger": "click",
+      "target": "CheckoutButton",
+      "action": "Validate form, process payment, show loading state, then show ConfirmationModal on success"
+    },
+    {
+      "trigger": "click",
+      "target": "RemoveButton",
+      "action": "Remove item from list, update OrderSummary"
+    }
+  ]
+}
