@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Preview - TEST-7000</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Components (Inlined for Preview) ---
+
+        // Avatar.tsx
+        const Avatar = ({ src, alt, size = 'md' }) => {
+            const sizeClasses = {
+                sm: 'w-8 h-8',
+                md: 'w-12 h-12',
+                lg: 'w-16 h-16',
+                xl: 'w-24 h-24',
+            };
+
+            return (
+                <img
+                    src={src}
+                    alt={alt}
+                    className={`rounded-full object-cover border-2 border-white shadow-sm block ${sizeClasses[size]}`}
+                    role="img"
+                    aria-label="User avatar"
+                />
+            );
+        };
+
+        // Button.tsx
+        const Button = ({ 
+            label, 
+            variant = 'primary', 
+            icon, 
+            className = '',
+            ...props 
+        }) => {
+            const baseClasses = 'inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+            
+            const variantClasses = {
+                primary: 'bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500',
+                secondary: 'bg-slate-500 text-white hover:bg-slate-600 focus:ring-slate-500',
+                outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-blue-500',
+            };
+
+            return (
+                <button 
+                    className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+                    {...props}
+                >
+                    {icon && <span className="mr-2">{icon}</span>}
+                    {label}
+                </button>
+            );
+        };
+
+        // StatCard.tsx
+        const StatCard = ({ label, value }) => {
+            return (
+                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+                    <span className="text-2xl font-bold text-gray-900">{value}</span>
+                    <span className="text-sm text-gray-500 uppercase tracking-wide">{label}</span>
+                </div>
+            );
+        };
+
+        // ActivityItem.tsx
+        const ActivityItem = ({ action, timestamp }) => {
+            return (
+                <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
+                    <div className="flex-1">
+                        <p className="text-sm text-gray-900">{action}</p>
+                        <p className="text-xs text-gray-500 mt-1">{timestamp}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // UserProfileHeader.tsx
+        const UserProfileHeader = ({ 
+            username, 
+            handle,
+            avatarUrl 
+        }) => {
+            return (
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-white rounded-xl shadow-sm">
+                    <Avatar src={avatarUrl} alt={username} size="xl" />
+                    <div className="text-center md:text-left flex-1">
+                        <h1 className="text-2xl font-bold text-gray-900">{username}</h1>
+                        <p className="text-sm text-gray-500">{handle}</p>
+                    </div>
+                    <Button label="Settings" variant="outline" />
+                </div>
+            );
+        };
+
+        // StatsRow.tsx
+        const StatsRow = ({ stats }) => {
+            return (
+                <div className="grid grid-cols-3 gap-4 my-6">
+                    <StatCard label="Followers" value={stats.followers} />
+                    <StatCard label="Posts" value={stats.posts} />
+                    <StatCard label="Likes" value={stats.likes} />
+                </div>
+            );
+        };
+
+        // ActivityFeed.tsx
+        const ActivityFeed = ({ activities }) => {
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    <div className="space-y-0">
+                        {activities.map((activity, index) => (
+                            <ActivityItem 
+                                key={index} 
+                                action={activity.action} 
+                                timestamp={activity.timestamp} 
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // UserProfileDashboard.tsx
+        const UserProfileDashboard = ({ userData }) => {
+            return (
+                <div className="max-w-4xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
+                    <UserProfileHeader 
+                        username={userData.username} 
+                        handle={userData.handle} 
+                        avatarUrl={userData.avatarUrl}
+                    />
+                    <StatsRow stats={userData.stats} />
+                    <ActivityFeed activities={userData.activities} />
+                </div>
+            );
+        };
+
+        // --- App / Preview Data ---
+
+        const mockData = {
+            username: "Jane Doe",
+            handle: "@janedoe",
+            avatarUrl: "https://i.pravatar.cc/300?img=5", // Using placeholder image
+            stats: {
+                followers: 1250,
+                posts: 42,
+                likes: 8900
+            },
+            activities: [
+                { action: "Liked a post by @johndoe", timestamp: "2 hours ago" },
+                { action: "Commented on 'Design Trends 2024'", timestamp: "5 hours ago" },
+                { action: "Started following @design_daily", timestamp: "1 day ago" },
+                { action: "Posted a new photo", timestamp: "2 days ago" }
+            ]
+        };
+
+        const App = () => {
+            return (
+                <div>
+                    <UserProfileDashboard userData={mockData} />
+                    
+                    <div className="max-w-4xl mx-auto p-8 mt-12 border-t border-gray-300">
+                        <h2 className="text-xl font-bold mb-4">Component Library</h2>
+                        
+                        <div className="space-y-8">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-2">Buttons</h3>
+                                <div className="flex gap-4">
+                                    <Button label="Primary" variant="primary" />
+                                    <Button label="Secondary" variant="secondary" />
+                                    <Button label="Outline" variant="outline" />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-semibold mb-2">Avatars</h3>
+                                <div className="flex gap-4 items-end">
+                                    <Avatar src={mockData.avatarUrl} alt="sm" size="sm" />
+                                    <Avatar src={mockData.avatarUrl} alt="md" size="md" />
+                                    <Avatar src={mockData.avatarUrl} alt="lg" size="lg" />
+                                    <Avatar src={mockData.avatarUrl} alt="xl" size="xl" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
