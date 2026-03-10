@@ -1,13 +1,9 @@
 import React from 'react';
 
 export interface QuantitySelectorProps {
-  /** Current quantity value */
   quantity: number;
-  /** Handler for plus button */
   onIncrement: () => void;
-  /** Handler for minus button */
   onDecrement: () => void;
-  /** Whether the selector is disabled */
   disabled?: boolean;
 }
 
@@ -18,34 +14,37 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   disabled = false,
 }) => {
   return (
-    <div 
-      className={`flex items-center space-x-2 border rounded-md p-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+    <div
       role="group"
       aria-label="Quantity controls"
+      className={`flex items-center space-x-2 border rounded-md p-1 ${
+        disabled ? 'opacity-50 pointer-events-none' : ''
+      }`}
     >
       <button
-        onClick={onDecrement}
-        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+        type="button"
         aria-label="Decrease quantity"
-        disabled={disabled}
+        onClick={onDecrement}
+        disabled={disabled || quantity <= 1}
+        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50 disabled:hover:bg-transparent"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
       </button>
-      
-      <span className="w-8 text-center font-medium" role="status">
+      <span role="status" className="w-8 text-center font-medium">
         {quantity}
       </span>
-      
       <button
-        onClick={onIncrement}
-        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+        type="button"
         aria-label="Increase quantity"
+        onClick={onIncrement}
         disabled={disabled}
+        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50 disabled:hover:bg-transparent"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
       </button>
     </div>
