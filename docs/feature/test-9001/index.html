@@ -12,13 +12,18 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/babel" data-presets="react,typescript">
 const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
 // --- Avatar ---
 
+interface AvatarProps {
+  src: string;
+  alt: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}
 
-const Avatar = ({ src, alt, size = 'md' }) => {
+const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md' }) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
@@ -39,8 +44,13 @@ const Avatar = ({ src, alt, size = 'md' }) => {
 
 // --- Button ---
 
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  label: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+  icon?: ReactNode;
+}
 
-const Button = ({ 
+const Button: React.FC<ButtonProps> = ({ 
   label, 
   variant = 'primary', 
   icon, 
@@ -68,8 +78,12 @@ const Button = ({
 
 // --- ActivityItem ---
 
+interface ActivityItemProps {
+  action: string;
+  timestamp: string;
+}
 
-const ActivityItem = ({ action, timestamp }) => {
+const ActivityItem: React.FC<ActivityItemProps> = ({ action, timestamp }) => {
   return (
     <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
       <div className="flex-1">
@@ -82,9 +96,27 @@ const ActivityItem = ({ action, timestamp }) => {
 
 // --- CartItem ---
 
+interface Product {
+  id: number | string;
+  name: string;
+  price: number;
+  image: string;
+}
 
+interface CartItemProps {
+  /** Product data */
+  product: Product;
+  /** Current quantity */
+  quantity: number;
+  /** Handler for quantity change */
+  onQuantityChange: (newQuantity: number) => void;
+  /** Handler for removing item */
+  onRemove: () => void;
+  /** Whether the item is being removed */
+  isRemoving?: boolean;
+}
 
-const CartItem = ({
+const CartItem: React.FC<CartItemProps> = ({
   product,
   quantity,
   onQuantityChange,
@@ -139,8 +171,16 @@ const CartItem = ({
 
 // --- CartSummary ---
 
+interface CartSummaryProps {
+  /** Calculated total price of items */
+  subtotal: number;
+  /** Handler for checkout */
+  onCheckout: () => void;
+  /** Whether the checkout is loading */
+  isLoading?: boolean;
+}
 
-const CartSummary = ({
+const CartSummary: React.FC<CartSummaryProps> = ({
   subtotal,
   onCheckout,
   isLoading = false,
@@ -169,8 +209,18 @@ const CartSummary = ({
 
 // --- QuantitySelector ---
 
+interface QuantitySelectorProps {
+  /** Current quantity value */
+  quantity: number;
+  /** Handler for plus button */
+  onIncrement: () => void;
+  /** Handler for minus button */
+  onDecrement: () => void;
+  /** Whether the selector is disabled */
+  disabled?: boolean;
+}
 
-const QuantitySelector = ({
+const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   onIncrement,
   onDecrement,
@@ -213,8 +263,12 @@ const QuantitySelector = ({
 
 // --- StatCard ---
 
+interface StatCardProps {
+  label: string;
+  value: number | string;
+}
 
-const StatCard = ({ label, value }) => {
+const StatCard: React.FC<StatCardProps> = ({ label, value }) => {
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100">
       <span className="text-2xl font-bold text-gray-900">{value}</span>
@@ -225,8 +279,11 @@ const StatCard = ({ label, value }) => {
 
 // --- ActivityFeed ---
 
+interface ActivityFeedProps {
+  activities: ActivityItemProps[];
+}
 
-const ActivityFeed = ({ activities }) => {
+const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
@@ -245,9 +302,19 @@ const ActivityFeed = ({ activities }) => {
 
 // --- ShoppingCart ---
 
+interface CartItemData {
+  product: Product;
+  quantity: number;
+}
 
+interface ShoppingCartProps {
+  /** List of cart items */
+  items: CartItemData[];
+  /** Optional handler for checkout */
+  onCheckout?: () => void;
+}
 
-const ShoppingCart = ({
+const ShoppingCart: React.FC<ShoppingCartProps> = ({
   items: initialItems,
   onCheckout,
 }) => {
@@ -261,13 +328,13 @@ const ShoppingCart = ({
 
   const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-  const handleQuantityChange = (index, newQuantity) => {
+  const handleQuantityChange = (index: number, newQuantity: number) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], quantity: newQuantity };
     setItems(newItems);
   };
 
-  const handleRemove = (index) => {
+  const handleRemove = (index: number) => {
     const newItems = items.filter((_, i) => i !== index);
     setItems(newItems);
   };
@@ -338,8 +405,15 @@ const ShoppingCart = ({
 
 // --- StatsRow ---
 
+interface StatsRowProps {
+  stats: {
+    followers: number;
+    posts: number;
+    likes: number;
+  };
+}
 
-const StatsRow = ({ stats }) => {
+const StatsRow: React.FC<StatsRowProps> = ({ stats }) => {
   return (
     <div className="grid grid-cols-3 gap-4 my-6">
       <StatCard label="Followers" value={stats.followers} />
@@ -351,8 +425,13 @@ const StatsRow = ({ stats }) => {
 
 // --- UserProfileHeader ---
 
+interface UserProfileHeaderProps {
+  username: string;
+  handle: string;
+  avatarUrl: string; // Added prop for Avatar src since it's required by Avatar
+}
 
-const UserProfileHeader = ({ 
+const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ 
   username, 
   handle,
   avatarUrl 
@@ -371,8 +450,21 @@ const UserProfileHeader = ({
 
 // --- UserProfileDashboard ---
 
+interface UserProfileDashboardProps {
+  userData: {
+    username: string;
+    handle: string;
+    avatarUrl: string;
+    stats: {
+      followers: number;
+      posts: number;
+      likes: number;
+    };
+    activities: ActivityItemProps[];
+  };
+}
 
-const UserProfileDashboard = ({ userData }) => {
+const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ userData }) => {
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
       <UserProfileHeader 
