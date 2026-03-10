@@ -12,7 +12,7 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/plain" id="app-source">
+<script type="text/plain" id="app-source" data-main-component="UserProfileDashboard">
 const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
 // --- Avatar ---
@@ -478,20 +478,104 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ userData })
   );
 };
 
-
-// --- Mount ---
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(UserProfileDashboard));
 </script>
 <script>
 (function() {
   var source = document.getElementById("app-source").textContent;
+  var mainComp = document.getElementById("app-source").getAttribute("data-main-component");
   try {
     var compiled = Babel.transform(source, {
       presets: ["react", "typescript"],
       filename: "app.tsx"
     }).code;
-    var fn = new Function("React", "ReactDOM", compiled);
-    fn(React, ReactDOM);
+
+    function generateSampleProps(src, compName) {
+      var propsName = compName + "Props";
+      var re = new RegExp("interface\\s+" + propsName + "\\s*\\{([\\s\\S]*?)\\n\\}", "m");
+      var m = src.match(re);
+      if (!m) return {};
+      var body = m[1];
+      var props = {};
+      var lines = body.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) continue;
+        var pm = line.match(/^(\w+)\??\s*:\s*(.+?)[\s;]*$/);
+        if (!pm) continue;
+        props[pm[1]] = genVal(pm[2].trim().replace(/;$/, ""), pm[1], src);
+      }
+      return props;
+    }
+
+    function genVal(t, name, src) {
+      t = t.trim();
+      if (t === "string") {
+        if (/url|src|image|avatar|photo/i.test(name)) return "https://i.pravatar.cc/150?img=47";
+        if (/email/i.test(name)) return "user@example.com";
+        if (/name|username/i.test(name)) return "Jane Doe";
+        if (/handle/i.test(name)) return "@janedoe";
+        if (/title/i.test(name)) return "Sample Title";
+        if (/desc/i.test(name)) return "Sample description text.";
+        if (/action/i.test(name)) return "Performed an action";
+        if (/timestamp|date|time/i.test(name)) return "2 hours ago";
+        return "Sample " + name;
+      }
+      if (t === "number") {
+        if (/price|cost|amount/i.test(name)) return 29.99;
+        if (/count|total|quantity/i.test(name)) return 3;
+        return 42;
+      }
+      if (t === "boolean") return false;
+      if (t === "number | string") return 42;
+      if (t === "ReactNode" || t === "React.ReactNode") return null;
+      if (t.endsWith("[]")) {
+        var itemT = t.slice(0, -2).trim();
+        var arr = [];
+        for (var i = 0; i < 3; i++) arr.push(genVal(itemT, name, src));
+        return arr;
+      }
+      if (t.includes("=>")) return function(){};
+      if (t.startsWith("{")) {
+        var obj = {};
+        var inner = t.slice(1, -1);
+        var parts = inner.split(/[;\n]/);
+        for (var j = 0; j < parts.length; j++) {
+          var p = parts[j].trim();
+          if (!p) continue;
+          var kv = p.match(/(\w+)\??\s*:\s*(.+)/);
+          if (kv) obj[kv[1]] = genVal(kv[2].trim(), kv[1], src);
+        }
+        return obj;
+      }
+      if (t.match(/^'[^']*'/)) {
+        var um = t.match(/^'([^']*)'/);
+        return um ? um[1] : t;
+      }
+      var refRe = new RegExp("interface\\s+" + t.replace(/[<>]/g, "") + "\\s*\\{([\\s\\S]*?)\\n\\}", "m");
+      var rm = src.match(refRe);
+      if (rm) {
+        var rObj = {};
+        var rLines = rm[1].split("\n");
+        for (var k = 0; k < rLines.length; k++) {
+          var rl = rLines[k].trim();
+          if (!rl || rl.startsWith("//") || rl.startsWith("/*") || rl.startsWith("*")) continue;
+          var rpm = rl.match(/^(\w+)\??\s*:\s*(.+?)[\s;]*$/);
+          if (rpm) rObj[rpm[1]] = genVal(rpm[2].trim().replace(/;$/, ""), rpm[1], src);
+        }
+        return rObj;
+      }
+      return "sample";
+    }
+
+    var sampleProps = generateSampleProps(source, mainComp);
+    console.log("Generated sample props:", JSON.stringify(sampleProps, null, 2));
+
+    var fn = new Function("React", "ReactDOM", "sampleProps", "mainComp",
+      compiled + "\n" +
+      "try { var Comp = eval(mainComp); ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Comp, sampleProps)); } " +
+      "catch(e) { console.error('Mount error:', e); document.getElementById('root').innerHTML = '<div style=\"padding:20px;color:red;\"><h2>Mount Error</h2><pre>' + e.message + '</pre></div>'; }"
+    );
+    fn(React, ReactDOM, sampleProps, mainComp);
   } catch(e) {
     console.error("Babel compilation error:", e);
     document.getElementById("root").innerHTML = '<div style="padding:20px;color:red;"><h2>Compilation Error</h2><pre>' + e.message + '</pre></div>';
