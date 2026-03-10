@@ -1,2 +1,2 @@
-export * from './Avatar';
-export * from './Button';
+export * from './CounterDisplay';
+export * from './CounterButton';
