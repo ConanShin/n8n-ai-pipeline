@@ -3,216 +3,237 @@
   "title": "로그인 페이지 UI 개선",
   "components": [
     {
-      "name": "LoginPage",
-      "type": "page",
-      "description": "Main login page container with responsive layout",
-      "props": {},
-      "layout": {
-        "display": "flex",
-        "tailwind": "min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
-      },
-      "children": [
-        "LoginForm"
-      ],
-      "states": [
-        "default"
-      ],
-      "accessibility": {
-        "role": "main",
-        "ariaLabel": "Login Page"
-      }
-    },
-    {
-      "name": "LoginForm",
-      "type": "organism",
-      "description": "Form containing email/password inputs, submit button, and social login buttons",
+      "name": "SocialButton",
+      "type": "atom",
+      "description": "Button for social login providers",
       "props": {
-        "onSubmit": {
+        "provider": {
+          "type": "string",
+          "required": true,
+          "description": "The name of the social provider (e.g., Google, GitHub)"
+        },
+        "icon": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "The provider's icon"
+        },
+        "onClick": {
           "type": "function",
           "required": true,
-          "description": "Handler for form submission"
+          "description": "Handler for click event"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md flex flex-col"
+        "tailwind": "w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
       },
       "children": [
-        "InputField",
-        "PrimaryButton",
-        "Divider",
-        "SocialLoginGroup"
+        "icon",
+        "text"
       ],
       "states": [
         "default",
-        "loading",
-        "error"
-      ],
-      "accessibility": {
-        "role": "form",
-        "ariaLabel": "User Login Form"
-      }
-    },
-    {
-      "name": "InputField",
-      "type": "atom",
-      "description": "Reusable input field for email and password",
-      "props": {
-        "type": {
-          "type": "string",
-          "required": true,
-          "description": "Input type (email, password)"
-        },
-        "label": {
-          "type": "string",
-          "required": true,
-          "description": "Input label text"
-        },
-        "placeholder": {
-          "type": "string",
-          "required": false,
-          "description": "Placeholder text"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col gap-1.5 w-full"
-      },
-      "children": [],
-      "states": [
-        "default",
+        "hover",
         "focus",
-        "error"
+        "loading",
+        "disabled"
       ],
       "accessibility": {
-        "role": "textbox",
-        "ariaLabel": "Input field"
+        "role": "button",
+        "ariaLabel": "Sign in with ${provider}"
       }
     },
     {
       "name": "PrimaryButton",
       "type": "atom",
-      "description": "Main submission button",
+      "description": "Main submission button for the login form",
       "props": {
         "label": {
           "type": "string",
           "required": true,
           "description": "Button text"
         },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Button type (submit, button)"
+        },
         "isLoading": {
           "type": "boolean",
           "required": false,
-          "description": "Loading state indicator"
+          "description": "Loading state"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+        "tailwind": "w-full flex items-center justify-center px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-semibold"
       },
-      "children": [],
+      "children": [
+        "text",
+        "loadingSpinner"
+      ],
       "states": [
         "default",
         "hover",
-        "active",
-        "disabled",
-        "loading"
+        "focus",
+        "loading",
+        "disabled"
       ],
       "accessibility": {
         "role": "button",
-        "ariaLabel": "Submit Login"
+        "ariaLabel": "Submit login form"
       }
     },
     {
-      "name": "Divider",
-      "type": "atom",
-      "description": "Visual divider with 'or' text for separating email and social login",
-      "props": {},
+      "name": "InputField",
+      "type": "molecule",
+      "description": "Input field with a label and optional error message",
+      "props": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Input ID for accessibility"
+        },
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Label text"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Input type (email, password)"
+        },
+        "placeholder": {
+          "type": "string",
+          "required": false,
+          "description": "Placeholder text"
+        },
+        "error": {
+          "type": "string",
+          "required": false,
+          "description": "Error message"
+        }
+      },
       "layout": {
         "display": "flex",
-        "tailwind": "relative flex items-center py-5 w-full before:flex-grow before:border-t before:border-gray-300 after:flex-grow after:border-t after:border-gray-300"
+        "tailwind": "flex flex-col gap-1.5 w-full"
       },
-      "children": [],
+      "children": [
+        "label",
+        "input",
+        "errorText"
+      ],
       "states": [
-        "default"
+        "default",
+        "focus",
+        "error",
+        "disabled"
       ],
       "accessibility": {
-        "role": "separator",
-        "ariaLabel": "or"
+        "role": "textbox",
+        "ariaLabel": "${label} input"
       }
     },
     {
       "name": "SocialLoginGroup",
       "type": "molecule",
-      "description": "Container for social login buttons",
+      "description": "Group of social login buttons separated by a divider",
       "props": {},
       "layout": {
-        "display": "grid",
-        "tailwind": "grid grid-cols-2 gap-4 w-full sm:flex sm:flex-col sm:gap-3"
+        "display": "flex",
+        "tailwind": "flex flex-col gap-3 w-full sm:flex-row sm:justify-between mt-4"
       },
       "children": [
-        "SocialLoginButton"
+        "SocialButton(Google)",
+        "SocialButton(GitHub)",
+        "SocialButton(Kakao)"
       ],
       "states": [
         "default"
       ],
       "accessibility": {
         "role": "group",
-        "ariaLabel": "Social Login Options"
+        "ariaLabel": "Social login options"
       }
     },
     {
-      "name": "SocialLoginButton",
-      "type": "atom",
-      "description": "Button for OAuth login (e.g., Google, Apple, GitHub)",
+      "name": "LoginForm",
+      "type": "organism",
+      "description": "Complete login form containing credentials inputs, primary button, and social login options",
       "props": {
-        "provider": {
-          "type": "string",
+        "onSubmit": {
+          "type": "function",
           "required": true,
-          "description": "Name of the social provider"
-        },
-        "icon": {
-          "type": "string",
-          "required": true,
-          "description": "Provider icon identifier"
+          "description": "Submit handler"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+        "tailwind": "w-full max-w-md p-6 sm:p-8 bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col gap-6"
       },
-      "children": [],
+      "children": [
+        "FormHeader",
+        "InputField(Email)",
+        "InputField(Password)",
+        "PrimaryButton",
+        "Divider",
+        "SocialLoginGroup"
+      ],
       "states": [
         "default",
-        "hover",
-        "active",
-        "disabled"
+        "submitting",
+        "error"
       ],
       "accessibility": {
-        "role": "button",
-        "ariaLabel": "Login with social provider"
+        "role": "form",
+        "ariaLabel": "User login form"
+      }
+    },
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "The main login page layout providing responsive centering for the form",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "states": [
+        "default",
+        "loading"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Login Page"
       }
     }
   ],
   "colorPalette": {
-    "primary": "#4F46E5",
-    "secondary": "#6B7280",
-    "background": "#F9FAFB",
+    "primary": "#2563EB",
+    "primaryHover": "#1D4ED8",
     "surface": "#FFFFFF",
-    "text-primary": "#111827",
-    "border": "#D1D5DB"
+    "background": "#F9FAFB",
+    "textPrimary": "#111827",
+    "textSecondary": "#4B5563",
+    "border": "#D1D5DB",
+    "error": "#EF4444"
   },
   "interactions": [
     {
-      "trigger": "click",
-      "action": "Submit login form credentials via PrimaryButton"
+      "trigger": "submit",
+      "action": "Validates email and password, shows loading state on PrimaryButton, and triggers authentication API call."
     },
     {
       "trigger": "click",
-      "action": "Initiate social OAuth redirect via SocialLoginButton"
+      "action": "SocialButton click redirects to the respective OAuth provider."
     },
     {
-      "trigger": "hover",
-      "action": "Highlight buttons and show focus rings on InputFields"
+      "trigger": "focus",
+      "action": "InputField receives primary color ring to indicate active state."
     }
   ]
 }
