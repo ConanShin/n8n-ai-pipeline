@@ -1,0 +1,206 @@
+{
+  "ticket": "TEST-1014",
+  "title": "로그인 페이지 UI 개선",
+  "components": [
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "Main login page container with responsive layout centering the login form",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Login Page"
+      }
+    },
+    {
+      "name": "LoginForm",
+      "type": "organism",
+      "description": "Login form containing email/password inputs, standard login button, and social login buttons",
+      "props": {
+        "onSubmit": {
+          "type": "function",
+          "required": true,
+          "description": "Handler for form submission"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full max-w-md flex flex-col gap-6 bg-white p-8 rounded-xl shadow-md"
+      },
+      "children": [
+        "InputField",
+        "Button",
+        "Divider",
+        "SocialLoginButton"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "error"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "Login Form"
+      }
+    },
+    {
+      "name": "InputField",
+      "type": "molecule",
+      "description": "Input field with label and optional error message",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Label text"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Input type (text, password, email)"
+        },
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Input ID for accessibility"
+        },
+        "placeholder": {
+          "type": "string",
+          "required": false,
+          "description": "Placeholder text"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-1.5"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "error",
+        "focus",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "textbox",
+        "ariaLabel": "Input Field"
+      }
+    },
+    {
+      "name": "Button",
+      "type": "atom",
+      "description": "Primary action button for standard login",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Button text"
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Button type (button, submit)"
+        },
+        "disabled": {
+          "type": "boolean",
+          "required": false,
+          "description": "Disabled state"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full flex items-center justify-center py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "disabled",
+        "loading"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Submit Button"
+      }
+    },
+    {
+      "name": "Divider",
+      "type": "atom",
+      "description": "Visual divider with 'or' text between login methods",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center w-full gap-3 text-sm text-gray-500 before:flex-1 before:border-t before:border-gray-300 after:flex-1 after:border-t after:border-gray-300"
+      },
+      "children": [],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "separator",
+        "ariaLabel": "Divider"
+      }
+    },
+    {
+      "name": "SocialLoginButton",
+      "type": "atom",
+      "description": "Button for social login providers (e.g., Google, GitHub)",
+      "props": {
+        "provider": {
+          "type": "string",
+          "required": true,
+          "description": "Social provider name"
+        },
+        "icon": {
+          "type": "string",
+          "required": true,
+          "description": "Icon identifier"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-gray-200"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Login with Social Provider"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#2563EB",
+    "secondary": "#4B5563",
+    "background": "#F9FAFB",
+    "surface": "#FFFFFF",
+    "border": "#D1D5DB",
+    "textPrimary": "#111827",
+    "textSecondary": "#6B7280"
+  },
+  "interactions": [
+    {
+      "trigger": "submit",
+      "action": "Validate input fields and attempt standard login"
+    },
+    {
+      "trigger": "click",
+      "action": "Initiate OAuth flow for selected social provider when SocialLoginButton is clicked"
+    }
+  ]
+}
