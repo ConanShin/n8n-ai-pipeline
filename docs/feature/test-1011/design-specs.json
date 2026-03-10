@@ -1,0 +1,162 @@
+{
+  "ticket": "TEST-1011",
+  "title": "로그인 페이지 UI 개선",
+  "components": [
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "Main login page container with responsive centering",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Login Page"
+      }
+    },
+    {
+      "name": "LoginForm",
+      "type": "organism",
+      "description": "Card containing the email/password login and social login options",
+      "props": {
+        "onSubmit": {
+          "type": "function",
+          "required": true,
+          "description": "Handler for form submission"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full max-w-md flex flex-col gap-6 bg-white p-8 rounded-xl shadow-lg border border-gray-100"
+      },
+      "children": [
+        "EmailInput",
+        "PasswordInput",
+        "SubmitButton",
+        "Divider",
+        "SocialLoginGroup"
+      ],
+      "states": [
+        "default",
+        "loading",
+        "error"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "User Login Form"
+      }
+    },
+    {
+      "name": "SocialLoginGroup",
+      "type": "molecule",
+      "description": "Container for social login buttons",
+      "props": {
+        "onSocialLogin": {
+          "type": "function",
+          "required": true,
+          "description": "Handler for social login click"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col sm:flex-row gap-3 w-full"
+      },
+      "children": [
+        "SocialButton"
+      ],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "group",
+        "ariaLabel": "Social Login Options"
+      }
+    },
+    {
+      "name": "SocialButton",
+      "type": "atom",
+      "description": "Individual social login button with icon",
+      "props": {
+        "provider": {
+          "type": "string",
+          "required": true,
+          "description": "Name of the social provider (e.g., Google, GitHub)"
+        },
+        "icon": {
+          "type": "node",
+          "required": true,
+          "description": "Icon component for the provider"
+        },
+        "onClick": {
+          "type": "function",
+          "required": true,
+          "description": "Click handler"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-primary focus:outline-none text-sm font-medium text-gray-700"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Login with provider"
+      }
+    },
+    {
+      "name": "Divider",
+      "type": "atom",
+      "description": "Visual separator for 'or login with'",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center text-sm text-gray-500 before:flex-1 before:border-t before:border-gray-200 before:mr-4 after:flex-1 after:border-t after:border-gray-200 after:ml-4"
+      },
+      "children": [],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "separator",
+        "ariaLabel": "or"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#2563EB",
+    "primaryHover": "#1D4ED8",
+    "background": "#F9FAFB",
+    "surface": "#FFFFFF",
+    "text": "#111827",
+    "textSecondary": "#4B5563",
+    "border": "#D1D5DB"
+  },
+  "interactions": [
+    {
+      "trigger": "submit",
+      "action": "Submit login form credentials via Email/Password"
+    },
+    {
+      "trigger": "click",
+      "action": "Initiate OAuth flow for selected social provider on SocialButton click"
+    },
+    {
+      "trigger": "hover",
+      "action": "Highlight social buttons and primary button"
+    }
+  ]
+}

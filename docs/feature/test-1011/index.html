@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEST-1011 - 로그인 페이지 UI 개선</title>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin><\/script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+<style>body { margin: 0; }<\/style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/plain" id="app-source">
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+// --- Avatar ---
+
+interface AvatarProps {
+  src: string;
+  alt: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}
+
+const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-24 h-24',
+  };
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`rounded-full object-cover border-2 border-white shadow-sm block ${sizeClasses[size]}`}
+      role="img"
+      aria-label="User avatar"
+    />
+  );
+};
+
+// --- Button ---
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  label: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+  icon?: ReactNode;
+}
+
+const Button: React.FC<ButtonProps> = ({ 
+  label, 
+  variant = 'primary', 
+  icon, 
+  className = '',
+  ...props 
+}) => {
+  const baseClasses = 'inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
+  const variantClasses = {
+    primary: 'bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500',
+    secondary: 'bg-slate-500 text-white hover:bg-slate-600 focus:ring-slate-500',
+    outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-blue-500',
+  };
+
+  return (
+    <button 
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      {...props}
+    >
+      {icon && <span className="mr-2">{icon}</span>}
+      {label}
+    </button>
+  );
+};
+
+// --- ActivityItem ---
+
+interface ActivityItemProps {
+  action: string;
+  timestamp: string;
+}
+
+const ActivityItem: React.FC<ActivityItemProps> = ({ action, timestamp }) => {
+  return (
+    <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
+      <div className="flex-1">
+        <p className="text-sm text-gray-900">{action}</p>
+        <p className="text-xs text-gray-500 mt-1">{timestamp}</p>
+      </div>
+    </div>
+  );
+};
+
+// --- CartItem ---
+
+interface Product {
+  id: number | string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+interface CartItemProps {
+  /** Product data */
+  product: Product;
+  /** Current quantity */
+  quantity: number;
+  /** Handler for quantity change */
+  onQuantityChange: (newQuantity: number) => void;
+  /** Handler for removing item */
+  onRemove: () => void;
+  /** Whether the item is being removed */
+  isRemoving?: boolean;
+}
+
+const CartItem: React.FC<CartItemProps> = ({
+  product,
+  quantity,
+  onQuantityChange,
+  onRemove,
+  isRemoving = false,
+}) => {
+  const handleIncrement = () => onQuantityChange(quantity + 1);
+  const handleDecrement = () => {
+    if (quantity > 1) {
+      onQuantityChange(quantity - 1);
+    }
+  };
+
+  return (
+    <article 
+      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200 ${isRemoving ? 'opacity-50 pointer-events-none' : ''}`}
+      role="article"
+    >
+      <div className="flex items-center gap-4 w-full sm:w-auto">
+        <img 
+          src={product.image} 
+          alt={product.name} 
+          className="w-20 h-20 object-cover rounded-md bg-gray-100"
+        />
+        
+        <div className="flex-1 flex flex-col gap-1">
+          <h3 className="font-semibold text-lg">{product.name}</h3>
+          <span className="text-gray-500">${product.price.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+        <QuantitySelector 
+          quantity={quantity}
+          onIncrement={handleIncrement}
+          onDecrement={handleDecrement}
+          disabled={isRemoving}
+        />
+        
+        <button
+          onClick={onRemove}
+          className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
+          aria-label={`Remove ${product.name} from cart`}
+          disabled={isRemoving}
+        >
+          Remove
+        </button>
+      </div>
+    </article>
+  );
+};
+
+// --- CartSummary ---
+
+interface CartSummaryProps {
+  /** Calculated total price of items */
+  subtotal: number;
+  /** Handler for checkout */
+  onCheckout: () => void;
+  /** Whether the checkout is loading */
+  isLoading?: boolean;
+}
+
+const CartSummary: React.FC<CartSummaryProps> = ({
+  subtotal,
+  onCheckout,
+  isLoading = false,
+}) => {
+  return (
+    <div 
+      className="flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
+      role="complementary"
+      aria-label="Order summary"
+    >
+      <div className="flex justify-between items-center text-lg font-bold">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
+      
+      <button
+        onClick={onCheckout}
+        className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Processing...' : 'Checkout'}
+      </button>
+    </div>
+  );
+};
+
+// --- QuantitySelector ---
+
+interface QuantitySelectorProps {
+  /** Current quantity value */
+  quantity: number;
+  /** Handler for plus button */
+  onIncrement: () => void;
+  /** Handler for minus button */
+  onDecrement: () => void;
+  /** Whether the selector is disabled */
+  disabled?: boolean;
+}
+
+const QuantitySelector: React.FC<QuantitySelectorProps> = ({
+  quantity,
+  onIncrement,
+  onDecrement,
+  disabled = false,
+}) => {
+  return (
+    <div 
+      className={`flex items-center space-x-2 border rounded-md p-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+      role="group"
+      aria-label="Quantity controls"
+    >
+      <button
+        onClick={onDecrement}
+        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+        aria-label="Decrease quantity"
+        disabled={disabled}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+        </svg>
+      </button>
+      
+      <span className="w-8 text-center font-medium" role="status">
+        {quantity}
+      </span>
+      
+      <button
+        onClick={onIncrement}
+        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+        aria-label="Increase quantity"
+        disabled={disabled}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+// --- StatCard ---
+
+interface StatCardProps {
+  label: string;
+  value: number | string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ label, value }) => {
+  return (
+    <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+      <span className="text-2xl font-bold text-gray-900">{value}</span>
+      <span className="text-sm text-gray-500 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+};
+
+// --- ActivityFeed ---
+
+interface ActivityFeedProps {
+  activities: ActivityItemProps[];
+}
+
+const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+      <div className="space-y-0">
+        {activities.map((activity, index) => (
+          <ActivityItem 
+            key={index} 
+            action={activity.action} 
+            timestamp={activity.timestamp} 
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- ShoppingCart ---
+
+interface CartItemData {
+  product: Product;
+  quantity: number;
+}
+
+interface ShoppingCartProps {
+  /** List of cart items */
+  items: CartItemData[];
+  /** Optional handler for checkout */
+  onCheckout?: () => void;
+}
+
+const ShoppingCart: React.FC<ShoppingCartProps> = ({
+  items: initialItems,
+  onCheckout,
+}) => {
+  const [items, setItems] = useState<CartItemData[]>(initialItems);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Update local state if props change
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+  const handleQuantityChange = (index: number, newQuantity: number) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], quantity: newQuantity };
+    setItems(newItems);
+  };
+
+  const handleRemove = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    setItems(newItems);
+  };
+
+  const handleCheckout = () => {
+    setIsLoading(true);
+    if (onCheckout) {
+      onCheckout();
+    } else {
+      // Simulate checkout delay if no handler provided
+      setTimeout(() => {
+        setIsLoading(false);
+        alert('Proceeding to checkout...');
+      }, 1000);
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div 
+        className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
+        role="main" 
+        aria-label="Shopping cart"
+      >
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <p className="text-xl font-medium">Your cart is empty</p>
+          </div>
+        </div>
+        <div className="lg:col-span-1">
+           <CartSummary subtotal={0} onCheckout={handleCheckout} isLoading={isLoading} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <main 
+      className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
+      role="main"
+      aria-label="Shopping cart"
+    >
+      <div className="lg:col-span-2 space-y-4">
+        {items.map((item, index) => (
+          <CartItem
+            key={`${item.product.id}-${index}`}
+            product={item.product}
+            quantity={item.quantity}
+            onQuantityChange={(qty) => handleQuantityChange(index, qty)}
+            onRemove={() => handleRemove(index)}
+          />
+        ))}
+      </div>
+      
+      <div className="lg:col-span-1">
+        <CartSummary 
+          subtotal={subtotal} 
+          onCheckout={handleCheckout} 
+          isLoading={isLoading}
+        />
+      </div>
+    </main>
+  );
+};
+
+// --- StatsRow ---
+
+interface StatsRowProps {
+  stats: {
+    followers: number;
+    posts: number;
+    likes: number;
+  };
+}
+
+const StatsRow: React.FC<StatsRowProps> = ({ stats }) => {
+  return (
+    <div className="grid grid-cols-3 gap-4 my-6">
+      <StatCard label="Followers" value={stats.followers} />
+      <StatCard label="Posts" value={stats.posts} />
+      <StatCard label="Likes" value={stats.likes} />
+    </div>
+  );
+};
+
+// --- UserProfileHeader ---
+
+interface UserProfileHeaderProps {
+  username: string;
+  handle: string;
+  avatarUrl: string; // Added prop for Avatar src since it's required by Avatar
+}
+
+const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ 
+  username, 
+  handle,
+  avatarUrl 
+}) => {
+  return (
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-white rounded-xl shadow-sm">
+      <Avatar src={avatarUrl} alt={username} size="xl" />
+      <div className="text-center md:text-left flex-1">
+        <h1 className="text-2xl font-bold text-gray-900">{username}</h1>
+        <p className="text-sm text-gray-500">{handle}</p>
+      </div>
+      <Button label="Settings" variant="outline" />
+    </div>
+  );
+};
+
+// --- UserProfileDashboard ---
+
+interface UserProfileDashboardProps {
+  userData: {
+    username: string;
+    handle: string;
+    avatarUrl: string;
+    stats: {
+      followers: number;
+      posts: number;
+      likes: number;
+    };
+    activities: ActivityItemProps[];
+  };
+}
+
+const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ userData }) => {
+  return (
+    <div className="max-w-4xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
+      <UserProfileHeader 
+        username={userData.username} 
+        handle={userData.handle} 
+        avatarUrl={userData.avatarUrl}
+      />
+      <StatsRow stats={userData.stats} />
+      <ActivityFeed activities={userData.activities} />
+    </div>
+  );
+};
+
+// --- Mount ---
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(UserProfileDashboard));
+<\/script>
+<script>
+(function() {
+  var source = document.getElementById("app-source").textContent;
+  try {
+    var compiled = Babel.transform(source, {
+      presets: ["react", "typescript"],
+      filename: "app.tsx"
+    }).code;
+    var fn = new Function("React", "ReactDOM", compiled);
+    fn(React, ReactDOM);
+  } catch(e) {
+    console.error("Babel compilation error:", e);
+    document.getElementById("root").innerHTML = "<div style=\"padding:20px;color:red;\"><h2>Compilation Error</h2><pre>" + e.message + "</pre></div>";
+  }
+})();
+<\/script>
+</body>
+</html>
