@@ -1,213 +1,153 @@
 {
-  "ticket": "TEST-8000",
-  "title": "Shopping Cart Component",
+  "ticket": "TEST-9001",
+  "title": "간단한 카운터 앱 - 숫자를 증가/감소할 수 있는 버튼이 있는 카운터",
   "components": [
     {
-      "name": "QuantitySelector",
-      "type": "molecule",
-      "description": "Component to increment or decrement product quantity",
+      "name": "Display",
+      "type": "atom",
+      "description": "Displays the current counter value prominently",
       "props": {
-        "quantity": {
+        "value": {
           "type": "number",
           "required": true,
-          "description": "Current quantity value"
+          "description": "The current count to be displayed"
+        }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "text-6xl font-bold text-gray-800 text-center my-8"
+      },
+      "children": [],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "status",
+        "ariaLive": "polite",
+        "ariaLabel": "Current count"
+      }
+    },
+    {
+      "name": "Button",
+      "type": "atom",
+      "description": "Reusable button for counter actions",
+      "props": {
+        "variant": {
+          "type": "string",
+          "required": false,
+          "description": "The style variant: primary, secondary, or danger"
         },
-        "onIncrement": {
+        "onClick": {
           "type": "function",
           "required": true,
-          "description": "Handler for plus button"
+          "description": "Function to execute on click"
         },
-        "onDecrement": {
-          "type": "function",
+        "children": {
+          "type": "node",
           "required": true,
-          "description": "Handler for minus button"
+          "description": "Button label or icon"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex items-center space-x-2 border rounded-md p-1"
+        "tailwind": "flex justify-center items-center px-6 py-3 rounded-lg font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 hover:opacity-90 active:scale-95"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "active"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Counter action button"
+      }
+    },
+    {
+      "name": "ButtonGroup",
+      "type": "molecule",
+      "description": "Groups the counter control buttons together",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-row gap-4 justify-center mt-4 w-full"
       },
       "children": [
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Decrease quantity" }
-        },
-        {
-          "element": "span",
-          "tailwind": "w-8 text-center font-medium",
-          "accessibility": { "role": "status" }
-        },
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Increase quantity" }
-        }
+        "Button (Decrement)",
+        "Button (Reset)",
+        "Button (Increment)"
       ],
-      "states": ["default", "disabled"],
+      "states": [
+        "default"
+      ],
       "accessibility": {
         "role": "group",
-        "ariaLabel": "Quantity controls"
+        "ariaLabel": "Counter controls"
       }
     },
     {
-      "name": "CartItem",
-      "type": "molecule",
-      "description": "Individual product item row in the cart",
-      "props": {
-        "product": {
-          "type": "object",
-          "required": true,
-          "description": "Product data (id, name, price, image)"
-        },
-        "quantity": {
-          "type": "number",
-          "required": true,
-          "description": "Current quantity"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200"
-      },
-      "children": [
-        {
-          "element": "img",
-          "tailwind": "w-20 h-20 object-cover rounded-md bg-gray-100",
-          "description": "Product thumbnail"
-        },
-        {
-          "element": "div",
-          "tailwind": "flex-1 flex flex-col gap-1",
-          "children": [
-            { "element": "h3", "tailwind": "font-semibold text-lg" },
-            { "element": "span", "tailwind": "text-gray-500" }
-          ]
-        },
-        {
-          "name": "QuantitySelector",
-          "type": "molecule"
-        },
-        {
-          "element": "button",
-          "tailwind": "text-red-500 hover:text-red-700 text-sm font-medium",
-          "content": "Remove",
-          "accessibility": { "ariaLabel": "Remove item from cart" }
-        }
-      ],
-      "states": ["default", "removing"],
-      "accessibility": {
-        "role": "article"
-      }
-    },
-    {
-      "name": "CartSummary",
-      "type": "molecule",
-      "description": "Summary section showing totals and checkout action",
-      "props": {
-        "subtotal": {
-          "type": "number",
-          "required": true,
-          "description": "Calculated total price of items"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "flex justify-between items-center text-lg font-bold",
-          "children": [
-            { "element": "span", "content": "Subtotal" },
-            { "element": "span", "content": "${subtotal}" }
-          ]
-        },
-        {
-          "element": "button",
-          "tailwind": "w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors",
-          "content": "Checkout",
-          "accessibility": { "role": "button" }
-        }
-      ],
-      "states": ["default", "loading"],
-      "accessibility": {
-        "role": "complementary",
-        "ariaLabel": "Order summary"
-      }
-    },
-    {
-      "name": "ShoppingCart",
+      "name": "CounterCard",
       "type": "organism",
-      "description": "Main container for the shopping cart page",
-      "props": {
-        "items": {
-          "type": "array",
-          "required": true,
-          "description": "List of cart items"
-        }
-      },
+      "description": "The main card container holding the display and controls",
+      "props": {},
       "layout": {
-        "display": "grid",
-        "tailwind": "grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
+        "display": "flex",
+        "tailwind": "flex flex-col items-center bg-white shadow-xl rounded-2xl p-8 max-w-sm w-full mx-auto border border-gray-100"
       },
       "children": [
-        {
-          "element": "div",
-          "tailwind": "lg:col-span-2 space-y-4",
-          "description": "List container or Empty State",
-          "states": [
-            {
-              "name": "empty",
-              "tailwind": "flex flex-col items-center justify-center py-12 text-gray-500",
-              "content": "Your cart is empty"
-            },
-            {
-              "name": "filled",
-              "children": ["CartItem list"]
-            }
-          ]
-        },
-        {
-          "name": "CartSummary",
-          "tailwind": "lg:col-span-1"
-        }
+        "Display",
+        "ButtonGroup"
       ],
-      "states": ["loading", "empty", "filled"],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "Counter application widget"
+      }
+    },
+    {
+      "name": "CounterApp",
+      "type": "page",
+      "description": "The main wrapper for the counter application",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex min-h-screen items-center justify-center bg-gray-50 p-4"
+      },
+      "children": [
+        "CounterCard"
+      ],
+      "states": [
+        "default"
+      ],
       "accessibility": {
         "role": "main",
-        "ariaLabel": "Shopping cart"
+        "ariaLabel": "Counter App Page"
       }
     }
   ],
   "colorPalette": {
-    "primary": "blue-600",
-    "secondary": "gray-600",
-    "danger": "red-500",
-    "background": "gray-50",
-    "border": "gray-200"
+    "primary": "#3B82F6",
+    "danger": "#EF4444",
+    "secondary": "#6B7280",
+    "background": "#F9FAFB",
+    "card": "#FFFFFF",
+    "text": "#1F2937"
   },
   "interactions": [
     {
       "trigger": "click",
-      "element": "QuantitySelector Button (+)",
-      "action": "Increments item quantity and updates subtotal"
+      "action": "Increments the counter value by 1 when the + button is clicked"
     },
     {
       "trigger": "click",
-      "element": "QuantitySelector Button (-)",
-      "action": "Decrements item quantity (stops at 1) and updates subtotal"
+      "action": "Decrements the counter value by 1 when the - button is clicked"
     },
     {
       "trigger": "click",
-      "element": "Remove Button",
-      "action": "Removes item from list and recalculates subtotal"
-    },
-    {
-      "trigger": "click",
-      "element": "Checkout Button",
-      "action": "Navigates to checkout flow"
+      "action": "Resets the counter value to 0 when the Reset button is clicked"
     }
   ]
 }
