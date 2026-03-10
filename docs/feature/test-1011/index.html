@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TEST-1011 - 로그인 페이지 UI 개선</title>
-<script src="https://cdn.tailwindcss.com"><\/script>
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin><\/script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin><\/script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
-<style>body { margin: 0; }<\/style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>body { margin: 0; }</style>
 </head>
 <body>
 <div id="root"></div>
@@ -478,9 +478,10 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ userData })
   );
 };
 
+
 // --- Mount ---
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(UserProfileDashboard));
-<\/script>
+</script>
 <script>
 (function() {
   var source = document.getElementById("app-source").textContent;
@@ -493,9 +494,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(
     fn(React, ReactDOM);
   } catch(e) {
     console.error("Babel compilation error:", e);
-    document.getElementById("root").innerHTML = "<div style=\"padding:20px;color:red;\"><h2>Compilation Error</h2><pre>" + e.message + "</pre></div>";
+    document.getElementById("root").innerHTML = '<div style="padding:20px;color:red;"><h2>Compilation Error</h2><pre>' + e.message + '</pre></div>';
   }
 })();
-<\/script>
+</script>
 </body>
 </html>
