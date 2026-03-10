@@ -1,0 +1,155 @@
+{
+  "ticket": "TEST-3001",
+  "title": "간단한 투두 앱",
+  "components": [
+    {
+      "name": "TodoInput",
+      "type": "molecule",
+      "description": "Input field and button to add a new todo item",
+      "props": {
+        "onAdd": {
+          "type": "function",
+          "required": true,
+          "description": "Callback when add button is clicked"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex gap-2 w-full mb-6"
+      },
+      "children": [
+        "TextInput",
+        "Button"
+      ],
+      "states": [
+        "default",
+        "empty",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "Add new todo form"
+      }
+    },
+    {
+      "name": "TodoItem",
+      "type": "molecule",
+      "description": "Individual todo item with checkbox, text, and delete button",
+      "props": {
+        "todo": {
+          "type": "object",
+          "required": true,
+          "description": "Todo data object {id, text, completed}"
+        },
+        "onToggle": {
+          "type": "function",
+          "required": true,
+          "description": "Callback to toggle completion status"
+        },
+        "onDelete": {
+          "type": "function",
+          "required": true,
+          "description": "Callback to delete the todo"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow"
+      },
+      "children": [
+        "Checkbox",
+        "Text",
+        "Button"
+      ],
+      "states": [
+        "default",
+        "completed"
+      ],
+      "accessibility": {
+        "role": "listitem",
+        "ariaLabel": "Todo item"
+      }
+    },
+    {
+      "name": "TodoList",
+      "type": "organism",
+      "description": "List container for all todo items",
+      "props": {
+        "todos": {
+          "type": "array",
+          "required": true,
+          "description": "Array of todo objects"
+        },
+        "onToggle": {
+          "type": "function",
+          "required": true,
+          "description": "Callback passed to items"
+        },
+        "onDelete": {
+          "type": "function",
+          "required": true,
+          "description": "Callback passed to items"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col w-full gap-2"
+      },
+      "children": [
+        "TodoItem"
+      ],
+      "states": [
+        "default",
+        "empty"
+      ],
+      "accessibility": {
+        "role": "list",
+        "ariaLabel": "List of todos"
+      }
+    },
+    {
+      "name": "TodoAppPage",
+      "type": "page",
+      "description": "Main layout wrapper for the Todo App",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen bg-gray-50 flex flex-col items-center py-10 px-4"
+      },
+      "children": [
+        "Header",
+        "TodoInput",
+        "TodoList"
+      ],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Todo Application"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#3b82f6",
+    "danger": "#ef4444",
+    "background": "#f9fafb",
+    "surface": "#ffffff",
+    "text": "#1f2937",
+    "border": "#e5e7eb"
+  },
+  "interactions": [
+    {
+      "trigger": "submit on TodoInput",
+      "action": "Validates input and adds a new todo to the list"
+    },
+    {
+      "trigger": "click on Checkbox in TodoItem",
+      "action": "Toggles the completed status of the todo item"
+    },
+    {
+      "trigger": "click on Delete Button in TodoItem",
+      "action": "Removes the todo item from the list"
+    }
+  ]
+}
