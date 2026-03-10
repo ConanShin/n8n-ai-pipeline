@@ -1,3 +1,3 @@
-provider: google
-model: gemini-3.1-pro
+provider: github-copilot
+model: gemini-3.1-pro-preview
 mcpServers: {}
