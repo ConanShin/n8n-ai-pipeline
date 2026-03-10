@@ -1,1 +1,1 @@
-provider: google\nmodel: antigravity-gemini-3-pro\nmcpServers: {}\n
+provider: google\nmodel: antigravity-gemini-3.1-pro\nmcpServers: {}\n
