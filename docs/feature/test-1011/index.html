@@ -550,7 +550,19 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ userData })
       if (t.startsWith("{")) {
         var inner = t.slice(1);
         if (inner.endsWith("}")) inner = inner.slice(0, -1);
-        return parseInterfaceBody(inner, src);
+        // Convert top-level semicolons to newlines so parseInterfaceBody can split properly
+        var normalized = "";
+        var depth = 0;
+        for (var si = 0; si < inner.length; si++) {
+          if (inner[si] === "{") depth++;
+          if (inner[si] === "}") depth--;
+          if (inner[si] === ";" && depth === 0) {
+            normalized += "\n";
+          } else {
+            normalized += inner[si];
+          }
+        }
+        return parseInterfaceBody(normalized, src);
       }
       if (t.match(/^'[^']*'/)) {
         var um = t.match(/^'([^']*)'/);
