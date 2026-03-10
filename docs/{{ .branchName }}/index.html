@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counter App Preview</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React 18 & ReactDOM 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const CounterDisplay = ({ count }) => {
+      return (
+        <div
+          role="status"
+          aria-label="Current count value"
+          className="flex justify-center items-center text-6xl font-bold text-gray-800 p-8 bg-white rounded-xl shadow-sm min-w-[200px]"
+        >
+          {count}
+        </div>
+      );
+    };
+
+    const CounterButton = ({ label, onClick, variant = 'primary' }) => {
+      const baseClasses = "flex justify-center items-center px-6 py-3 rounded-lg font-semibold text-white transition-transform hover:scale-105 active:scale-95 shadow-md";
+      
+      let variantClasses = "";
+      if (variant === 'primary') {
+        variantClasses = "bg-blue-500 hover:bg-blue-600";
+      } else if (variant === 'secondary') {
+        variantClasses = "bg-gray-500 hover:bg-gray-600";
+      } else if (variant === 'danger') {
+        variantClasses = "bg-red-500 hover:bg-red-600";
+      }
+
+      return (
+        <button
+          role="button"
+          aria-label="Counter action button"
+          className={`${baseClasses} ${variantClasses}`}
+          onClick={onClick}
+        >
+          {label}
+        </button>
+      );
+    };
+
+    const App = () => {
+      const [count, setCount] = useState(0);
+
+      const handleIncrement = () => setCount(prev => prev + 1);
+      const handleDecrement = () => setCount(prev => prev - 1);
+      const handleReset = () => setCount(0);
+
+      return (
+        <main
+          role="main"
+          aria-label="Counter application main page"
+          className="flex flex-col items-center justify-center min-h-screen bg-gray-50 gap-8 p-4"
+        >
+          <CounterDisplay count={count} />
+          <div className="flex flex-row gap-4">
+            <CounterButton label="-1" onClick={handleDecrement} variant="danger" />
+            <CounterButton label="Reset" onClick={handleReset} variant="secondary" />
+            <CounterButton label="+1" onClick={handleIncrement} variant="primary" />
+          </div>
+        </main>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
