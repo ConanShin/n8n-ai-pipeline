@@ -1,0 +1,129 @@
+{
+  "ticket": "TEST-4001",
+  "title": "간단한 날씨 위젯",
+  "components": [
+    {
+      "name": "WeatherIcon",
+      "type": "atom",
+      "description": "날씨 상태를 나타내는 아이콘",
+      "props": {
+        "condition": {
+          "type": "string",
+          "required": true,
+          "description": "sunny | cloudy | rainy"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center w-24 h-24 text-white"
+      },
+      "children": [],
+      "states": [
+        "sunny",
+        "cloudy",
+        "rainy"
+      ],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "현재 날씨 상태 아이콘"
+      }
+    },
+    {
+      "name": "WeatherDetailItem",
+      "type": "molecule",
+      "description": "습도, 풍속 등 개별 날씨 지표를 라벨과 함께 표시",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "지표 이름 (예: 습도, 풍속)"
+        },
+        "value": {
+          "type": "string",
+          "required": true,
+          "description": "지표 값 (예: 60%, 5m/s)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center gap-1 text-sm text-white/80"
+      },
+      "children": [],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "text",
+        "ariaLabel": "날씨 세부 지표"
+      }
+    },
+    {
+      "name": "WeatherWidget",
+      "type": "organism",
+      "description": "모든 날씨 정보를 종합하여 보여주는 반응형 카드 컴포넌트",
+      "props": {
+        "city": {
+          "type": "string",
+          "required": true,
+          "description": "도시명 (예: 서울)"
+        },
+        "temperature": {
+          "type": "number",
+          "required": true,
+          "description": "현재 온도"
+        },
+        "condition": {
+          "type": "string",
+          "required": true,
+          "description": "sunny | cloudy | rainy"
+        },
+        "humidity": {
+          "type": "number",
+          "required": true,
+          "description": "습도 (%)"
+        },
+        "windSpeed": {
+          "type": "number",
+          "required": true,
+          "description": "풍속 (m/s)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-6 p-6 rounded-2xl shadow-lg w-full max-w-sm mx-auto text-white transition-colors duration-500"
+      },
+      "children": [
+        "WeatherIcon",
+        "WeatherDetailItem"
+      ],
+      "states": [
+        "sunny",
+        "cloudy",
+        "rainy",
+        "loading",
+        "error"
+      ],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "현재 도시 날씨 정보 카드"
+      }
+    }
+  ],
+  "colorPalette": {
+    "sunny": "bg-gradient-to-br from-blue-400 to-blue-600",
+    "cloudy": "bg-gradient-to-br from-gray-400 to-gray-600",
+    "rainy": "bg-gradient-to-br from-blue-700 to-blue-900",
+    "textPrimary": "#ffffff",
+    "textSecondary": "rgba(255, 255, 255, 0.8)"
+  },
+  "interactions": [
+    {
+      "trigger": "hover",
+      "action": "카드가 살짝 떠오르며(scale-105) 그림자가 깊어짐"
+    },
+    {
+      "trigger": "condition change",
+      "action": "날씨 상태 변경 시 배경 그라데이션 색상이 부드럽게 전환(transition)됨"
+    }
+  ]
+}
