@@ -1,0 +1,177 @@
+{
+  "ticket": "TEST-1008",
+  "title": "로그인 페이지 UI 개선",
+  "components": [
+    {
+      "name": "InputField",
+      "type": "atom",
+      "description": "이메일 및 비밀번호 입력을 위한 기본 입력 필드",
+      "props": {
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "입력 타입 (text, email, password)"
+        },
+        "placeholder": {
+          "type": "string",
+          "required": false,
+          "description": "플레이스홀더 텍스트"
+        }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "focus",
+        "error",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "textbox",
+        "ariaLabel": "입력 필드"
+      }
+    },
+    {
+      "name": "PrimaryButton",
+      "type": "atom",
+      "description": "로그인 폼의 메인 제출 버튼",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "버튼 텍스트"
+        },
+        "isLoading": {
+          "type": "boolean",
+          "required": false,
+          "description": "로딩 상태 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors"
+      },
+      "children": [],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "disabled",
+        "loading"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "제출 버튼"
+      }
+    },
+    {
+      "name": "SocialLoginButton",
+      "type": "molecule",
+      "description": "소셜 로그인 제공자(Google, GitHub 등)를 위한 버튼",
+      "props": {
+        "provider": {
+          "type": "string",
+          "required": true,
+          "description": "소셜 제공자 이름"
+        },
+        "icon": {
+          "type": "string",
+          "required": true,
+          "description": "아이콘 컴포넌트 이름 또는 URL"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+      },
+      "children": [
+        "Icon",
+        "TextLabel"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "소셜 계정으로 로그인"
+      }
+    },
+    {
+      "name": "LoginForm",
+      "type": "organism",
+      "description": "이메일/비밀번호 및 소셜 로그인 옵션이 포함된 전체 로그인 폼",
+      "props": {
+        "onSubmit": {
+          "type": "function",
+          "required": true,
+          "description": "폼 제출 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-6 w-full max-w-md p-6 sm:p-8 bg-white shadow-xl rounded-2xl"
+      },
+      "children": [
+        "InputField (Email)",
+        "InputField (Password)",
+        "PrimaryButton",
+        "Divider",
+        "SocialLoginButton (Google)",
+        "SocialLoginButton (GitHub)"
+      ],
+      "states": [
+        "default",
+        "submitting",
+        "error"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "사용자 로그인 폼"
+      }
+    },
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "반응형 레이아웃이 적용된 메인 로그인 페이지 컨테이너",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "states": [
+        "default"
+      ],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "로그인 페이지"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#2563EB",
+    "primaryHover": "#1D4ED8",
+    "background": "#F9FAFB",
+    "surface": "#FFFFFF",
+    "border": "#D1D5DB",
+    "textMain": "#111827",
+    "textMuted": "#6B7280"
+  },
+  "interactions": [
+    {
+      "trigger": "submit",
+      "action": "이메일과 비밀번호의 유효성을 검사한 후 인증 API에 자격 증명을 전송합니다."
+    },
+    {
+      "trigger": "click on SocialLoginButton",
+      "action": "해당 소셜 제공자의 OAuth 흐름으로 사용자를 리디렉션합니다."
+    }
+  ]
+}
