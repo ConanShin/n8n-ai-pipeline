@@ -618,7 +618,7 @@ const BattingStage: React.FC<BattingStageProps> = ({
       />
       
       <ResultOverlay 
-        result={hitResult as any} 
+        result={hitResult} 
         scoreIncrement={scoreIncrement} 
         visible={overlayVisible} 
       />
@@ -720,7 +720,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ totalScore, history, grade,
         {history.map((h, i) => (
           <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-800 rounded-xl">
             <span className="text-gray-400 text-sm font-medium">{i + 1}타석</span>
-            <ScoreLabel result={h.result as any} size="sm" />
+            <ScoreLabel result={h.result} size="sm" />
             <span className="text-gray-300 text-sm font-bold tabular-nums">+{h.points}점</span>
           </div>
         ))}
@@ -751,8 +751,8 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ totalScore, history, grade,
 
 
 interface GameTemplateProps {
-  hud: ReactNode;
-  stage: ReactNode;
+  hud: any;
+  stage: any;
 }
 
 const GameTemplate: React.FC<GameTemplateProps> = ({ hud, stage }) => {
