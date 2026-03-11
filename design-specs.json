@@ -1,213 +1,583 @@
 {
-  "ticket": "TEST-8000",
-  "title": "Shopping Cart Component",
+  "ticket": "TEST-2025-FINAL",
+  "title": "GitHub Copilot Integration Final Test — Modern Responsive Dashboard",
+  "description": "A modern, responsive Dashboard layout with a collapsible Sidebar, a Topbar with user controls, and three Stat Cards (Total Users, Revenue, Active Sessions).",
   "components": [
     {
-      "name": "QuantitySelector",
-      "type": "molecule",
-      "description": "Component to increment or decrement product quantity",
+      "name": "NavItem",
+      "type": "atom",
+      "description": "A single navigation link item used inside the Sidebar, supports active and hover states.",
       "props": {
-        "quantity": {
-          "type": "number",
-          "required": true,
-          "description": "Current quantity value"
-        },
-        "onIncrement": {
-          "type": "function",
-          "required": true,
-          "description": "Handler for plus button"
-        },
-        "onDecrement": {
-          "type": "function",
-          "required": true,
-          "description": "Handler for minus button"
-        }
+        "label": { "type": "string", "required": true, "description": "Display text for the nav link" },
+        "icon": { "type": "ReactNode", "required": true, "description": "Icon element rendered before the label" },
+        "href": { "type": "string", "required": true, "description": "Navigation destination" },
+        "isActive": { "type": "boolean", "required": false, "description": "Highlights item when current route matches" }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex items-center space-x-2 border rounded-md p-1"
+        "tailwind": "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer"
       },
       "children": [
         {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Decrease quantity" }
+          "element": "span",
+          "tailwind": "w-5 h-5 shrink-0",
+          "description": "Icon wrapper"
         },
         {
           "element": "span",
-          "tailwind": "w-8 text-center font-medium",
-          "accessibility": { "role": "status" }
-        },
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Increase quantity" }
+          "tailwind": "truncate",
+          "description": "Label text"
         }
       ],
-      "states": ["default", "disabled"],
+      "states": ["default", "active", "hover"],
+      "stateStyles": {
+        "default": "text-slate-400 hover:bg-slate-700 hover:text-white",
+        "active": "bg-indigo-600 text-white shadow-sm"
+      },
       "accessibility": {
-        "role": "group",
-        "ariaLabel": "Quantity controls"
+        "role": "link",
+        "ariaLabel": "Navigation item",
+        "ariaCurrent": "page (when active)"
       }
     },
     {
-      "name": "CartItem",
+      "name": "StatCard",
       "type": "molecule",
-      "description": "Individual product item row in the cart",
+      "description": "A metric card displaying a stat title, numeric value, percentage trend badge, and a contextual icon. Used in groups of three on the Dashboard.",
       "props": {
-        "product": {
-          "type": "object",
-          "required": true,
-          "description": "Product data (id, name, price, image)"
-        },
-        "quantity": {
-          "type": "number",
-          "required": true,
-          "description": "Current quantity"
-        }
+        "title": { "type": "string", "required": true, "description": "Metric label, e.g. 'Total Users'" },
+        "value": { "type": "string", "required": true, "description": "Formatted metric value, e.g. '24,521'" },
+        "trend": { "type": "number", "required": true, "description": "Percentage change vs previous period (positive = up, negative = down)" },
+        "icon": { "type": "ReactNode", "required": true, "description": "Contextual icon for the metric type" },
+        "iconBgColor": { "type": "string", "required": false, "description": "Tailwind bg class for icon container, e.g. 'bg-indigo-100'" }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200"
+        "tailwind": "flex flex-col gap-3 p-6 bg-white rounded-2xl shadow-sm border border-slate-100"
       },
       "children": [
         {
-          "element": "img",
-          "tailwind": "w-20 h-20 object-cover rounded-md bg-gray-100",
-          "description": "Product thumbnail"
-        },
-        {
           "element": "div",
-          "tailwind": "flex-1 flex flex-col gap-1",
+          "tailwind": "flex items-center justify-between",
+          "description": "Top row: title + icon",
           "children": [
-            { "element": "h3", "tailwind": "font-semibold text-lg" },
-            { "element": "span", "tailwind": "text-gray-500" }
-          ]
-        },
-        {
-          "name": "QuantitySelector",
-          "type": "molecule"
-        },
-        {
-          "element": "button",
-          "tailwind": "text-red-500 hover:text-red-700 text-sm font-medium",
-          "content": "Remove",
-          "accessibility": { "ariaLabel": "Remove item from cart" }
-        }
-      ],
-      "states": ["default", "removing"],
-      "accessibility": {
-        "role": "article"
-      }
-    },
-    {
-      "name": "CartSummary",
-      "type": "molecule",
-      "description": "Summary section showing totals and checkout action",
-      "props": {
-        "subtotal": {
-          "type": "number",
-          "required": true,
-          "description": "Calculated total price of items"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "flex justify-between items-center text-lg font-bold",
-          "children": [
-            { "element": "span", "content": "Subtotal" },
-            { "element": "span", "content": "${subtotal}" }
-          ]
-        },
-        {
-          "element": "button",
-          "tailwind": "w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors",
-          "content": "Checkout",
-          "accessibility": { "role": "button" }
-        }
-      ],
-      "states": ["default", "loading"],
-      "accessibility": {
-        "role": "complementary",
-        "ariaLabel": "Order summary"
-      }
-    },
-    {
-      "name": "ShoppingCart",
-      "type": "organism",
-      "description": "Main container for the shopping cart page",
-      "props": {
-        "items": {
-          "type": "array",
-          "required": true,
-          "description": "List of cart items"
-        }
-      },
-      "layout": {
-        "display": "grid",
-        "tailwind": "grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "lg:col-span-2 space-y-4",
-          "description": "List container or Empty State",
-          "states": [
             {
-              "name": "empty",
-              "tailwind": "flex flex-col items-center justify-center py-12 text-gray-500",
-              "content": "Your cart is empty"
+              "element": "span",
+              "tailwind": "text-sm font-medium text-slate-500",
+              "description": "Metric title"
             },
             {
-              "name": "filled",
-              "children": ["CartItem list"]
+              "element": "div",
+              "tailwind": "w-10 h-10 flex items-center justify-center rounded-xl",
+              "description": "Icon container with dynamic bg color"
             }
           ]
         },
         {
-          "name": "CartSummary",
-          "tailwind": "lg:col-span-1"
+          "element": "div",
+          "tailwind": "flex items-end justify-between",
+          "children": [
+            {
+              "element": "span",
+              "tailwind": "text-3xl font-bold text-slate-800 tracking-tight",
+              "description": "Primary metric value"
+            },
+            {
+              "element": "span",
+              "tailwind": "inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full",
+              "description": "Trend badge — green for positive, red for negative",
+              "stateStyles": {
+                "positive": "bg-emerald-50 text-emerald-600",
+                "negative": "bg-red-50 text-red-500"
+              }
+            }
+          ]
         }
       ],
-      "states": ["loading", "empty", "filled"],
+      "states": ["default", "loading", "error"],
+      "variants": [
+        {
+          "name": "TotalUsers",
+          "title": "Total Users",
+          "iconBgColor": "bg-indigo-100",
+          "iconColor": "text-indigo-600"
+        },
+        {
+          "name": "Revenue",
+          "title": "Revenue",
+          "iconBgColor": "bg-emerald-100",
+          "iconColor": "text-emerald-600"
+        },
+        {
+          "name": "ActiveSessions",
+          "title": "Active Sessions",
+          "iconBgColor": "bg-amber-100",
+          "iconColor": "text-amber-600"
+        }
+      ],
+      "accessibility": {
+        "role": "article",
+        "ariaLabel": "Statistic card"
+      }
+    },
+    {
+      "name": "StatCardSkeleton",
+      "type": "atom",
+      "description": "Placeholder skeleton card shown while StatCard data is loading.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-3 p-6 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex items-center justify-between",
+          "children": [
+            { "element": "div", "tailwind": "h-4 w-24 bg-slate-200 rounded" },
+            { "element": "div", "tailwind": "w-10 h-10 bg-slate-200 rounded-xl" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "h-8 w-32 bg-slate-200 rounded mt-2"
+        }
+      ],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "Loading statistic"
+      }
+    },
+    {
+      "name": "Sidebar",
+      "type": "organism",
+      "description": "Vertical navigation sidebar fixed on the left. Collapses to icon-only mode on mobile. Contains the app logo/brand, primary nav links, and a bottom user profile snippet.",
+      "props": {
+        "isOpen": { "type": "boolean", "required": true, "description": "Controls expanded vs. collapsed state on mobile" },
+        "onClose": { "type": "function", "required": true, "description": "Callback to close the mobile drawer overlay" },
+        "navItems": {
+          "type": "array",
+          "required": true,
+          "description": "Array of nav item configs { label, icon, href, isActive }"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col w-64 h-screen bg-slate-800 text-white fixed inset-y-0 left-0 z-40 transition-transform duration-300"
+      },
+      "responsiveBehavior": {
+        "mobile": "Rendered as an off-canvas drawer; translates off-screen when closed (-translate-x-full), overlaid with a semi-transparent backdrop",
+        "desktop": "Always visible, static positioned as part of the two-column layout"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-3 px-6 py-5 border-b border-slate-700",
+          "description": "Brand / Logo area",
+          "children": [
+            {
+              "element": "div",
+              "tailwind": "w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold text-sm",
+              "description": "App logo mark"
+            },
+            {
+              "element": "span",
+              "tailwind": "text-base font-semibold tracking-tight",
+              "content": "Copilot Dashboard"
+            }
+          ]
+        },
+        {
+          "element": "nav",
+          "tailwind": "flex-1 overflow-y-auto px-3 py-4 space-y-1",
+          "description": "Scrollable nav link list",
+          "children": ["NavItem × N"]
+        },
+        {
+          "element": "div",
+          "tailwind": "px-4 py-4 border-t border-slate-700 flex items-center gap-3",
+          "description": "Bottom user profile snippet",
+          "children": [
+            {
+              "element": "div",
+              "tailwind": "w-8 h-8 rounded-full bg-indigo-400 shrink-0 flex items-center justify-center text-xs font-bold",
+              "description": "User avatar initials"
+            },
+            {
+              "element": "div",
+              "tailwind": "flex flex-col min-w-0",
+              "children": [
+                { "element": "span", "tailwind": "text-sm font-medium text-white truncate", "description": "Username" },
+                { "element": "span", "tailwind": "text-xs text-slate-400 truncate", "description": "User role / email" }
+              ]
+            }
+          ]
+        }
+      ],
+      "states": ["open", "closed"],
+      "accessibility": {
+        "role": "navigation",
+        "ariaLabel": "Main navigation sidebar",
+        "ariaHidden": "true when closed on mobile"
+      }
+    },
+    {
+      "name": "MobileMenuButton",
+      "type": "atom",
+      "description": "Hamburger / close toggle button visible only on mobile to open/close the Sidebar drawer.",
+      "props": {
+        "isOpen": { "type": "boolean", "required": true, "description": "Current drawer state" },
+        "onToggle": { "type": "function", "required": true, "description": "Toggles Sidebar open/closed" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors md:hidden"
+      },
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Toggle navigation menu",
+        "ariaExpanded": "bound to isOpen prop",
+        "ariaControls": "sidebar"
+      }
+    },
+    {
+      "name": "SearchBar",
+      "type": "molecule",
+      "description": "Inline search input in the Topbar for global search across the dashboard.",
+      "props": {
+        "placeholder": { "type": "string", "required": false, "description": "Input placeholder text" },
+        "onSearch": { "type": "function", "required": true, "description": "Callback fired on input change or submit" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2 w-full max-w-xs"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "w-4 h-4 text-slate-400 shrink-0",
+          "description": "Search icon"
+        },
+        {
+          "element": "input",
+          "tailwind": "bg-transparent text-sm text-slate-700 placeholder-slate-400 outline-none w-full",
+          "description": "Text input field"
+        }
+      ],
+      "states": ["default", "focused"],
+      "accessibility": {
+        "role": "search",
+        "ariaLabel": "Search dashboard"
+      }
+    },
+    {
+      "name": "NotificationBell",
+      "type": "atom",
+      "description": "Icon button in the Topbar showing unread notification count badge.",
+      "props": {
+        "count": { "type": "number", "required": false, "description": "Number of unread notifications; hides badge when 0" },
+        "onClick": { "type": "function", "required": true, "description": "Opens notification panel" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "w-5 h-5",
+          "description": "Bell icon"
+        },
+        {
+          "element": "span",
+          "tailwind": "absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white",
+          "description": "Unread badge dot (conditionally rendered)"
+        }
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Notifications",
+        "ariaBadge": "unread notification count"
+      }
+    },
+    {
+      "name": "UserMenu",
+      "type": "molecule",
+      "description": "Clickable avatar in the Topbar that opens a dropdown menu with profile and logout actions.",
+      "props": {
+        "userName": { "type": "string", "required": true, "description": "Display name of the current user" },
+        "avatarUrl": { "type": "string", "required": false, "description": "URL of the user avatar image; falls back to initials" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative flex items-center gap-2 cursor-pointer"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "w-8 h-8 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center overflow-hidden",
+          "description": "Avatar image or initials fallback"
+        },
+        {
+          "element": "span",
+          "tailwind": "text-sm font-medium text-slate-700 hidden sm:block",
+          "description": "Username display"
+        },
+        {
+          "element": "div",
+          "tailwind": "absolute right-0 top-10 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50",
+          "description": "Dropdown menu (conditionally visible)",
+          "children": [
+            { "element": "a", "tailwind": "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50", "content": "Profile" },
+            { "element": "a", "tailwind": "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50", "content": "Settings" },
+            { "element": "hr", "tailwind": "my-1 border-slate-100" },
+            { "element": "a", "tailwind": "block px-4 py-2 text-sm text-red-500 hover:bg-red-50", "content": "Logout" }
+          ]
+        }
+      ],
+      "states": ["closed", "open"],
+      "accessibility": {
+        "role": "menu",
+        "ariaLabel": "User account menu",
+        "ariaExpanded": "bound to dropdown open state"
+      }
+    },
+    {
+      "name": "Topbar",
+      "type": "organism",
+      "description": "Horizontal top navigation bar fixed at the top of the main content area. Contains the mobile menu toggle, page title, search bar, notification bell, and user menu.",
+      "props": {
+        "pageTitle": { "type": "string", "required": true, "description": "Current page heading displayed in the Topbar" },
+        "onMobileMenuToggle": { "type": "function", "required": true, "description": "Passed down to MobileMenuButton" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-between gap-4 px-4 sm:px-6 py-3 bg-white border-b border-slate-100 sticky top-0 z-30"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-3",
+          "description": "Left section",
+          "children": [
+            { "name": "MobileMenuButton", "type": "atom" },
+            {
+              "element": "h1",
+              "tailwind": "text-lg font-semibold text-slate-800",
+              "description": "Page title"
+            }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-2 sm:gap-3",
+          "description": "Right section",
+          "children": [
+            { "name": "SearchBar", "type": "molecule" },
+            { "name": "NotificationBell", "type": "atom" },
+            { "name": "UserMenu", "type": "molecule" }
+          ]
+        }
+      ],
+      "accessibility": {
+        "role": "banner",
+        "ariaLabel": "Top navigation bar"
+      }
+    },
+    {
+      "name": "StatCardGrid",
+      "type": "organism",
+      "description": "Responsive three-column grid of StatCards for Total Users, Revenue, and Active Sessions.",
+      "props": {
+        "stats": {
+          "type": "array",
+          "required": true,
+          "description": "Array of stat data objects passed to each StatCard"
+        },
+        "isLoading": {
+          "type": "boolean",
+          "required": false,
+          "description": "When true renders StatCardSkeleton placeholders"
+        }
+      },
+      "layout": {
+        "display": "grid",
+        "tailwind": "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6"
+      },
+      "children": [
+        {
+          "name": "StatCard",
+          "variant": "TotalUsers",
+          "description": "Total registered users metric"
+        },
+        {
+          "name": "StatCard",
+          "variant": "Revenue",
+          "description": "Total revenue metric"
+        },
+        {
+          "name": "StatCard",
+          "variant": "ActiveSessions",
+          "description": "Currently active sessions metric"
+        }
+      ],
+      "states": ["loading", "default", "error"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "Key metrics overview"
+      }
+    },
+    {
+      "name": "DashboardContent",
+      "type": "template",
+      "description": "Scrollable main content area rendered to the right of the Sidebar. Hosts the Topbar and all page-level sections.",
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col flex-1 min-h-screen bg-slate-50 overflow-y-auto"
+      },
+      "children": [
+        { "name": "Topbar", "type": "organism" },
+        {
+          "element": "main",
+          "tailwind": "flex-1 p-4 sm:p-6 lg:p-8 space-y-8",
+          "description": "Page body",
+          "children": [
+            { "name": "StatCardGrid", "type": "organism" }
+          ]
+        }
+      ],
       "accessibility": {
         "role": "main",
-        "ariaLabel": "Shopping cart"
+        "ariaLabel": "Dashboard main content"
+      }
+    },
+    {
+      "name": "SidebarBackdrop",
+      "type": "atom",
+      "description": "Semi-transparent overlay rendered behind the mobile Sidebar drawer to dismiss it on tap.",
+      "props": {
+        "isVisible": { "type": "boolean", "required": true, "description": "Shows/hides the overlay" },
+        "onClick": { "type": "function", "required": true, "description": "Closes the Sidebar when tapped" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity duration-300 md:hidden"
+      },
+      "states": ["visible", "hidden"],
+      "accessibility": {
+        "role": "presentation",
+        "ariaHidden": "true"
+      }
+    },
+    {
+      "name": "DashboardPage",
+      "type": "page",
+      "description": "Root page component that composes the full Dashboard layout: Sidebar, SidebarBackdrop, and DashboardContent side by side.",
+      "props": {
+        "initialStats": {
+          "type": "array",
+          "required": false,
+          "description": "Server-side pre-fetched stat data for SSR/SSG scenarios"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex h-screen w-full overflow-hidden bg-slate-50"
+      },
+      "children": [
+        { "name": "SidebarBackdrop", "type": "atom" },
+        { "name": "Sidebar", "type": "organism" },
+        { "name": "DashboardContent", "type": "template" }
+      ],
+      "states": ["default", "loading", "error"],
+      "accessibility": {
+        "role": "document",
+        "ariaLabel": "Dashboard page"
       }
     }
   ],
+  "atomicHierarchy": {
+    "atoms": ["NavItem", "StatCardSkeleton", "MobileMenuButton", "NotificationBell", "SidebarBackdrop"],
+    "molecules": ["StatCard", "SearchBar", "UserMenu"],
+    "organisms": ["Sidebar", "Topbar", "StatCardGrid"],
+    "templates": ["DashboardContent"],
+    "pages": ["DashboardPage"]
+  },
   "colorPalette": {
-    "primary": "blue-600",
-    "secondary": "gray-600",
-    "danger": "red-500",
-    "background": "gray-50",
-    "border": "gray-200"
+    "primary": "#6366f1",
+    "primaryLight": "#e0e7ff",
+    "primaryDark": "#4338ca",
+    "secondary": "#64748b",
+    "success": "#10b981",
+    "successLight": "#ecfdf5",
+    "warning": "#f59e0b",
+    "warningLight": "#fffbeb",
+    "danger": "#ef4444",
+    "dangerLight": "#fef2f2",
+    "background": "#f8fafc",
+    "surface": "#ffffff",
+    "border": "#f1f5f9",
+    "textPrimary": "#1e293b",
+    "textSecondary": "#64748b",
+    "textMuted": "#94a3b8",
+    "sidebarBg": "#1e293b",
+    "sidebarText": "#94a3b8",
+    "sidebarActiveText": "#ffffff"
+  },
+  "typography": {
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "pageTitle": "text-lg font-semibold text-slate-800",
+    "sectionTitle": "text-xl font-bold text-slate-800",
+    "statValue": "text-3xl font-bold text-slate-800 tracking-tight",
+    "statLabel": "text-sm font-medium text-slate-500",
+    "navLabel": "text-sm font-medium",
+    "caption": "text-xs text-slate-400"
+  },
+  "breakpoints": {
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px"
   },
   "interactions": [
     {
       "trigger": "click",
-      "element": "QuantitySelector Button (+)",
-      "action": "Increments item quantity and updates subtotal"
+      "element": "MobileMenuButton",
+      "action": "Toggles the Sidebar drawer open/closed on mobile; animates with translate-x transition"
     },
     {
       "trigger": "click",
-      "element": "QuantitySelector Button (-)",
-      "action": "Decrements item quantity (stops at 1) and updates subtotal"
+      "element": "SidebarBackdrop",
+      "action": "Closes the mobile Sidebar drawer"
     },
     {
       "trigger": "click",
-      "element": "Remove Button",
-      "action": "Removes item from list and recalculates subtotal"
+      "element": "NavItem",
+      "action": "Navigates to the target route; updates active state styling"
     },
     {
       "trigger": "click",
-      "element": "Checkout Button",
-      "action": "Navigates to checkout flow"
+      "element": "NotificationBell",
+      "action": "Opens a notification panel or dropdown listing recent alerts"
+    },
+    {
+      "trigger": "click",
+      "element": "UserMenu avatar",
+      "action": "Toggles the user dropdown menu; closes on outside click"
+    },
+    {
+      "trigger": "change",
+      "element": "SearchBar input",
+      "action": "Filters dashboard content or navigates to search results in real-time"
+    },
+    {
+      "trigger": "resize",
+      "element": "window",
+      "action": "At md breakpoint Sidebar transitions from drawer to static; Topbar adapts right-side controls"
+    },
+    {
+      "trigger": "load",
+      "element": "StatCardGrid",
+      "action": "Renders StatCardSkeleton placeholders while fetching data, then swaps in StatCards"
     }
   ]
 }
