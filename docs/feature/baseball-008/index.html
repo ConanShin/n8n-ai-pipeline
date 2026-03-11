@@ -168,7 +168,7 @@ const ActionButton = ({ disabled = false, swinging = false, onSwing }) => {
     variantClass = "bg-amber-300 scale-90 ring-4 ring-amber-200 shadow-inner";
   }
 
-  const handlePointerDown = (e.PointerEvent) => {
+  const handlePointerDown = (e) => {
     if (disabled) return;
     setIsPressed(true);
     onSwing();
