@@ -1,0 +1,31 @@
+{
+  "assignments": {
+    "assignments": [
+      {
+        "id": "ticket-key",
+        "name": "ticketKey",
+        "value": "={{ $json.body.issue.key }}",
+        "type": "string"
+      },
+      {
+        "id": "ticket-summary",
+        "name": "ticketSummary",
+        "value": "={{ $json.body.issue.fields.summary }}",
+        "type": "string"
+      },
+      {
+        "id": "ticket-description",
+        "name": "ticketDescription",
+        "value": "={{ $json.body.issue.fields.description }}",
+        "type": "string"
+      },
+      {
+        "id": "branch-name",
+        "name": "branchName",
+        "value": "=feature/{{ $json.body.issue.key.toLowerCase() }}",
+        "type": "string"
+      }
+    ]
+  },
+  "options": {}
+}

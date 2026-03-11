@@ -1,0 +1,27 @@
+=== TASK 3: Patch Verification Inside Container ===
+Timestamp: 2026-02-20
+
+--- Step 1: Find runners.config.js ---
+Command: docker exec n8n-ai-agent find / -name "runners.config.js" -path "*/@n8n/config/*" 2>/dev/null | head -1
+
+File path found:
+/usr/local/lib/node_modules/n8n/node_modules/.pnpm/@n8n+config@file+packages+@n8n+config/node_modules/@n8n/config/dist/configs/runners.config.js
+
+--- Step 2: Verify Patch Applied ---
+Command: docker exec n8n-ai-agent grep "this.enabled" [path-from-above]
+
+Content of file:
+        this.enabled = false;
+
+VERIFICATION RESULT: ✅ PATCH APPLIED SUCCESSFULLY
+
+The patch replaced `this.enabled = true` → `this.enabled = false` during the container build.
+This confirms the Dockerfile RUN block (lines 26-29) executed correctly inside the image build process.
+
+Key confirmation:
+- ✅ runners.config.js found at expected pnpm path
+- ✅ Contains `this.enabled = false` (NOT `true`)
+- ✅ Patch came from Dockerfile build time (not runtime env vars)
+- ✅ Task Runners are now DISABLED inside n8n
+
+=== PATCH VERIFICATION COMPLETE ===

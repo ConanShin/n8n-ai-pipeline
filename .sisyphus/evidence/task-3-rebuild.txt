@@ -1,0 +1,35 @@
+=== TASK 3: Container Rebuild with Patched Dockerfile ===
+Timestamp: 2026-02-20
+
+--- Step 1: docker compose down ---
+Container n8n-ai-agent  Stopping
+Container n8n-ai-agent  Stopped
+Container n8n-ai-agent  Removing
+Container n8n-ai-agent  Removed
+Network n8n_default  Removing
+Network n8n_default  Removed
+
+--- Step 2: docker compose up -d --build ---
+Build output (key lines):
+#8 [n8n 5/7] RUN RUNNERS_CONFIG=$(find /usr/local/lib/node_modules/n8n -name "runners.config.js" -path "*/@n8n/config/*" 2>/dev/null | head -1) \
+    && test -f "$RUNNERS_CONFIG" || (echo "runners.config.js not found" && exit 1) \
+    && sed -i 's/this\.enabled = true/this.enabled = false/g' "$RUNNERS_CONFIG" \
+    && grep -q "this.enabled = false" "$RUNNERS_CONFIG" && echo "Task Runners disabled successfully"
+#8 0.635 Task Runners disabled successfully
+#8 DONE 0.7s
+
+Build completed successfully. Image: n8n-n8n:latest
+
+--- Step 3: docker compose ps (after 30s wait) ---
+NAME           IMAGE     COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+n8n-ai-agent   n8n-n8n   "tini -- /docker-ent…"   n8n       33 seconds ago   Up 33 seconds (healthy)   0.0.0.0:5678->5678/tcp
+
+Container Status: ✅ Up and Healthy
+
+--- Step 4: Health Endpoint Check ---
+curl -s http://localhost:5678/healthz
+Response: {"status":"ok"}
+
+Health Check: ✅ PASSED
+
+=== REBUILD SUCCESSFUL ===

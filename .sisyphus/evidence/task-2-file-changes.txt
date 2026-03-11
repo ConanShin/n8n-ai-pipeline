@@ -1,0 +1,3 @@
+26:RUN RUNNERS_CONFIG=$(find /usr/local/lib/node_modules/n8n -name "runners.config.js" -path "*/@n8n/config/*" 2>/dev/null | head -1) \
+27:    && test -f "$RUNNERS_CONFIG" || (echo "runners.config.js not found" && exit 1) \
+✓ N8N_RUNNERS_ENABLED removed (no match found)

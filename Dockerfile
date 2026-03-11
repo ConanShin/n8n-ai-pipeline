@@ -20,6 +20,19 @@ RUN git config --global user.name "n8n-ai-agent" \
 
 RUN mkdir -p /home/node/workspace && chown -R node:node /home/node/workspace
 
+# Fix: Always send env vars to task runners
+# Task runners' BuiltInsParser can't detect $env usage in bash commands (ExecuteCommand nodes)
+# Instead of disabling task runners (which breaks ExecuteCommand nodes), disable the env stripping
+# This ensures all nodes (JS Code, ExecuteCommand, etc.) can access $env variables
+RUN STRIPPER=$(find /usr/local/lib/node_modules/n8n -name "data-request-response-stripper.js" -path "*/task-managers/*" 2>/dev/null | head -1) \
+    && test -f "$STRIPPER" || (echo "data-request-response-stripper.js not found" && exit 1) \
+    && sed -i '/stripEnvProviderState(envProviderState) {/,/^    }/c\
+    stripEnvProviderState(envProviderState) {\
+        return envProviderState;\
+    }' "$STRIPPER" \
+    && grep -A 2 "stripEnvProviderState(envProviderState)" "$STRIPPER" | grep -q "return envProviderState" \
+    && echo "Env stripping disabled - all task runners will receive full env vars"
+
 USER node
 
 RUN opencode --version

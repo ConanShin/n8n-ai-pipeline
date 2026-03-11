@@ -1,0 +1,14 @@
+{
+  "name": "GitHub: Create Branch",
+  "parameters": {
+    "owner": "={{ $env.GITHUB_OWNER }}",
+    "repository": "={{ $env.GITHUB_REPO }}"
+  }
+}
+{
+  "name": "GitHub: Create PR",
+  "parameters": {
+    "owner": "={{ $env.GITHUB_OWNER }}",
+    "repository": "={{ $env.GITHUB_REPO }}"
+  }
+}

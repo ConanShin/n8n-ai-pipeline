@@ -1,0 +1,5 @@
+    && grep -q "this.enabled = false" "$RUNNERS_CONFIG" && echo "Task Runners disabled successfully"
+
+USER node
+
+RUN opencode --version

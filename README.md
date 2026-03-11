@@ -76,7 +76,7 @@ Jira Issue Created
 |------|--------|------|
 | `EXECUTIONS_TIMEOUT` | 600초 | OpenCode 에이전트 실행 최대 시간 |
 | Memory Limit | 4GB | Docker 컨테이너 메모리 상한 |
-| LLM Model | antigravity-claude-sonnet-4-6 (Google OAuth) | opencode_config/opencode.yaml에서 변경 |
+| LLM Model | github-copilot/claude-sonnet-4.6 | opencode_config/opencode.yaml에서 변경 |
 
 ## 관리 명령어
 

@@ -1,0 +1,110 @@
+# Task 4: $env Access Verification - CRITICAL BLOCKER FOUND
+
+## Webhook Trigger Test
+Date: 2026-02-20T05:30:32Z
+Payload: TEST-999 Jira issue created
+
+### Webhook Response
+HTTP Status: 500
+Response: {"code":0,"message":"Unrecognized node type: n8n-nodes-base.executeCommand"}
+
+## CRITICAL FINDING: executeCommand Nodes Unrecognized
+
+By disabling task runners via TaskRunnersConfig.enabled = false, we have made the
+`executeCommand` node type **completely unrecognized** by n8n core.
+
+### Workflow Analysis
+Total Nodes: 9
+- Jira Webhook (webhook) ✓
+- Set Variables (set) ✓
+- Get Main SHA (httpRequest) ✓
+- GitHub: Create Branch (github) ✓
+- Git: Clone/Checkout (executeCommand) ❌ UNRECOGNIZED
+- OpenCode: Designer Agent (executeCommand) ❌ UNRECOGNIZED
+- OpenCode: Coder Agent (executeCommand) ❌ UNRECOGNIZED
+- Git: Push Branch (executeCommand) ❌ UNRECOGNIZED
+- GitHub: Create PR (github) ✓
+
+### Error Logs
+```
+Unrecognized node type: n8n-nodes-base.executeCommand
+Activation of workflow "Jira-to-Code AI Pipeline" (e37Q7iiP1An4jGSw) did fail with error: 
+"Unrecognized node type: n8n-nodes-base.executeCommand"
+Error in handling webhook request POST /webhook/jira-webhook: Unrecognized node type: 
+n8n-nodes-base.executeCommand
+```
+
+## $env Variable Usage (from workflow JSON)
+
+### Get Main SHA Node
+```json
+{
+  "url": "=https://api.github.com/repos/{{ $env.GITHUB_OWNER }}/{{ $env.GITHUB_REPO }}/git/ref/heads/main",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "githubApi"
+}
+```
+Expected resolved URL: https://api.github.com/repos/ConanShin/n8n-ai-pipeline/git/ref/heads/main
+
+### GitHub: Create Branch Node
+```json
+{
+  "owner": "={{ $env.GITHUB_OWNER }}",
+  "repository": "={{ $env.GITHUB_REPO }}"
+}
+```
+Expected values: owner="ConanShin", repository="n8n-ai-pipeline"
+
+### Git: Clone/Checkout Node (executeCommand - UNRECOGNIZED)
+```
+git clone --branch {{ $('Set Variables').item.json.branchName }} 
+  https://{{ $env.GITHUB_TOKEN }}@github.com/{{ $env.GITHUB_OWNER }}/{{ $env.GITHUB_REPO }}.git
+```
+
+## ROOT CAUSE ANALYSIS
+
+### The Problem
+Disabling TaskRunnersConfig.enabled completely removes the executeCommand node type 
+from n8n's node registry. This is because:
+
+1. Task runners are not just an execution mode - they're the **provider** for executeCommand nodes
+2. When TaskRunnersConfig.enabled = false, n8n doesn't load the executeCommand node type at all
+3. The workflow can't even **activate** (let alone execute) because it contains unrecognized nodes
+
+### Why This Approach Failed
+The original issue was: "$env variables show '[not accessible via UI]' when task runners are enabled"
+
+Our fix: Disable task runners entirely
+
+The consequence: executeCommand nodes become completely unavailable, breaking the workflow
+
+## VERDICT: TASK 4 CANNOT BE COMPLETED AS SPECIFIED
+
+❌ **BLOCKER**: Workflow cannot execute at all with current approach
+❌ **Cannot verify $env resolution**: No nodes executed (webhook immediately fails)
+❌ **Incorrect solution**: Disabling task runners is too aggressive
+
+## NEXT STEPS REQUIRED
+
+We need a **different approach** to fix $env accessibility:
+
+### Option 1: Patch executeCommand Node to Access $env
+- Keep task runners enabled
+- Modify the executeCommand node implementation to properly expose $env to the UI
+- This is the "surgical" fix that addresses the root cause
+
+### Option 2: Replace executeCommand with SSH/Code Nodes
+- Remove executeCommand nodes from workflow
+- Replace with SSH nodes or Code nodes that can run shell commands
+- These node types may have better $env integration
+
+### Option 3: Investigate Task Runner $env Context Injection
+- Keep task runners enabled
+- Patch the task runner context to properly inject $env variables
+- May require changes to @n8n/task-runner package
+
+## FILES SAVED
+- .sisyphus/evidence/task-4-webhook-test.json (execution response)
+- .sisyphus/evidence/task-4-full-workflow.json (workflow definition)
+- .sisyphus/evidence/task-4-set-variables-node.json (Set Variables params)
+- .sisyphus/evidence/task-4-env-resolution.txt (this analysis)

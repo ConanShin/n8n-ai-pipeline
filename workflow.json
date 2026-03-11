@@ -1,251 +1,488 @@
-{
-  "name": "Jira-to-Code AI Pipeline",
-  "nodes": [
-    {
-      "parameters": {},
-      "id": "trigger-jira",
-      "name": "Jira Trigger",
-      "type": "n8n-nodes-base.jiraTrigger",
-      "typeVersion": 1,
-      "position": [240, 300],
-      "webhookId": "jira-ticket-created",
-      "credentials": {
-        "jiraSoftwareCloudApi": {
-          "id": "JIRA_CREDENTIAL_ID",
-          "name": "Jira Cloud"
+[
+  {
+    "updatedAt": "2026-02-23T04:17:46.000Z",
+    "createdAt": "2026-02-23T03:32:07.310Z",
+    "id": "TcN2TS8LFKc3jzm9",
+    "name": "Jira-to-Code AI Pipeline",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "jira-webhook",
+          "responseMode": "onReceived",
+          "options": {
+            "responseData": "firstEntryJson"
+          }
+        },
+        "id": "trigger-webhook",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          240,
+          300
+        ],
+        "webhookId": "jira-webhook"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extract data from webhook body (webhook output wraps payload in 'body')\nconst webhookData = $input.first().json;\nconst payload = webhookData.body || webhookData;\n\nconst issueKey = payload.issue?.key || payload.key || 'UNKNOWN';\nconst summary = payload.issue?.fields?.summary || payload.fields?.summary || payload.summary || 'No summary';\nconst description = payload.issue?.fields?.description || payload.fields?.description || payload.description || 'No description';\n\nreturn {\n  ticketKey: issueKey,\n  ticketSummary: summary,\n  ticketDescription: description,\n  branchName: `feature/${issueKey.toLowerCase()}`\n};"
+        },
+        "id": "code-extract-vars",
+        "name": "Extract Variables",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          460,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://api.github.com/repos/ConanShin/n8n-ai-pipeline/git/ref/heads/main",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {}
+        },
+        "id": "get-main-sha",
+        "name": "Get Main SHA",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          460,
+          500
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "github-token-v2",
+            "name": "GitHub Token v2"
+          }
         }
       },
-      "notes": "Jira에서 이슈 생성 시 트리거. 크리덴셜 등록 후 JIRA_CREDENTIAL_ID를 실제 ID로 교체하세요."
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
+      {
+        "parameters": {
+          "jsCode": "// Combine data from both upstream nodes\nconst vars = $('Extract Variables').first().json;\nconst sha = $('Get Main SHA').first().json;\n\nreturn {\n  ticketKey: vars.ticketKey,\n  ticketSummary: vars.ticketSummary,\n  ticketDescription: vars.ticketDescription,\n  branchName: vars.branchName,\n  mainSha: sha.object.sha\n};"
+        },
+        "id": "combine-data",
+        "name": "Combine Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          680,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.github.com/repos/ConanShin/n8n-ai-pipeline/git/refs",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"ref\": \"refs/heads/{{ $json.branchName }}\",\n  \"sha\": \"{{ $json.mainSha }}\"\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "github-create-branch",
+        "name": "GitHub: Create Branch",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          900,
+          400
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "github-token-v2",
+            "name": "GitHub Token v2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "=git config --global --add safe.directory \"*\" && cd /home/node/workspace && rm -rf project && git clone --branch {{ $('Combine Data').first().json.branchName }} --single-branch https://{{ $env[\"GITHUB_TOKEN\"] }}@github.com/ConanShin/n8n-ai-pipeline.git project && cd project && git config user.email 'ai-agent@example.com' && git config user.name 'AI Agent' && cp opencode_config/opencode.yaml .opencode.yaml"
+        },
+        "id": "git-clone",
+        "name": "Git: Clone/Checkout",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "command": "=cd /home/node/workspace/project && export CI=true && export TERM=dumb && export HOME=/home/node && timeout 180 opencode run --model github-copilot/claude-sonnet-4.6 --format json --agent Designer </dev/null \"Jira 티켓 '{{ $('Combine Data').first().json.ticketKey }}: {{ $('Combine Data').first().json.ticketSummary }}'을 분석해. 설명: '{{ $('Combine Data').first().json.ticketDescription }}'. 이를 바탕으로 React + Tailwind CSS 기반 UI 구조를 JSON 형식으로 생성해서 design-specs.json 파일로 저장하고 git add + commit 해줘. 커밋 메시지: 'design: add UI spec for {{ $('Combine Data').first().json.ticketKey }}'\"",
+          "timeout": 300
+        },
+        "id": "opencode-designer",
+        "name": "OpenCode: Designer Agent",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1340,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "command": "=cd /home/node/workspace/project && export CI=true && export TERM=dumb && export HOME=/home/node && timeout 300 opencode run --model github-copilot/claude-sonnet-4.6 --format json --agent Coder </dev/null \"방금 생성된 design-specs.json 파일을 읽어. 이 디자인 명세를 구현하는 React + Tailwind CSS 코드를 src/components/ 폴더에 작성해. TypeScript를 사용하고, 각 컴포넌트별 props 인터페이스를 정의해.\\n\\n그 다음, 반드시 preview.html 파일을 프로젝트 루트에 생성해. 이 파일은 GitHub Pages에 배포되어 브라우저에서 바로 볼 수 있는 self-contained HTML이어야 해.\\npreview.html 규칙:\\n1. CDN으로 React 18, ReactDOM 18, Babel standalone, Tailwind CSS를 로드할 것\\n2. <script type='text/babel'> 블록 안에 모든 컴포넌트를 인라인으로 포함할 것 (import문 없이)\\n3. src/components/에 만든 모든 컴포넌트를 preview.html에도 동일하게 작성할 것\\n4. 최상위 App 컴포넌트를 만들어서 모든 컴포넌트를 조합하여 렌더링할 것\\n5. ReactDOM.createRoot(document.getElementById('root')).render(<App />) 로 마운트할 것\\n6. 완전히 동작하는 인터랙티브 페이지여야 함 (state, event handler 모두 포함)\\n\\n모든 파일을 git add + commit 해줘. 커밋 메시지: 'feat: implement components for {{ $('Combine Data').first().json.ticketKey }}'\"",
+          "timeout": 600
+        },
+        "id": "opencode-coder",
+        "name": "OpenCode: Coder Agent",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1560,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "command": "=cd /home/node/workspace/project && COMMIT_COUNT=$(git rev-list --count origin/{{ $('Combine Data').first().json.branchName }}..HEAD) && if [ \"$COMMIT_COUNT\" -eq 0 ]; then echo \"ERROR: No new commits found. Designer/Coder agents may have failed to generate code.\" && exit 1; fi && git push origin {{ $('Combine Data').first().json.branchName }}"
+        },
+        "id": "git-push",
+        "name": "Git: Push Branch",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1780,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.github.com/repos/ConanShin/n8n-ai-pipeline/pulls",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"title\": \"[AI] {{ $('Combine Data').first().json.ticketKey }}: {{ $('Combine Data').first().json.ticketSummary }}\",\n  \"body\": \"## AI Generated PR\\n\\n**Jira Ticket**: {{ $('Combine Data').first().json.ticketKey }}\\n**Summary**: {{ $('Combine Data').first().json.ticketSummary }}\\n\\n### Generated Files\\n- `design-specs.json`: UI design specification\\n- `src/components/`: React component implementation\\n\\n---\\n*This PR was automatically generated by n8n AI Pipeline.*\",\n  \"head\": \"{{ $('Combine Data').first().json.branchName }}\",\n  \"base\": \"main\"\n}",
+          "options": {}
+        },
+        "id": "github-create-pr",
+        "name": "GitHub: Create PR",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2000,
+          400
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "github-token-v2",
+            "name": "GitHub Token v2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Collect PR response data + variables for downstream nodes\nconst prResponse = $input.first().json;\nconst combineDataOutput = $('Combine Data').first().json;\n\nconst prUrl = prResponse.html_url || prResponse._links?.html?.href || 'PR URL not available';\nconst prNumber = prResponse.number || 'N/A';\nconst branchName = combineDataOutput.branchName;\nconst pagesUrl = `https://conanshin.github.io/n8n-ai-pipeline/${branchName}/`;\n\nreturn {\n  ticketKey: combineDataOutput.ticketKey,\n  ticketSummary: combineDataOutput.ticketSummary,\n  branchName: branchName,\n  prUrl: prUrl,\n  prNumber: prNumber,\n  pagesUrl: pagesUrl\n};"
+        },
+        "id": "collect-pr-data",
+        "name": "Collect PR Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2220,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "command": "=BRANCH_NAME=\"{{ $('Collect PR Data').first().json.branchName }}\" && TICKET_KEY=\"{{ $('Collect PR Data').first().json.ticketKey }}\" && TICKET_SUMMARY=\"{{ $('Collect PR Data').first().json.ticketSummary }}\" && PR_URL=\"{{ $('Collect PR Data').first().json.prUrl }}\" && PR_NUMBER=\"{{ $('Collect PR Data').first().json.prNumber }}\" && PAGES_BASE=\"https://conanshin.github.io/n8n-ai-pipeline\" && PROJECT_DIR=\"/home/node/workspace/project\" && if [ ! -f \"$PROJECT_DIR/preview.html\" ]; then echo \"Building preview.html from source components...\" && COMP_TMP=$(mktemp) && for f in $(find \"$PROJECT_DIR/src/components\" -name \"*.tsx\" -o -name \"*.jsx\" 2>/dev/null | grep -v index | sort); do FNAME=$(basename \"$f\" .tsx) && echo \"// --- $FNAME ---\" >> \"$COMP_TMP\" && sed '/^import /d; s/^export default //g; s/^export //g' \"$f\" >> \"$COMP_TMP\" && echo \"\" >> \"$COMP_TMP\"; done && PAGE_COMP=$(find \"$PROJECT_DIR/src/components/pages\" -name \"*.tsx\" 2>/dev/null | grep -v index | head -1) && if [ -n \"$PAGE_COMP\" ]; then MAIN_COMP=$(basename \"$PAGE_COMP\" .tsx); else MAIN_COMP=$(find \"$PROJECT_DIR/src/components\" -name \"*.tsx\" | grep -v index | xargs wc -l 2>/dev/null | sort -rn | head -2 | tail -1 | awk '{print $NF}' | xargs basename | sed \"s/.tsx//\"); fi && echo \"Main component: $MAIN_COMP\" && { echo '<!DOCTYPE html>'; echo '<html lang=\"en\">'; echo '<head>'; echo '<meta charset=\"UTF-8\">'; echo '<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">'; echo \"<title>$TICKET_KEY - $TICKET_SUMMARY</title>\"; echo '<script src=\"https://cdn.tailwindcss.com\"></script>'; echo '<script src=\"https://unpkg.com/react@18/umd/react.development.js\" crossorigin></script>'; echo '<script src=\"https://unpkg.com/react-dom@18/umd/react-dom.development.js\" crossorigin></script>'; echo '<script src=\"https://unpkg.com/@babel/standalone/babel.min.js\"></script>'; echo '<style>body { margin: 0; }</style>'; echo '</head>'; echo '<body>'; echo '<div id=\"root\"></div>'; echo \"<script type=\\\"text/plain\\\" id=\\\"app-source\\\" data-main-component=\\\"$MAIN_COMP\\\">\"; echo 'const { useState, useEffect, useCallback, useMemo, useRef } = React;'; echo ''; } > \"$PROJECT_DIR/preview.html\" && sed 's|</script>|<\\\\/script>|g' \"$COMP_TMP\" >> \"$PROJECT_DIR/preview.html\" && echo '</script>' >> \"$PROJECT_DIR/preview.html\" && cat >> \"$PROJECT_DIR/preview.html\" << 'FOOTEREOF'\n<script>\n(function() {\n  var source = document.getElementById(\"app-source\").textContent;\n  var mainComp = document.getElementById(\"app-source\").getAttribute(\"data-main-component\");\n  try {\n    var compiled = Babel.transform(source, {\n      presets: [\"react\", \"typescript\"],\n      filename: \"app.tsx\"\n    }).code;\n\n    function parseInterfaceBody(body, fullSrc) {\n      var props = {};\n      var lines = body.split(\"\\n\");\n      var i = 0;\n      while (i < lines.length) {\n        var line = lines[i].trim();\n        i++;\n        if (!line || line.startsWith(\"//\") || line.startsWith(\"/*\") || line.startsWith(\"*\")) continue;\n        var pm = line.match(/^(\\/\\*\\*.*\\*\\/\\s*)?(\\w+)\\??\\s*:\\s*(.+)/);\n        if (!pm) continue;\n        var propName = pm[2];\n        var typeStr = pm[3].replace(/;\\s*$/, \"\").trim();\n        if (typeStr.includes(\"{\")) {\n          var braceCount = 0;\n          for (var c = 0; c < typeStr.length; c++) {\n            if (typeStr[c] === \"{\") braceCount++;\n            if (typeStr[c] === \"}\") braceCount--;\n          }\n          while (braceCount > 0 && i < lines.length) {\n            var nextLine = lines[i].trim();\n            i++;\n            typeStr += \" \" + nextLine;\n            for (var c2 = 0; c2 < nextLine.length; c2++) {\n              if (nextLine[c2] === \"{\") braceCount++;\n              if (nextLine[c2] === \"}\") braceCount--;\n            }\n          }\n          typeStr = typeStr.replace(/;\\s*$/, \"\").trim();\n        }\n        props[propName] = genVal(typeStr, propName, fullSrc);\n      }\n      return props;\n    }\n\n    function generateSampleProps(src, compName) {\n      var propsName = compName + \"Props\";\n      var re = new RegExp(\"interface\\\\s+\" + propsName + \"\\\\s*\\\\{([\\\\s\\\\S]*?)\\\\n\\\\}\", \"m\");\n      var m = src.match(re);\n      if (!m) return {};\n      return parseInterfaceBody(m[1], src);\n    }\n\n    function genVal(t, name, src) {\n      t = t.trim();\n      if (t === \"string\") {\n        if (/url|src|image|avatar|photo/i.test(name)) return \"https://i.pravatar.cc/150?img=47\";\n        if (/email/i.test(name)) return \"user@example.com\";\n        if (/name|username/i.test(name)) return \"Jane Doe\";\n        if (/handle/i.test(name)) return \"@janedoe\";\n        if (/title/i.test(name)) return \"Sample Title\";\n        if (/desc/i.test(name)) return \"Sample description text.\";\n        if (/action/i.test(name)) return \"Performed an action\";\n        if (/timestamp|date|time/i.test(name)) return \"2 hours ago\";\n        if (/label/i.test(name)) return \"Label\";\n        if (/id/i.test(name)) return \"id-\" + Math.random().toString(36).substr(2, 6);\n        return \"Sample \" + name;\n      }\n      if (t === \"number\") {\n        if (/price|cost|amount|subtotal/i.test(name)) return 29.99;\n        if (/count|total|quantity/i.test(name)) return 3;\n        if (/followers|posts|likes/i.test(name)) return Math.floor(Math.random() * 500) + 100;\n        return 42;\n      }\n      if (t === \"boolean\") return false;\n      if (t === \"number | string\") return 42;\n      if (t === \"ReactNode\" || t === \"React.ReactNode\") return null;\n      if (t.endsWith(\"[]\")) {\n        var itemT = t.slice(0, -2).trim();\n        var arr = [];\n        for (var ai = 0; ai < 3; ai++) arr.push(genVal(itemT, name, src));\n        return arr;\n      }\n      if (t.includes(\"=>\")) return function(){};\n      if (t.startsWith(\"{\")) {\n        var inner = t.slice(1);\n        if (inner.endsWith(\"}\")) inner = inner.slice(0, -1);\n        // Convert top-level semicolons to newlines so parseInterfaceBody can split properly\n        var normalized = \"\";\n        var depth = 0;\n        for (var si = 0; si < inner.length; si++) {\n          if (inner[si] === \"{\") depth++;\n          if (inner[si] === \"}\") depth--;\n          if (inner[si] === \";\" && depth === 0) {\n            normalized += \"\\n\";\n          } else {\n            normalized += inner[si];\n          }\n        }\n        return parseInterfaceBody(normalized, src);\n      }\n      if (t.match(/^'[^']*'/)) {\n        var um = t.match(/^'([^']*)'/);\n        return um ? um[1] : t;\n      }\n      var cleanT = t.replace(/[<>\\[\\]]/g, \"\");\n      var refRe = new RegExp(\"interface\\\\s+\" + cleanT + \"\\\\s*\\\\{([\\\\s\\\\S]*?)\\\\n\\\\}\", \"m\");\n      var rm = src.match(refRe);\n      if (rm) {\n        return parseInterfaceBody(rm[1], src);\n      }\n      return \"sample\";\n    }\n\n    var sampleProps = generateSampleProps(source, mainComp);\n    console.log(\"Generated sample props:\", JSON.stringify(sampleProps, null, 2));\n\n    var fn = new Function(\"React\", \"ReactDOM\", \"sampleProps\", \"mainComp\",\n      compiled + \"\\n\" +\n      \"try { var Comp = eval(mainComp); ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Comp, sampleProps)); } \" +\n      \"catch(e) { console.error('Mount error:', e); document.getElementById('root').innerHTML = '<div style=\\\"padding:20px;color:red;\\\"><h2>Mount Error</h2><pre>' + e.message + '</pre></div>'; }\"\n    );\n    fn(React, ReactDOM, sampleProps, mainComp);\n  } catch(e) {\n    console.error(\"Babel compilation error:\", e);\n    document.getElementById(\"root\").innerHTML = '<div style=\"padding:20px;color:red;\"><h2>Compilation Error</h2><pre>' + e.message + '</pre></div>';\n  }\n})();\n</script>\n</body>\n</html>\n\nFOOTEREOF\nrm -f \"$COMP_TMP\" && echo \"preview.html built successfully ($MAIN_COMP)\"; fi && cd /home/node/workspace && rm -rf pages-deploy && git clone --branch main --single-branch --depth 1 https://{{ $env[\"GITHUB_TOKEN\"] }}@github.com/ConanShin/n8n-ai-pipeline.git pages-deploy && cd pages-deploy && git config --global --add safe.directory \"*\" && git config user.email 'ai-agent@example.com' && git config user.name 'AI Agent' && mkdir -p \"docs/${BRANCH_NAME}\" && cp \"$PROJECT_DIR/preview.html\" \"docs/${BRANCH_NAME}/index.html\" && cp \"$PROJECT_DIR/design-specs.json\" \"docs/${BRANCH_NAME}/\" 2>/dev/null; git add \"docs/${BRANCH_NAME}/\" && git diff --cached --quiet || (git commit -m \"deploy: Pages preview for ${TICKET_KEY} at /${BRANCH_NAME}\" && git push origin main) && echo \"SUCCESS: Deployed to ${PAGES_BASE}/${BRANCH_NAME}/\"",
+          "timeout": 180
+        },
+        "id": "pages-deploy",
+        "name": "GitHub Pages: Build & Deploy",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2440,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          \"url\": \"{{ $env[\\\"SLACK_WEBHOOK_URL\\\"] }}\",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"✅ AI Pipeline 완료\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Jira Ticket:*\\n{{ $('Collect PR Data').first().json.ticketKey }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Summary:*\\n{{ $('Collect PR Data').first().json.ticketSummary }}\" }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Pull Request:*\\n<{{ $('Collect PR Data').first().json.prUrl }}|PR #{{ $('Collect PR Data').first().json.prNumber }}>\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Preview:*\\n<{{ $('Collect PR Data').first().json.pagesUrl }}|GitHub Pages>\" }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Branch:* `{{ $('Collect PR Data').first().json.branchName }}`\"\n      }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"🤖 Auto-generated by n8n AI Pipeline\" }\n      ]\n    }\n  ]\n}",
+          "options": {}
+        },
+        "id": "slack-success",
+        "name": "Slack: Success Notification",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2660,
+          400
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "error-trigger",
+        "name": "Error Trigger",
+        "type": "n8n-nodes-base.errorTrigger",
+        "typeVersion": 1,
+        "position": [
+          2220,
+          700
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extract error information from the Error Trigger output\nconst errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst lastNode = execution.lastNodeExecuted || 'Unknown';\nconst errorMsg = execution.error?.message || errorData.error?.message || 'Unknown error';\nconst workflowName = errorData.workflow?.name || 'Jira-to-Code AI Pipeline';\nconst executionId = execution.id || 'N/A';\n\n// Try to get ticket info from execution data\nlet ticketKey = 'N/A';\nlet ticketSummary = 'N/A';\ntry {\n  const resultData = execution.data?.resultData?.runData;\n  if (resultData && resultData['Combine Data']) {\n    const combineOutput = resultData['Combine Data'][0]?.data?.main?.[0]?.[0]?.json;\n    if (combineOutput) {\n      ticketKey = combineOutput.ticketKey || 'N/A';\n      ticketSummary = combineOutput.ticketSummary || 'N/A';\n    }\n  }\n} catch(e) {}\n\nreturn {\n  lastNode,\n  errorMsg,\n  workflowName,\n  executionId,\n  ticketKey,\n  ticketSummary\n};"
+        },
+        "id": "format-error",
+        "name": "Format Error Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2440,
+          700
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          \"url\": \"{{ $env[\\\"SLACK_WEBHOOK_URL\\\"] }}\",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"🚨 AI Pipeline 실패\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Jira Ticket:*\\n{{ $json.ticketKey }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Summary:*\\n{{ $json.ticketSummary }}\" }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Failed Node:*\\n`{{ $json.lastNode }}`\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Execution:*\\n{{ $json.executionId }}\" }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Error:*\\n```{{ $json.errorMsg }}```\"\n      }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"🤖 n8n AI Pipeline - check <http://localhost:5678|n8n dashboard> for details\" }\n      ]\n    }\n  ]\n}",
+          "options": {}
+        },
+        "id": "slack-error",
+        "name": "Slack: Error Notification",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2660,
+          700
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
             {
-              "id": "ticket-key",
-              "name": "ticketKey",
-              "value": "={{ $json.issue.key }}",
-              "type": "string"
+              "node": "Extract Variables",
+              "type": "main",
+              "index": 0
             },
             {
-              "id": "ticket-summary",
-              "name": "ticketSummary",
-              "value": "={{ $json.issue.fields.summary }}",
-              "type": "string"
-            },
-            {
-              "id": "ticket-description",
-              "name": "ticketDescription",
-              "value": "={{ $json.issue.fields.description }}",
-              "type": "string"
-            },
-            {
-              "id": "branch-name",
-              "name": "branchName",
-              "value": "=feature/{{ $json.issue.key.toLowerCase() }}",
-              "type": "string"
+              "node": "Get Main SHA",
+              "type": "main",
+              "index": 0
             }
           ]
-        },
-        "options": {}
+        ]
       },
-      "id": "set-variables",
-      "name": "Set Variables",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "resource": "ref",
-        "operation": "create",
-        "owner": "={{ $env.GITHUB_OWNER }}",
-        "repository": "={{ $env.GITHUB_REPO }}",
-        "ref": "=refs/heads/{{ $json.branchName }}",
-        "sha": "main"
+      "Extract Variables": {
+        "main": [
+          [
+            {
+              "node": "Combine Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "github-create-branch",
-      "name": "GitHub: Create Branch",
-      "type": "n8n-nodes-base.github",
-      "typeVersion": 1,
-      "position": [680, 300],
-      "credentials": {
-        "githubApi": {
-          "id": "GITHUB_CREDENTIAL_ID",
-          "name": "GitHub API"
-        }
+      "Get Main SHA": {
+        "main": [
+          [
+            {
+              "node": "Combine Data",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
       },
-      "notes": "feature/PROJ-123 형태로 브랜치 생성. GitHub 크리덴셜 등록 후 ID 교체 필요."
-    },
-    {
-      "parameters": {
-        "command": "=cd /home/node/workspace && (git clone --branch {{ $('Set Variables').item.json.branchName }} --single-branch https://{{ $env.GITHUB_TOKEN }}@github.com/{{ $env.GITHUB_OWNER }}/{{ $env.GITHUB_REPO }}.git project 2>/dev/null || (cd project && git fetch origin && git checkout {{ $('Set Variables').item.json.branchName }})) && cp /home/node/workspace/AGENTS.md /home/node/workspace/project/AGENTS.md 2>/dev/null; true"
+      "Combine Data": {
+        "main": [
+          [
+            {
+              "node": "GitHub: Create Branch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "git-clone",
-      "name": "Git: Clone/Checkout",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [900, 300],
-      "notes": "워크스페이스에 프로젝트 체크아웃"
-    },
-    {
-      "parameters": {
-        "command": "=cd /home/node/workspace/project && opencode run --format json --agent Designer \"Jira 티켓 '{{ $('Set Variables').item.json.ticketKey }}: {{ $('Set Variables').item.json.ticketSummary }}'을 분석해. 설명: '{{ $('Set Variables').item.json.ticketDescription }}'. 이를 바탕으로 React + Tailwind CSS 기반 UI 구조를 JSON 형식으로 생성해서 design-specs.json 파일로 저장하고 git add + commit 해줘. 커밋 메시지: 'design: add UI spec for {{ $('Set Variables').item.json.ticketKey }}'\"",
-        "timeout": 300
+      "GitHub: Create Branch": {
+        "main": [
+          [
+            {
+              "node": "Git: Clone/Checkout",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "opencode-designer",
-      "name": "OpenCode: Designer Agent",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [1120, 300],
-      "notes": "OpenCode Designer 에이전트: Jira 요구사항 → design-specs.json 생성 및 커밋"
-    },
-    {
-      "parameters": {
-        "command": "=cd /home/node/workspace/project && opencode run --format json --agent Coder \"방금 생성된 design-specs.json 파일을 읽어. 이 디자인 명세를 구현하는 React + Tailwind CSS 코드를 src/components/ 폴더에 작성해. TypeScript를 사용하고, 각 컴포넌트별 props 인터페이스를 정의해. 코드를 git add + commit 해줘. 커밋 메시지: 'feat: implement components for {{ $('Set Variables').item.json.ticketKey }}'\"",
-        "timeout": 600
+      "Git: Clone/Checkout": {
+        "main": [
+          [
+            {
+              "node": "OpenCode: Designer Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "opencode-coder",
-      "name": "OpenCode: Coder Agent",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [1340, 300],
-      "notes": "OpenCode Coder 에이전트: design-specs.json → React 컴포넌트 구현 및 커밋"
-    },
-    {
-      "parameters": {
-        "command": "=cd /home/node/workspace/project && git push origin {{ $('Set Variables').item.json.branchName }}"
+      "OpenCode: Designer Agent": {
+        "main": [
+          [
+            {
+              "node": "OpenCode: Coder Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "git-push",
-      "name": "Git: Push Branch",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [1560, 300]
-    },
-    {
-      "parameters": {
-        "resource": "pullRequest",
-        "operation": "create",
-        "owner": "={{ $env.GITHUB_OWNER }}",
-        "repository": "={{ $env.GITHUB_REPO }}",
-        "title": "=[AI] {{ $('Set Variables').item.json.ticketKey }}: {{ $('Set Variables').item.json.ticketSummary }}",
-        "body": "=## 🤖 AI 자동 생성 PR\n\n**Jira 티켓**: {{ $('Set Variables').item.json.ticketKey }}\n**요약**: {{ $('Set Variables').item.json.ticketSummary }}\n\n### 생성된 파일\n- `design-specs.json`: UI 디자인 명세\n- `src/components/`: React 컴포넌트 구현\n\n---\n*이 PR은 n8n AI Pipeline에 의해 자동 생성되었습니다.*",
-        "head": "={{ $('Set Variables').item.json.branchName }}",
-        "base": "main"
+      "OpenCode: Coder Agent": {
+        "main": [
+          [
+            {
+              "node": "Git: Push Branch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "github-create-pr",
-      "name": "GitHub: Create PR",
-      "type": "n8n-nodes-base.github",
-      "typeVersion": 1,
-      "position": [1780, 300],
-      "credentials": {
-        "githubApi": {
-          "id": "GITHUB_CREDENTIAL_ID",
-          "name": "GitHub API"
-        }
+      "Git: Push Branch": {
+        "main": [
+          [
+            {
+              "node": "GitHub: Create PR",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "GitHub: Create PR": {
+        "main": [
+          [
+            {
+              "node": "Collect PR Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Collect PR Data": {
+        "main": [
+          [
+            {
+              "node": "GitHub Pages: Build & Deploy",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "GitHub Pages: Build & Deploy": {
+        "main": [
+          [
+            {
+              "node": "Slack: Success Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Error Trigger": {
+        "main": [
+          [
+            {
+              "node": "Format Error Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Error Data": {
+        "main": [
+          [
+            {
+              "node": "Slack: Error Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
-    {
-      "parameters": {
-        "channel": "={{ $env.SLACK_CHANNEL }}",
-        "text": "=:rocket: *AI 자동화 작업 완료*\n\n:ticket: *티켓*: {{ $('Set Variables').item.json.ticketKey }} - {{ $('Set Variables').item.json.ticketSummary }}\n:art: *디자인 명세*: design-specs.json 생성 완료\n:computer: *코드 생성*: React 컴포넌트 구현 완료\n:link: *PR*: {{ $json.html_url }}\n\n브랜치: `{{ $('Set Variables').item.json.branchName }}`",
-        "otherOptions": {}
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Asia/Seoul",
+      "saveManualExecutions": true,
+      "saveDataErrorExecution": "all",
+      "saveDataSuccessExecution": "all"
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "4a0a5adb-dad2-4a32-b540-42c898226a5e",
+    "activeVersionId": "4a0a5adb-dad2-4a32-b540-42c898226a5e",
+    "versionCounter": 12,
+    "triggerCount": 1,
+    "tags": [
+      {
+        "updatedAt": "2026-02-23T02:15:14.371Z",
+        "createdAt": "2026-02-23T02:15:14.371Z",
+        "id": "A2oYAWnSxmJvQtPw",
+        "name": "ai-pipeline"
       },
-      "id": "slack-notify",
-      "name": "Slack: Notify",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [2000, 300],
-      "credentials": {
-        "slackApi": {
-          "id": "SLACK_CREDENTIAL_ID",
-          "name": "Slack Bot"
+      {
+        "updatedAt": "2026-02-23T02:15:14.372Z",
+        "createdAt": "2026-02-23T02:15:14.372Z",
+        "id": "gZvN6PhkIb09ZPI2",
+        "name": "automation"
+      }
+    ],
+    "shared": [
+      {
+        "updatedAt": "2026-02-23T03:32:07.316Z",
+        "createdAt": "2026-02-23T03:32:07.316Z",
+        "role": "workflow:owner",
+        "workflowId": "TcN2TS8LFKc3jzm9",
+        "projectId": "6ZFlFCClmPsxFCuM",
+        "project": {
+          "updatedAt": "2026-02-20T01:32:05.053Z",
+          "createdAt": "2026-02-20T00:38:02.971Z",
+          "id": "6ZFlFCClmPsxFCuM",
+          "name": "Cheolmin Shin <cheolmin.conan.shin.dev@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "985361d7-5e63-4b88-b096-5da149204a90"
         }
       }
-    },
-    {
-      "parameters": {
-        "channel": "={{ $env.SLACK_CHANNEL }}",
-        "text": "=:x: *AI 파이프라인 오류 발생*\n\n:ticket: *티켓*: {{ $('Set Variables').item.json.ticketKey }}\n:warning: *오류*: {{ $json.error.message }}\n\n수동 확인이 필요합니다.",
-        "otherOptions": {}
-      },
-      "id": "slack-error",
-      "name": "Slack: Error Alert",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [2000, 520],
-      "credentials": {
-        "slackApi": {
-          "id": "SLACK_CREDENTIAL_ID",
-          "name": "Slack Bot"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "error-trigger",
-      "name": "Error Trigger",
-      "type": "n8n-nodes-base.errorTrigger",
-      "typeVersion": 1,
-      "position": [1780, 520]
-    }
-  ],
-  "connections": {
-    "Jira Trigger": {
-      "main": [
-        [{ "node": "Set Variables", "type": "main", "index": 0 }]
-      ]
-    },
-    "Set Variables": {
-      "main": [
-        [{ "node": "GitHub: Create Branch", "type": "main", "index": 0 }]
-      ]
-    },
-    "GitHub: Create Branch": {
-      "main": [
-        [{ "node": "Git: Clone/Checkout", "type": "main", "index": 0 }]
-      ]
-    },
-    "Git: Clone/Checkout": {
-      "main": [
-        [{ "node": "OpenCode: Designer Agent", "type": "main", "index": 0 }]
-      ]
-    },
-    "OpenCode: Designer Agent": {
-      "main": [
-        [{ "node": "OpenCode: Coder Agent", "type": "main", "index": 0 }]
-      ]
-    },
-    "OpenCode: Coder Agent": {
-      "main": [
-        [{ "node": "Git: Push Branch", "type": "main", "index": 0 }]
-      ]
-    },
-    "Git: Push Branch": {
-      "main": [
-        [{ "node": "GitHub: Create PR", "type": "main", "index": 0 }]
-      ]
-    },
-    "GitHub: Create PR": {
-      "main": [
-        [{ "node": "Slack: Notify", "type": "main", "index": 0 }]
-      ]
-    },
-    "Error Trigger": {
-      "main": [
-        [{ "node": "Slack: Error Alert", "type": "main", "index": 0 }]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "timezone": "Asia/Seoul",
-    "saveManualExecutions": true,
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all"
-  },
-  "tags": [
-    { "name": "ai-pipeline" },
-    { "name": "automation" }
-  ]
-}
+    ]
+  }
+]
