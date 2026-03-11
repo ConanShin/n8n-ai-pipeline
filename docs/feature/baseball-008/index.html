@@ -32,13 +32,8 @@
     
 
 
-interface BallIconProps {
-  size?: number;
-  variant?: 'active' | 'used' | 'flying';
-  className?: string;
-}
 
-const BallIcon: React.FC<BallIconProps> = ({ size = 24, variant = 'active', className = '' }) => {
+const BallIcon = ({ size = 24, variant = 'active', className = '' }) => {
   const baseClasses = "rounded-full shrink-0 inline-block";
   const variants = {
     active: "bg-white border-2 border-gray-300 shadow-inner",
@@ -59,12 +54,8 @@ const BallIcon: React.FC<BallIconProps> = ({ size = 24, variant = 'active', clas
 
 
 
-interface StrikeIndicatorDotProps {
-  isUsed: boolean;
-  index: number;
-}
 
-const StrikeIndicatorDot: React.FC<StrikeIndicatorDotProps> = ({ isUsed, index }) => {
+const StrikeIndicatorDot = ({ isUsed, index }) => {
   const baseClasses = "inline-flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm transition-all duration-300";
   const variants = {
     active: "bg-white border-2 border-gray-400 text-transparent",
@@ -85,15 +76,11 @@ const StrikeIndicatorDot: React.FC<StrikeIndicatorDotProps> = ({ isUsed, index }
 
 
 
-interface ScoreLabelProps {
-  result: 'homerun' | '3base' | '2base' | '1base' | 'strike';
-  size?: 'sm' | 'md' | 'lg';
-}
 
-const ScoreLabel: React.FC<ScoreLabelProps> = ({ result, size = 'md' }) => {
+const ScoreLabel = ({ result, size = 'md' }) => {
   const baseClasses = "inline-flex items-center justify-center rounded-full font-extrabold tracking-widest shadow-lg select-none";
   
-  const variants: Record<string, { tailwind: string, label: string }> = {
+  const variants = {
     homerun: { tailwind: "bg-yellow-400 text-yellow-900 ring-4 ring-yellow-200 animate-bounce text-3xl sm:text-4xl", label: "⚾ HOMERUN!" },
     '3base': { tailwind: "bg-green-500 text-white ring-4 ring-green-300 text-2xl sm:text-3xl", label: "3루타!" },
     '2base': { tailwind: "bg-blue-500 text-white ring-4 ring-blue-300 text-2xl sm:text-3xl", label: "2루타!" },
@@ -124,13 +111,8 @@ const ScoreLabel: React.FC<ScoreLabelProps> = ({ result, size = 'md' }) => {
 
 
 
-interface TimingCursorProps {
-  progress: number;
-  inHitZone: boolean;
-  inPerfectZone: boolean;
-}
 
-const TimingCursor: React.FC<TimingCursorProps> = ({ progress, inHitZone, inPerfectZone }) => {
+const TimingCursor = ({ progress, inHitZone, inPerfectZone }) => {
   const baseClasses = "absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-md border-2 transition-colors duration-75";
   let variantClass = "bg-white border-gray-400";
   
@@ -153,14 +135,8 @@ const TimingCursor: React.FC<TimingCursorProps> = ({ progress, inHitZone, inPerf
 
 
 
-interface HitZoneMarkerProps {
-  hitZoneStart: number;
-  hitZoneEnd: number;
-  perfectZoneStart: number;
-  perfectZoneEnd: number;
-}
 
-const HitZoneMarker: React.FC<HitZoneMarkerProps> = ({
+const HitZoneMarker = ({
   hitZoneStart, hitZoneEnd, perfectZoneStart, perfectZoneEnd
 }) => {
   return (
@@ -180,13 +156,8 @@ const HitZoneMarker: React.FC<HitZoneMarkerProps> = ({
 
 
 
-interface ActionButtonProps {
-  disabled?: boolean;
-  swinging?: boolean;
-  onSwing: () => void;
-}
 
-const ActionButton: React.FC<ActionButtonProps> = ({ disabled = false, swinging = false, onSwing }) => {
+const ActionButton = ({ disabled = false, swinging = false, onSwing }) => {
   const [isPressed, setIsPressed] = useState(false);
   const baseClasses = "flex items-center justify-center w-40 h-40 sm:w-52 sm:h-52 rounded-full cursor-pointer select-none transition-all duration-75 touch-none";
   
@@ -197,7 +168,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ disabled = false, swinging 
     variantClass = "bg-amber-300 scale-90 ring-4 ring-amber-200 shadow-inner";
   }
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = (e.PointerEvent) => {
     if (disabled) return;
     setIsPressed(true);
     onSwing();
@@ -228,13 +199,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({ disabled = false, swinging 
 
 
 
-interface ResultBadgeProps {
-  grade: 'legend' | 'great' | 'good' | 'out';
-  label: string;
-  icon?: string;
-}
 
-const ResultBadge: React.FC<ResultBadgeProps> = ({ grade, label, icon }) => {
+const ResultBadge = ({ grade, label, icon }) => {
   const baseClasses = "flex flex-col items-center gap-2 px-10 py-5 rounded-3xl shadow-2xl font-black text-center";
   const variants = {
     legend: "bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900 ring-4 ring-yellow-200 text-4xl animate-bounce",
@@ -254,12 +220,8 @@ const ResultBadge: React.FC<ResultBadgeProps> = ({ grade, label, icon }) => {
 
 
 
-interface CountdownTimerProps {
-  count: number | string;
-  visible: boolean;
-}
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ count, visible }) => {
+const CountdownTimer = ({ count, visible }) => {
   if (!visible) return null;
 
   return (
@@ -282,16 +244,8 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ count, visible }) => {
 
 
 
-interface TimingBarProps {
-  progress: number;
-  hitZoneStart: number;
-  hitZoneEnd: number;
-  perfectZoneStart: number;
-  perfectZoneEnd: number;
-  active: boolean;
-}
 
-const TimingBar: React.FC<TimingBarProps> = ({
+const TimingBar = ({
   progress, hitZoneStart, hitZoneEnd, perfectZoneStart, perfectZoneEnd, active
 }) => {
   const inHitZone = progress >= hitZoneStart && progress <= hitZoneEnd;
@@ -327,12 +281,8 @@ const TimingBar: React.FC<TimingBarProps> = ({
 
 
 
-interface OutChanceRowProps {
-  totalChances?: number;
-  usedChances: number;
-}
 
-const OutChanceRow: React.FC<OutChanceRowProps> = ({ totalChances = 3, usedChances }) => {
+const OutChanceRow = ({ totalChances = 3, usedChances }) => {
   return (
     <div 
       role="group" 
@@ -350,13 +300,8 @@ const OutChanceRow: React.FC<OutChanceRowProps> = ({ totalChances = 3, usedChanc
 
 
 
-interface ScoreBoardProps {
-  score: number;
-  currentInning: number;
-  usedChances: number;
-}
 
-const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, currentInning, usedChances }) => {
+const ScoreBoard = ({ score, currentInning, usedChances }) => {
   const [displayScore, setDisplayScore] = useState(score);
 
   useEffect(() => {
@@ -367,7 +312,7 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, currentInning, usedChanc
     const duration = 400;
     const startTime = performance.now();
     
-    const animate = (time: number) => {
+    const animate = (time) => {
       const elapsed = time - startTime;
       const progress = Math.min(elapsed / duration, 1);
       setDisplayScore(Math.floor(start + (end - start) * progress));
@@ -408,13 +353,8 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, currentInning, usedChanc
 
 
 
-interface BallPitchCanvasProps {
-  pitching: boolean;
-  progress: number;
-  hitResult?: string | null;
-}
 
-const BallPitchCanvas: React.FC<BallPitchCanvasProps> = ({ pitching, progress, hitResult }) => {
+const BallPitchCanvas = ({ pitching, progress, hitResult }) => {
   const ballSize = 12 + progress * 52; 
   const ballTop = 25 + progress * 37;
   
@@ -460,13 +400,8 @@ const BallPitchCanvas: React.FC<BallPitchCanvasProps> = ({ pitching, progress, h
 
 
 
-interface ResultOverlayProps {
-  result: 'homerun' | '3base' | '2base' | '1base' | 'strike' | null;
-  scoreIncrement: number;
-  visible: boolean;
-}
 
-const ResultOverlay: React.FC<ResultOverlayProps> = ({ result, scoreIncrement, visible }) => {
+const ResultOverlay = ({ result, scoreIncrement, visible }) => {
   if (!visible || !result) return null;
 
   return (
@@ -491,13 +426,8 @@ const ResultOverlay: React.FC<ResultOverlayProps> = ({ result, scoreIncrement, v
 
 
 
-interface RhythmMetronomeProps {
-  bpm: number;
-  active: boolean;
-  beat: number;
-}
 
-const RhythmMetronome: React.FC<RhythmMetronomeProps> = ({ bpm, active, beat }) => {
+const RhythmMetronome = ({ bpm, active, beat }) => {
   return (
     <div 
       role="presentation" 
@@ -525,16 +455,8 @@ const RhythmMetronome: React.FC<RhythmMetronomeProps> = ({ bpm, active, beat }) 
 
 
 
-interface GameHUDProps {
-  score: number;
-  currentInning: number;
-  usedChances: number;
-  bpm: number;
-  beat: number;
-  gamePhase: string;
-}
 
-const GameHUD: React.FC<GameHUDProps> = ({ score, currentInning, usedChances, bpm, beat, gamePhase }) => {
+const GameHUD = ({ score, currentInning, usedChances, bpm, beat, gamePhase }) => {
   return (
     <div 
       role="banner" 
@@ -555,25 +477,8 @@ const GameHUD: React.FC<GameHUDProps> = ({ score, currentInning, usedChances, bp
 
 
 
-interface BattingStageProps {
-  pitching: boolean;
-  progress: number;
-  hitResult: string | null;
-  canSwing: boolean;
-  showCountdown: boolean;
-  countdownValue?: number | string;
-  onSwing: () => void;
-  hitZoneConfig: {
-    hitZoneStart: number;
-    hitZoneEnd: number;
-    perfectZoneStart: number;
-    perfectZoneEnd: number;
-  };
-  scoreIncrement: number;
-  overlayVisible: boolean;
-}
 
-const BattingStage: React.FC<BattingStageProps> = ({
+const BattingStage = ({
   pitching, progress, hitResult, canSwing, showCountdown, countdownValue, onSwing, hitZoneConfig, scoreIncrement, overlayVisible
 }) => {
   const isPulseVisible = progress >= hitZoneConfig.hitZoneStart && progress <= hitZoneConfig.hitZoneEnd;
@@ -634,13 +539,8 @@ const BattingStage: React.FC<BattingStageProps> = ({
 
 
 
-interface StartScreenProps {
-  onStart: () => void;
-  selectedDifficulty: 'easy' | 'normal' | 'hard';
-  onDifficultyChange: (diff: 'easy' | 'normal' | 'hard') => void;
-}
 
-const StartScreen: React.FC<StartScreenProps> = ({ onStart, selectedDifficulty, onDifficultyChange }) => {
+const StartScreen = ({ onStart, selectedDifficulty, onDifficultyChange }) => {
   return (
     <main role="main" aria-label="야구 게임 시작 화면" className="flex flex-col items-center justify-center gap-8 w-full min-h-screen bg-gray-950 px-6 py-12">
       <div className="flex flex-col items-center gap-3">
@@ -694,15 +594,8 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, selectedDifficulty, 
 
 
 
-interface ResultScreenProps {
-  totalScore: number;
-  history: Array<{ result: string; points: number }>;
-  grade: 'legend' | 'great' | 'good' | 'out';
-  onRestart: () => void;
-  onHome: () => void;
-}
 
-const ResultScreen: React.FC<ResultScreenProps> = ({ totalScore, history, grade, onRestart, onHome }) => {
+const ResultScreen = ({ totalScore, history, grade, onRestart, onHome }) => {
   const gradeMap = {
     legend: { label: "전설의 타자!", icon: "🏆" },
     great: { label: "강타자!", icon: "💪" },
@@ -750,12 +643,8 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ totalScore, history, grade,
 
 
 
-interface GameTemplateProps {
-  hud: any;
-  stage: any;
-}
 
-const GameTemplate: React.FC<GameTemplateProps> = ({ hud, stage }) => {
+const GameTemplate = ({ hud, stage }) => {
   return (
     <div 
       role="application" 
@@ -776,8 +665,6 @@ const GameTemplate: React.FC<GameTemplateProps> = ({ hud, stage }) => {
 
 
 
-type Difficulty = 'easy' | 'normal' | 'hard';
-type Phase = 'start' | 'countdown' | 'playing' | 'inning-result' | 'finished';
 
 const difficultyConfig = {
   easy: { bpm: 60, pitchDuration: 2000, hitZone: [0.32, 0.68], perfectZone: [0.44, 0.56] },
@@ -785,7 +672,7 @@ const difficultyConfig = {
   hard: { bpm: 100, pitchDuration: 1000, hitZone: [0.42, 0.58], perfectZone: [0.48, 0.52] }
 };
 
-const scoreMap: Record<string, { points: number }> = {
+const scoreMap = {
   homerun: { points: 400 },
   '3base': { points: 300 },
   '2base': { points: 200 },
@@ -793,24 +680,24 @@ const scoreMap: Record<string, { points: number }> = {
   strike: { points: 0 }
 };
 
-const BaseballGamePage: React.FC = () => {
-  const [gamePhase, setGamePhase] = useState<Phase>('start');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
+const BaseballGamePage = () => {
+  const [gamePhase, setGamePhase] = useState('start');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('normal');
   const [score, setScore] = useState(0);
   const [currentInning, setCurrentInning] = useState(1);
   const [usedChances, setUsedChances] = useState(0);
-  const [history, setHistory] = useState<Array<{ result: string; points: number }>>([]);
+  const [history, setHistory] = useState([]);
   
-  const [countdownValue, setCountdownValue] = useState<number | string>('');
+  const [countdownValue, setCountdownValue] = useState('');
   const [progress, setProgress] = useState(0);
-  const [hitResult, setHitResult] = useState<string | null>(null);
+  const [hitResult, setHitResult] = useState(null);
   const [scoreIncrement, setScoreIncrement] = useState(0);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [beat, setBeat] = useState(0);
   
   const config = difficultyConfig[selectedDifficulty];
-  const reqRef = useRef<number>();
-  const startRef = useRef<number>();
+  const reqRef = useRef();
+  const startRef = useRef();
 
   useEffect(() => {
     if (gamePhase === 'countdown') {
@@ -848,7 +735,7 @@ const BaseballGamePage: React.FC = () => {
       setOverlayVisible(false);
       setScoreIncrement(0);
 
-      const animate = (time: number) => {
+      const animate = (time) => {
         if (!startRef.current) startRef.current = time;
         const elapsed = time - startRef.current;
         const p = Math.min(elapsed / config.pitchDuration, 1);
@@ -871,7 +758,7 @@ const BaseballGamePage: React.FC = () => {
     }
   }, [gamePhase]);
 
-  const handleSwing = (currentProgress: number = progress) => {
+  const handleSwing = (currentProgress = progress) => {
     if (hitResult !== null) return;
     
     if (reqRef.current) {
