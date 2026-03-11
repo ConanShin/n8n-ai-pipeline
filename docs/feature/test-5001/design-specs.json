@@ -1,0 +1,157 @@
+{
+  "ticket": "TEST-5001",
+  "title": "GitHub Copilot 모델 테스트 - Hello World React 컴포넌트",
+  "components": [
+    {
+      "name": "GreetingText",
+      "type": "atom",
+      "description": "화면 중앙에 크게 표시되는 Hello GitHub Copilot! 텍스트 레이블",
+      "props": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "표시할 인사 문구. 기본값: 'Hello GitHub Copilot!'"
+        }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "heading",
+        "ariaLevel": "1",
+        "ariaLabel": "Hello GitHub Copilot!"
+      }
+    },
+    {
+      "name": "GreetingBadge",
+      "type": "atom",
+      "description": "GitHub Copilot 브랜드를 나타내는 작은 배지 레이블 (보조 정보)",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "배지 텍스트. 기본값: 'Powered by Claude Sonnet via GitHub Copilot'"
+        }
+      },
+      "layout": {
+        "display": "inline-flex",
+        "tailwind": "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "w-2 h-2 rounded-full bg-green-500",
+          "description": "온라인/활성 상태를 나타내는 녹색 점"
+        },
+        {
+          "element": "span",
+          "tailwind": "text-sm",
+          "description": "배지 텍스트"
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "Powered by Claude Sonnet via GitHub Copilot"
+      }
+    },
+    {
+      "name": "HelloWorldCard",
+      "type": "molecule",
+      "description": "인사 텍스트와 배지를 포함하는 중앙 정렬 카드 컨테이너",
+      "props": {
+        "greetingText": {
+          "type": "string",
+          "required": true,
+          "description": "메인 인사 문구"
+        },
+        "badgeLabel": {
+          "type": "string",
+          "required": false,
+          "description": "하단 배지에 표시할 보조 텍스트"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-center gap-6 bg-white rounded-2xl shadow-lg p-10 md:p-16 max-w-2xl w-full mx-auto"
+      },
+      "children": [
+        {
+          "name": "GreetingText",
+          "type": "atom",
+          "description": "메인 Hello GitHub Copilot! 헤딩"
+        },
+        {
+          "element": "p",
+          "tailwind": "text-base md:text-lg text-gray-500 text-center",
+          "content": "Claude 3.5 Sonnet 모델 테스트 배포",
+          "description": "서브타이틀 텍스트"
+        },
+        {
+          "name": "GreetingBadge",
+          "type": "atom",
+          "description": "Copilot 브랜드 배지"
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "Hello World greeting card"
+      }
+    },
+    {
+      "name": "HelloWorldPage",
+      "type": "page",
+      "description": "Hello GitHub Copilot! 문구를 화면 정중앙에 표시하는 풀스크린 페이지",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-12"
+      },
+      "children": [
+        {
+          "name": "HelloWorldCard",
+          "type": "molecule",
+          "description": "중앙 배치된 인사 카드"
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Hello GitHub Copilot page"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#0969da",
+    "primaryLight": "#dbeafe",
+    "secondary": "#6b7280",
+    "background": "#f8fafc",
+    "backgroundAccent": "#eff6ff",
+    "surface": "#ffffff",
+    "textPrimary": "#0f172a",
+    "textSecondary": "#6b7280",
+    "border": "#e5e7eb",
+    "success": "#22c55e"
+  },
+  "interactions": [
+    {
+      "trigger": "load",
+      "element": "HelloWorldPage",
+      "action": "페이지 진입 시 HelloWorldCard가 중앙에 페이드인 애니메이션으로 나타남"
+    },
+    {
+      "trigger": "hover",
+      "element": "HelloWorldCard",
+      "action": "카드에 살짝 확대(scale-up) 및 그림자 강조 트랜지션 효과 적용"
+    },
+    {
+      "trigger": "hover",
+      "element": "GreetingBadge",
+      "action": "배지 배경색이 gray-100 → blue-50 으로 부드럽게 전환"
+    }
+  ]
+}
