@@ -1,1 +1,2 @@
-export * from './ScoreboardTemplate';
+export * from './GameTemplate';
+export * from './GameTemplate';

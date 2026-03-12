@@ -3,3 +3,8 @@ export * from './InningHeaderRow';
 export * from './InningScoreRow';
 export * from './StatSummaryRow';
 export * from './ScoreboardLegend';
+export * from './StrikeCounter';
+export * from './ScoreDisplay';
+export * from './ResultOverlay';
+export * from './PitchLane';
+export * from './GameControlBar';
