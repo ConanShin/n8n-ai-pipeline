@@ -1,2 +1,1 @@
-export * from './ScoreboardPage';
-export * from './BaseballGamePage';
+export * from './PlayerStatsDashboardPage';
