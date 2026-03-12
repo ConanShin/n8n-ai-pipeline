@@ -3,26 +3,26 @@ import React from 'react';
 export interface StatBadgeProps {
   label: string;
   value: string | number;
-  variant?: 'blue' | 'green' | 'red' | 'yellow' | 'gray';
+  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'neutral';
 }
 
-export const StatBadge: React.FC<StatBadgeProps> = ({ label, value, variant = 'gray' }) => {
+export const StatBadge: React.FC<StatBadgeProps> = ({ label, value, variant = 'neutral' }) => {
   const variantClasses = {
-    blue: 'bg-blue-100 text-blue-800',
-    green: 'bg-green-100 text-green-800',
-    red: 'bg-red-100 text-red-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    gray: 'bg-gray-100 text-gray-700'
+    primary: 'bg-blue-100 text-blue-800',
+    success: 'bg-emerald-100 text-emerald-800',
+    warning: 'bg-amber-100 text-amber-800',
+    danger: 'bg-red-100 text-red-800',
+    neutral: 'bg-gray-100 text-gray-700',
   };
 
   return (
-    <div 
-      className={`inline-flex flex-col items-center justify-center px-4 py-2 rounded-xl gap-0.5 ${variantClasses[variant]}`}
+    <div
       role="status"
-      aria-label="Stat badge"
+      aria-label={`Stat badge for ${label}: ${value}`}
+      className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-lg gap-0.5 min-w-[64px] ${variantClasses[variant]}`}
     >
-      <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</span>
-      <span className="text-2xl font-extrabold">{value}</span>
+      <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wider">{label}</span>
+      <span className="text-sm font-bold">{value}</span>
     </div>
   );
 };

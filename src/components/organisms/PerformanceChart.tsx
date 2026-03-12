@@ -1,104 +1,140 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { SectionHeading } from '../atoms/SectionHeading';
-import { LoadingSpinner } from '../atoms/LoadingSpinner';
-import { EmptyState } from '../atoms/EmptyState';
-import { PerformanceChartBar } from '../molecules/PerformanceChartBar';
+import { PerformanceChartBar } from '../atoms/PerformanceChartBar';
+import { PerformanceChartTooltip } from '../atoms/PerformanceChartTooltip';
 
-export interface PerformanceChartData {
-  label: string;
+export interface GameStat {
+  date: string;
+  opponent: string;
+  result: 'W' | 'L' | 'ND';
   hits: number;
+  atBats: number;
+  rbi: number;
   homeRuns: number;
-  battingAverage: number;
 }
 
 export interface PerformanceChartProps {
-  data: PerformanceChartData[];
-  metric?: 'hits' | 'homeRuns' | 'battingAverage';
+  games: GameStat[];
+  statKey?: 'hits' | 'homeRuns' | 'rbi';
   title?: string;
-  isLoading?: boolean;
   maxGames?: number;
+  isLoading?: boolean;
+  hasError?: boolean;
 }
 
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({
-  data, metric: initialMetric = 'hits', title = 'Performance Trend', isLoading, maxGames = 10
+  games,
+  statKey = 'hits',
+  title = "Recent Game Performance",
+  maxGames = 10,
+  isLoading,
+  hasError
 }) => {
-  const [activeMetric, setActiveMetric] = useState<'hits' | 'homeRuns' | 'battingAverage'>(initialMetric);
+  const [activeStat, setActiveStat] = useState<'hits' | 'homeRuns' | 'rbi'>(statKey);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   
-  const displayData = useMemo(() => {
-    return data.slice(-maxGames);
-  }, [data, maxGames]);
+  const chartRef = useRef<HTMLDivElement>(null);
 
-  const maxValue = useMemo(() => {
-    if (displayData.length === 0) return 1;
-    const max = Math.max(...displayData.map(d => d[activeMetric]));
-    return max > 0 ? max : 1;
-  }, [displayData, activeMetric]);
+  if (isLoading) return <div className="animate-pulse bg-gray-200 rounded-2xl h-64 w-full"></div>;
+  if (hasError) return <div className="flex items-center justify-center h-48 text-red-500 text-sm">Failed to load chart</div>;
+  if (!games || games.length === 0) return (
+    <div className="flex flex-col gap-4 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full">
+      <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No recent game data available.</div>
+    </div>
+  );
 
-  const metrics = [
-    { id: 'hits', label: 'Hits' },
-    { id: 'homeRuns', label: 'HR' },
-    { id: 'battingAverage', label: 'AVG' }
-  ];
+  const displayGames = games.slice(-maxGames);
+  const maxValue = Math.max(...displayGames.map(g => g[activeStat]), 1);
+
+  const statTabs = [
+    { key: 'hits', label: 'Hits' },
+    { key: 'homeRuns', label: 'HR' },
+    { key: 'rbi', label: 'RBI' }
+  ] as const;
 
   return (
-    <div className="flex flex-col w-full bg-white rounded-2xl shadow-md border border-gray-100 p-6 gap-4" role="img" aria-label="Player performance bar chart">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <SectionHeading title={title} subtitle={`Last ${displayData.length} games`} />
-        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-          {metrics.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setActiveMetric(m.id as any)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                activeMetric === m.id 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+    <div
+      role="img"
+      aria-label="Bar chart of player's recent game performance"
+      className="flex flex-col gap-4 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full"
+    >
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <SectionHeading title={title} subtitle={`Last ${maxGames} games`} />
+        <div className="flex items-center gap-3 text-xs text-gray-500">
+          <span className="flex items-center gap-1"><span className="text-emerald-500">●</span> Win</span>
+          <span className="flex items-center gap-1"><span className="text-red-500">●</span> Loss</span>
         </div>
       </div>
+      
+      <div className="flex items-center gap-2 flex-wrap">
+        {statTabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveStat(tab.key)}
+            className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${
+              activeStat === tab.key 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="relative flex items-end justify-between gap-1 h-48 mt-4 border-b border-gray-200 pb-2">
-        {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
-            <LoadingSpinner size="lg" label="Loading chart data" />
-          </div>
-        ) : displayData.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <EmptyState icon="📊" message="No data to display" />
-          </div>
-        ) : (
-          displayData.map((d, i) => {
-            const val = d[activeMetric];
-            const formattedVal = activeMetric === 'battingAverage' ? val.toFixed(3).replace(/^0/, '') : val;
-            return (
-              <PerformanceChartBar 
-                key={i}
-                value={val}
-                maxValue={maxValue}
-                label={d.label}
-                tooltipText={`${d.label}: ${formattedVal} ${metrics.find(m=>m.id === activeMetric)?.label}`}
-                color={activeMetric === 'battingAverage' ? 'bg-blue-500' : activeMetric === 'homeRuns' ? 'bg-green-500' : 'bg-yellow-500'}
-              />
-            );
-          })
+      <div 
+        ref={chartRef}
+        className="relative flex items-end justify-between gap-2 h-48 px-1 mt-4 border-b border-gray-200"
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
+        {displayGames.map((game, i) => (
+          <PerformanceChartBar
+            key={i}
+            value={game[activeStat]}
+            maxValue={maxValue}
+            label={game.date}
+            gameResult={game.result}
+            isActive={selectedIndex === i}
+            onClick={() => setSelectedIndex(i === selectedIndex ? null : i)}
+            onMouseEnter={() => setHoveredIndex(i)}
+          />
+        ))}
+
+        {hoveredIndex !== null && (
+          <PerformanceChartTooltip
+            visible={true}
+            date={displayGames[hoveredIndex].date}
+            opponent={displayGames[hoveredIndex].opponent}
+            stats={{
+              hits: displayGames[hoveredIndex].hits,
+              'home runs': displayGames[hoveredIndex].homeRuns,
+              rbi: displayGames[hoveredIndex].rbi,
+              'at bats': displayGames[hoveredIndex].atBats
+            }}
+            style={{ 
+              left: `calc(${(hoveredIndex + 0.5) * (100 / displayGames.length)}% - 6px)`, 
+              top: '0' 
+            }}
+          />
         )}
       </div>
-      
-      <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-blue-500"></span> AVG
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-green-500"></span> HR
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-yellow-500"></span> Hits
-        </span>
+
+      <div className="flex justify-between px-1 text-xs text-gray-400">
+        {displayGames.map((game, i) => (
+          <div key={i} className="w-8 text-center overflow-hidden text-ellipsis whitespace-nowrap">
+            {game.date.split(' ')[0]}
+          </div>
+        ))}
       </div>
+      
+      {selectedIndex !== null && (
+        <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-blue-900 border border-blue-100">
+          <strong>Selected Game:</strong> {displayGames[selectedIndex].date} vs {displayGames[selectedIndex].opponent} - 
+          Result: {displayGames[selectedIndex].result} - 
+          Hits: {displayGames[selectedIndex].hits}, HR: {displayGames[selectedIndex].homeRuns}, RBI: {displayGames[selectedIndex].rbi}
+        </div>
+      )}
     </div>
   );
 };

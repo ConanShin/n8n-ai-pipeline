@@ -1,32 +1,38 @@
 import React from 'react';
+import { TrendIndicator } from '../atoms/TrendIndicator';
 
 export interface StatsTableRowProps {
-  date: string;
-  opponent: string;
-  atBats: number;
-  hits: number;
-  homeRuns: number;
-  rbi: number;
-  battingAverage: number;
+  statLabel: string;
+  statKey: string;
+  value: string | number;
+  rank?: number;
+  trend?: 'up' | 'down' | 'neutral';
+  delta?: string;
   isHighlighted?: boolean;
 }
 
 export const StatsTableRow: React.FC<StatsTableRowProps> = ({
-  date, opponent, atBats, hits, homeRuns, rbi, battingAverage, isHighlighted
+  statLabel,
+  value,
+  rank,
+  trend,
+  delta,
+  isHighlighted
 }) => {
   return (
-    <div 
-      className={`grid grid-cols-7 items-center px-4 py-3 text-sm border-b border-gray-100 last:border-none hover:bg-gray-50 transition-colors ${isHighlighted ? 'bg-blue-50' : 'bg-white'}`}
+    <div
       role="row"
-      aria-label="Game stats row"
+      aria-label={`${statLabel}: ${value}`}
+      className={`grid grid-cols-[2fr_1fr_1fr_1fr] items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150 ${isHighlighted ? 'bg-yellow-50' : ''}`}
     >
-      <div className="text-gray-500">{date}</div>
-      <div className="font-medium text-gray-900">{opponent}</div>
-      <div className="text-gray-700">{atBats}</div>
-      <div className="text-gray-700 font-semibold">{hits}</div>
-      <div className="text-gray-700">{homeRuns}</div>
-      <div className="text-gray-700">{rbi}</div>
-      <div className="text-blue-600 font-medium">{battingAverage.toFixed(3).replace(/^0/, '')}</div>
+      <span className="text-sm font-medium text-gray-700">{statLabel}</span>
+      <span className="text-sm font-bold text-gray-900 text-right">{value}</span>
+      <div className="text-right flex justify-end">
+        {trend && <TrendIndicator direction={trend} value={delta} />}
+      </div>
+      <span className="text-xs text-gray-400 text-right">
+        {rank ? `Rank #${rank}` : '-'}
+      </span>
     </div>
   );
 };

@@ -3,15 +3,12 @@ import React from 'react';
 export interface SectionHeadingProps {
   title: string;
   subtitle?: string;
-  level?: 2 | 3 | 4;
 }
 
-export const SectionHeading: React.FC<SectionHeadingProps> = ({ title, subtitle, level = 2 }) => {
-  const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-  
+export const SectionHeading: React.FC<SectionHeadingProps> = ({ title, subtitle }) => {
   return (
-    <div className="flex flex-col gap-0.5" role="heading" aria-label="Section heading">
-      <Tag className="text-lg font-semibold text-gray-800">{title}</Tag>
+    <div className="flex flex-col gap-0.5">
+      <h2 aria-level={2} className="text-lg font-bold text-gray-900">{title}</h2>
       {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
     </div>
   );
