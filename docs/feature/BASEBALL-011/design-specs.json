@@ -1,0 +1,1101 @@
+{
+  "ticket": "BASEBALL-011",
+  "title": "야구 경기 스코어보드 컴포넌트",
+  "description": "야구 경기의 실시간 스코어보드를 표시하는 React 컴포넌트. 이닝별 점수, 팀 정보, 주요 타격 통계(H/E/BB)를 전통적인 다크 스타일로 제공하며, 현재 이닝 하이라이트와 경기 상태 배지를 포함한다.",
+  "atomicDesignOverview": {
+    "atoms": [
+      "TeamAvatar",
+      "InningCell",
+      "StatCell",
+      "GameStatusBadge",
+      "TotalScoreCell",
+      "SectionLabel"
+    ],
+    "molecules": [
+      "TeamInfoRow",
+      "InningScoreRow",
+      "StatSummaryRow",
+      "InningHeaderRow",
+      "ScoreboardLegend"
+    ],
+    "organisms": [
+      "ScoreboardTable",
+      "ScoreboardHeader",
+      "ScoreboardFooter"
+    ],
+    "templates": [
+      "ScoreboardTemplate"
+    ],
+    "pages": [
+      "ScoreboardPage"
+    ]
+  },
+  "components": [
+    {
+      "name": "TeamAvatar",
+      "type": "atom",
+      "description": "팀 로고 이미지가 없을 때 이니셜(2자)을 원형 배경으로 표시하는 아바타. 팀 고유 색상을 배경으로 사용",
+      "props": {
+        "initials": {
+          "type": "string",
+          "required": true,
+          "description": "팀 이니셜 (예: 'KT', 'LG', 'SS')"
+        },
+        "teamColor": {
+          "type": "string",
+          "required": false,
+          "default": "#374151",
+          "description": "팀 배경 색상 (HEX 또는 Tailwind 색상 토큰)"
+        },
+        "size": {
+          "type": "string",
+          "required": false,
+          "default": "md",
+          "description": "'sm' | 'md' | 'lg' — 아바타 크기"
+        },
+        "logoSrc": {
+          "type": "string",
+          "required": false,
+          "description": "팀 로고 이미지 URL. 제공 시 이미지 우선 렌더링, 없으면 이니셜 폴백"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-center rounded-full font-extrabold tracking-tight select-none shrink-0 overflow-hidden"
+      },
+      "sizeMap": {
+        "sm": "w-7 h-7 text-xs",
+        "md": "w-10 h-10 text-sm",
+        "lg": "w-14 h-14 text-xl"
+      },
+      "states": ["default", "image-loaded", "image-fallback"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "{initials} 팀 로고"
+      }
+    },
+    {
+      "name": "InningCell",
+      "type": "atom",
+      "description": "스코어보드 테이블에서 이닝 한 칸의 점수를 표시하는 셀. 현재 이닝이면 노란색 하이라이트, 아직 플레이되지 않은 이닝이면 대시(-) 표시",
+      "props": {
+        "score": {
+          "type": "number | null",
+          "required": true,
+          "description": "해당 이닝 점수. null이면 미진행 이닝으로 '-' 표시"
+        },
+        "isCurrent": {
+          "type": "boolean",
+          "required": true,
+          "description": "현재 진행 중인 이닝 여부. true이면 노란색 하이라이트 적용"
+        },
+        "isHeader": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "이닝 번호 헤더 셀 여부 (숫자만 표시, 점수 스타일 없음)"
+        },
+        "inningNumber": {
+          "type": "number",
+          "required": false,
+          "description": "이닝 번호 (헤더 셀일 때 사용, 1~12)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-center w-8 h-9 sm:w-10 sm:h-10 text-sm font-bold tabular-nums transition-colors duration-200 shrink-0"
+      },
+      "variants": {
+        "default":      { "tailwind": "bg-transparent text-gray-200" },
+        "current":      { "tailwind": "bg-yellow-400 text-gray-900 rounded font-extrabold ring-2 ring-yellow-300 shadow-yellow-400/50 shadow-md" },
+        "empty":        { "tailwind": "bg-transparent text-gray-600" },
+        "header":       { "tailwind": "bg-transparent text-gray-500 text-xs font-semibold uppercase" }
+      },
+      "states": ["default", "current", "empty", "header"],
+      "accessibility": {
+        "role": "cell",
+        "ariaLabel": "{isHeader ? `${inningNumber}회` : isCurrent ? `현재 ${inningNumber}회 ${score ?? '진행 중'}점` : `${inningNumber}회 ${score ?? '미진행'}점`}"
+      }
+    },
+    {
+      "name": "StatCell",
+      "type": "atom",
+      "description": "H(안타), E(에러), BB(볼넷) 등 경기 통계 수치를 표시하는 셀. 헤더 라벨 버전과 수치 버전 두 가지 변형",
+      "props": {
+        "value": {
+          "type": "number | string",
+          "required": true,
+          "description": "표시할 통계 값 또는 라벨 문자열 (예: 8, 'H', 'E', 'BB')"
+        },
+        "statType": {
+          "type": "string",
+          "required": false,
+          "description": "'H' | 'E' | 'BB' | 'R' — 통계 유형 (색상 강조 분기용)"
+        },
+        "isHeader": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "헤더 라벨 셀 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-center w-10 h-9 sm:w-12 sm:h-10 text-sm font-bold tabular-nums shrink-0"
+      },
+      "variants": {
+        "header":  { "tailwind": "text-gray-400 text-xs font-semibold uppercase tracking-wider" },
+        "H":       { "tailwind": "text-green-400 font-extrabold" },
+        "E":       { "tailwind": "text-red-400 font-extrabold" },
+        "BB":      { "tailwind": "text-blue-400 font-extrabold" },
+        "R":       { "tailwind": "text-yellow-300 font-extrabold" },
+        "default": { "tailwind": "text-gray-200" }
+      },
+      "states": ["default", "header"],
+      "accessibility": {
+        "role": "cell",
+        "ariaLabel": "{isHeader ? statType + ' 통계 항목' : statType + ' ' + value}"
+      }
+    },
+    {
+      "name": "GameStatusBadge",
+      "type": "atom",
+      "description": "경기 상태(경기 전/진행 중/종료)를 표시하는 배지. 경기 종료 시 'FINAL' 배지로 강조 표시",
+      "props": {
+        "status": {
+          "type": "string",
+          "required": true,
+          "description": "'scheduled' | 'live' | 'final'"
+        },
+        "currentInning": {
+          "type": "number",
+          "required": false,
+          "description": "현재 이닝 번호 (status가 'live'일 때 표시)"
+        },
+        "inningHalf": {
+          "type": "string",
+          "required": false,
+          "description": "'top' | 'bottom' — 이닝 초/말 (live 상태에서 사용)"
+        }
+      },
+      "layout": {
+        "display": "inline-flex",
+        "tailwind": "items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-widest uppercase select-none"
+      },
+      "variants": {
+        "scheduled": {
+          "tailwind": "bg-gray-700 text-gray-300 border border-gray-600",
+          "label": "경기 전",
+          "icon": "🕐"
+        },
+        "live": {
+          "tailwind": "bg-red-600 text-white shadow-red-500/50 shadow-md animate-pulse border border-red-400",
+          "label": "{inningHalf === 'top' ? '▲' : '▼'} {currentInning}회",
+          "icon": "🔴"
+        },
+        "final": {
+          "tailwind": "bg-yellow-400 text-gray-900 shadow-yellow-400/40 shadow-md border border-yellow-300",
+          "label": "FINAL",
+          "icon": "✅"
+        }
+      },
+      "states": ["scheduled", "live", "final"],
+      "accessibility": {
+        "role": "status",
+        "ariaLive": "polite",
+        "ariaLabel": "경기 상태: {status === 'final' ? '경기 종료' : status === 'live' ? `${currentInning}회 ${inningHalf === 'top' ? '초' : '말'} 진행 중` : '경기 전'}"
+      }
+    },
+    {
+      "name": "TotalScoreCell",
+      "type": "atom",
+      "description": "팀별 최종 합산 점수를 크게 강조 표시하는 셀. 이닝 셀과 구분되는 왼쪽 경계선과 더 큰 폰트 사용. 점수가 높은 팀은 추가 강조",
+      "props": {
+        "score": {
+          "type": "number | null",
+          "required": true,
+          "description": "합산 총 득점. null이면 '-' 표시"
+        },
+        "isWinning": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "현재 점수 앞선 팀 여부. true이면 노란색 강조"
+        },
+        "isHeader": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "'R' 헤더 라벨 셀 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-center w-12 h-9 sm:w-14 sm:h-10 text-lg font-black tabular-nums border-l border-gray-600 shrink-0"
+      },
+      "variants": {
+        "default":  { "tailwind": "text-white" },
+        "winning":  { "tailwind": "text-yellow-300" },
+        "header":   { "tailwind": "text-gray-400 text-xs font-semibold uppercase tracking-wider text-sm" }
+      },
+      "states": ["default", "winning", "header"],
+      "accessibility": {
+        "role": "cell",
+        "ariaLabel": "{isHeader ? '총 득점' : `합계 ${score ?? 0}점${isWinning ? ' (리드 중)' : ''}`}"
+      }
+    },
+    {
+      "name": "SectionLabel",
+      "type": "atom",
+      "description": "스코어보드 상단 또는 섹션 구분을 위한 텍스트 라벨. 경기 날짜, 구장명 등에 사용",
+      "props": {
+        "text": {
+          "type": "string",
+          "required": true,
+          "description": "표시할 텍스트"
+        },
+        "variant": {
+          "type": "string",
+          "required": false,
+          "default": "default",
+          "description": "'default' | 'muted' | 'highlight'"
+        }
+      },
+      "layout": {
+        "display": "inline-block",
+        "tailwind": "text-xs tracking-wider select-none"
+      },
+      "variants": {
+        "default":   { "tailwind": "text-gray-400" },
+        "muted":     { "tailwind": "text-gray-600" },
+        "highlight": { "tailwind": "text-yellow-400 font-semibold" }
+      },
+      "states": ["default"],
+      "accessibility": {
+        "role": "none"
+      }
+    },
+    {
+      "name": "TeamInfoRow",
+      "type": "molecule",
+      "description": "팀 아바타 + 팀 이름을 수평으로 배치한 행. 스코어보드 테이블의 좌측 고정 영역에 위치",
+      "props": {
+        "teamName": {
+          "type": "string",
+          "required": true,
+          "description": "팀 전체 이름 (예: '키움 히어로즈')"
+        },
+        "teamShortName": {
+          "type": "string",
+          "required": true,
+          "description": "팀 단축 이름 (예: '키움') — 모바일에서 표시"
+        },
+        "initials": {
+          "type": "string",
+          "required": true,
+          "description": "아바타용 이니셜 (예: 'KW')"
+        },
+        "teamColor": {
+          "type": "string",
+          "required": false,
+          "description": "팀 색상 (HEX)"
+        },
+        "logoSrc": {
+          "type": "string",
+          "required": false,
+          "description": "팀 로고 이미지 URL"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[160px] px-2 sm:px-3 h-9 sm:h-10 shrink-0"
+      },
+      "children": [
+        {
+          "name": "TeamAvatar",
+          "type": "atom",
+          "sizeProp": "sm"
+        },
+        {
+          "element": "div",
+          "tailwind": "flex flex-col min-w-0",
+          "children": [
+            {
+              "element": "span",
+              "tailwind": "hidden sm:block text-sm font-bold text-gray-100 truncate",
+              "content": "{teamName}"
+            },
+            {
+              "element": "span",
+              "tailwind": "sm:hidden text-sm font-bold text-gray-100 truncate",
+              "content": "{teamShortName}"
+            }
+          ]
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "rowheader",
+        "ariaLabel": "{teamName}"
+      }
+    },
+    {
+      "name": "InningHeaderRow",
+      "type": "molecule",
+      "description": "이닝 번호(1~12), R, H, E, BB 헤더를 가로로 나열하는 스코어보드 컬럼 헤더 행",
+      "props": {
+        "totalInnings": {
+          "type": "number",
+          "required": false,
+          "default": 9,
+          "description": "표시할 총 이닝 수 (기본 9, 연장 시 최대 12)"
+        },
+        "currentInning": {
+          "type": "number",
+          "required": true,
+          "description": "현재 진행 이닝 번호 (해당 헤더 셀 하이라이트용)"
+        },
+        "showExtended": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "연장전(10~12회) 헤더 표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center sticky top-0 z-10 bg-gray-900 border-b border-gray-700"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "min-w-[120px] sm:min-w-[160px] h-8 px-2 sm:px-3 flex items-center",
+          "children": [
+            {
+              "element": "span",
+              "tailwind": "text-xs text-gray-500 uppercase tracking-wider font-semibold",
+              "content": "팀"
+            }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center",
+          "description": "이닝 헤더 셀 반복 (1 ~ totalInnings)",
+          "children": [
+            {
+              "name": "InningCell",
+              "type": "atom",
+              "isHeaderProp": true,
+              "repeat": "{totalInnings}",
+              "description": "이닝 번호 헤더 셀. 현재 이닝 번호와 동일하면 isCurrent=true"
+            }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center border-l border-gray-600",
+          "children": [
+            { "name": "TotalScoreCell", "type": "atom", "isHeaderProp": true, "valueProp": "R" },
+            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "H" },
+            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "E" },
+            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "BB" }
+          ]
+        }
+      ],
+      "states": ["default", "extended"],
+      "accessibility": {
+        "role": "row",
+        "ariaLabel": "스코어보드 컬럼 헤더"
+      }
+    },
+    {
+      "name": "InningScoreRow",
+      "type": "molecule",
+      "description": "한 팀의 이닝별 점수 전체 행. TeamInfoRow + InningCell 반복 + TotalScoreCell + StatCell 3개(H/E/BB)로 구성",
+      "props": {
+        "teamName": {
+          "type": "string",
+          "required": true,
+          "description": "팀 이름"
+        },
+        "teamShortName": {
+          "type": "string",
+          "required": true,
+          "description": "팀 단축 이름"
+        },
+        "initials": {
+          "type": "string",
+          "required": true,
+          "description": "팀 이니셜"
+        },
+        "teamColor": {
+          "type": "string",
+          "required": false,
+          "description": "팀 색상"
+        },
+        "logoSrc": {
+          "type": "string",
+          "required": false,
+          "description": "팀 로고 URL"
+        },
+        "scores": {
+          "type": "array",
+          "required": true,
+          "description": "이닝별 점수 배열 (최대 12개, null은 미진행). 예: [0, 1, 0, 2, null, null, null, null, null]"
+        },
+        "totalRuns": {
+          "type": "number",
+          "required": true,
+          "description": "총 득점 합계"
+        },
+        "hits": {
+          "type": "number",
+          "required": true,
+          "description": "안타 수 (H)"
+        },
+        "errors": {
+          "type": "number",
+          "required": true,
+          "description": "에러 수 (E)"
+        },
+        "walks": {
+          "type": "number",
+          "required": true,
+          "description": "볼넷 수 (BB)"
+        },
+        "currentInning": {
+          "type": "number",
+          "required": true,
+          "description": "현재 진행 이닝 (해당 셀 하이라이트)"
+        },
+        "isWinning": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "현재 리드 중 여부"
+        },
+        "totalInnings": {
+          "type": "number",
+          "required": false,
+          "default": 9,
+          "description": "스코어보드 표시 이닝 수"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center border-b border-gray-800 hover:bg-gray-800/30 transition-colors duration-150"
+      },
+      "children": [
+        { "name": "TeamInfoRow", "type": "molecule" },
+        {
+          "element": "div",
+          "tailwind": "flex items-center",
+          "description": "이닝 점수 셀 반복 (scores 배열 순회)",
+          "children": [
+            {
+              "name": "InningCell",
+              "type": "atom",
+              "repeat": "{totalInnings}",
+              "description": "각 이닝의 점수 셀. 현재 이닝이면 isCurrent=true"
+            }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center",
+          "children": [
+            { "name": "TotalScoreCell", "type": "atom", "description": "총 득점 R" },
+            { "name": "StatCell",       "type": "atom", "statTypeProp": "H", "description": "안타 수" },
+            { "name": "StatCell",       "type": "atom", "statTypeProp": "E", "description": "에러 수" },
+            { "name": "StatCell",       "type": "atom", "statTypeProp": "BB", "description": "볼넷 수" }
+          ]
+        }
+      ],
+      "states": ["default", "winning", "losing"],
+      "accessibility": {
+        "role": "row",
+        "ariaLabel": "{teamName} 점수 행"
+      }
+    },
+    {
+      "name": "StatSummaryRow",
+      "type": "molecule",
+      "description": "스코어보드 하단의 통계 범례/설명 행. H(안타), E(에러), BB(볼넷) 항목별 설명을 색상 점과 라벨로 나열",
+      "props": {
+        "compact": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "모바일 축약 표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center gap-4 sm:gap-6 px-3 py-2"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-1.5",
+          "children": [
+            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-green-400 shrink-0" },
+            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "H 안타" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-1.5",
+          "children": [
+            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-red-400 shrink-0" },
+            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "E 에러" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-1.5",
+          "children": [
+            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-blue-400 shrink-0" },
+            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "BB 볼넷" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-1.5 ml-auto",
+          "children": [
+            { "element": "span", "tailwind": "w-3 h-3 rounded-sm bg-yellow-400 shrink-0" },
+            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "현재 이닝" }
+          ]
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "note",
+        "ariaLabel": "스코어보드 범례: H 안타, E 에러, BB 볼넷, 노란색 셀은 현재 이닝"
+      }
+    },
+    {
+      "name": "ScoreboardLegend",
+      "type": "molecule",
+      "description": "스코어보드 하단 범례 섹션. StatSummaryRow 포함 및 업데이트 시각 표시",
+      "props": {
+        "lastUpdated": {
+          "type": "string",
+          "required": false,
+          "description": "마지막 데이터 업데이트 시각 (예: '14:35 기준')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-between flex-wrap gap-2 px-3 py-2 border-t border-gray-800 bg-gray-900/50"
+      },
+      "children": [
+        { "name": "StatSummaryRow", "type": "molecule" },
+        {
+          "element": "span",
+          "tailwind": "text-xs text-gray-600 ml-auto",
+          "content": "{lastUpdated}",
+          "visibleWhen": "!!lastUpdated"
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "complementary",
+        "ariaLabel": "스코어보드 부가 정보"
+      }
+    },
+    {
+      "name": "ScoreboardHeader",
+      "type": "organism",
+      "description": "스코어보드 상단 헤더 영역. 경기 날짜/구장/상태 배지와 두 팀 간 현재 점수 요약(빅 스코어)를 표시",
+      "props": {
+        "homeTeam": {
+          "type": "object",
+          "required": true,
+          "description": "{ name, shortName, initials, teamColor, logoSrc, totalRuns }"
+        },
+        "awayTeam": {
+          "type": "object",
+          "required": true,
+          "description": "{ name, shortName, initials, teamColor, logoSrc, totalRuns }"
+        },
+        "gameStatus": {
+          "type": "string",
+          "required": true,
+          "description": "'scheduled' | 'live' | 'final'"
+        },
+        "currentInning": {
+          "type": "number",
+          "required": false,
+          "description": "현재 이닝 번호"
+        },
+        "inningHalf": {
+          "type": "string",
+          "required": false,
+          "description": "'top' | 'bottom'"
+        },
+        "venue": {
+          "type": "string",
+          "required": false,
+          "description": "경기장 이름 (예: '잠실야구장')"
+        },
+        "gameDate": {
+          "type": "string",
+          "required": false,
+          "description": "경기 날짜 (예: '2026.03.12')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col gap-3 sm:gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 bg-gray-900 border-b border-gray-800"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex items-center justify-between",
+          "children": [
+            {
+              "element": "div",
+              "tailwind": "flex flex-col gap-0.5",
+              "children": [
+                {
+                  "element": "span",
+                  "tailwind": "text-xs text-gray-500",
+                  "content": "{gameDate}"
+                },
+                {
+                  "element": "span",
+                  "tailwind": "text-xs text-gray-600",
+                  "content": "{venue}"
+                }
+              ]
+            },
+            { "name": "GameStatusBadge", "type": "atom" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center justify-between gap-4 py-2",
+          "description": "빅 스코어 — 어웨이 팀 vs 홈 팀 중앙 점수 표시",
+          "children": [
+            {
+              "element": "div",
+              "tailwind": "flex flex-col items-center gap-1.5 flex-1",
+              "description": "어웨이 팀 정보",
+              "children": [
+                { "name": "TeamAvatar", "type": "atom", "sizeProp": "lg" },
+                { "element": "span", "tailwind": "text-sm font-bold text-gray-200 text-center", "content": "{awayTeam.shortName}" },
+                { "element": "span", "tailwind": "text-4xl sm:text-5xl font-black tabular-nums text-white", "content": "{awayTeam.totalRuns ?? '-'}" }
+              ]
+            },
+            {
+              "element": "div",
+              "tailwind": "flex flex-col items-center gap-1 px-2",
+              "children": [
+                { "element": "span", "tailwind": "text-2xl font-black text-gray-600", "content": ":" },
+                { "element": "span", "tailwind": "text-xs text-gray-600 uppercase tracking-widest", "content": "VS" }
+              ]
+            },
+            {
+              "element": "div",
+              "tailwind": "flex flex-col items-center gap-1.5 flex-1",
+              "description": "홈 팀 정보",
+              "children": [
+                { "name": "TeamAvatar", "type": "atom", "sizeProp": "lg" },
+                { "element": "span", "tailwind": "text-sm font-bold text-gray-200 text-center", "content": "{homeTeam.shortName}" },
+                { "element": "span", "tailwind": "text-4xl sm:text-5xl font-black tabular-nums text-white", "content": "{homeTeam.totalRuns ?? '-'}" }
+              ]
+            }
+          ]
+        }
+      ],
+      "states": ["scheduled", "live", "final"],
+      "accessibility": {
+        "role": "banner",
+        "ariaLabel": "경기 헤더 — {awayTeam.name} vs {homeTeam.name} 현재 점수"
+      }
+    },
+    {
+      "name": "ScoreboardTable",
+      "type": "organism",
+      "description": "이닝별 점수 테이블 전체 영역. InningHeaderRow + InningScoreRow × 2팀으로 구성. 이닝 수가 많아지면 가로 스크롤 지원",
+      "props": {
+        "homeTeam": {
+          "type": "object",
+          "required": true,
+          "description": "홈 팀 데이터 { name, shortName, initials, teamColor, logoSrc, scores, totalRuns, hits, errors, walks }"
+        },
+        "awayTeam": {
+          "type": "object",
+          "required": true,
+          "description": "어웨이 팀 데이터 (동일 구조)"
+        },
+        "currentInning": {
+          "type": "number",
+          "required": true,
+          "description": "현재 진행 이닝 번호 (1~12)"
+        },
+        "gameStatus": {
+          "type": "string",
+          "required": true,
+          "description": "'scheduled' | 'live' | 'final'"
+        },
+        "totalInnings": {
+          "type": "number",
+          "required": false,
+          "default": 9,
+          "description": "표시할 총 이닝 수 (9 또는 12)"
+        }
+      },
+      "layout": {
+        "display": "block",
+        "tailwind": "w-full overflow-x-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700"
+      },
+      "children": [
+        {
+          "element": "table",
+          "tailwind": "min-w-max w-full border-collapse",
+          "accessibility": { "role": "table", "ariaLabel": "이닝별 점수 테이블" },
+          "children": [
+            {
+              "element": "thead",
+              "children": [
+                { "name": "InningHeaderRow", "type": "molecule" }
+              ]
+            },
+            {
+              "element": "tbody",
+              "children": [
+                { "name": "InningScoreRow", "type": "molecule", "description": "어웨이 팀 행" },
+                { "name": "InningScoreRow", "type": "molecule", "description": "홈 팀 행" }
+              ]
+            }
+          ]
+        }
+      ],
+      "states": ["default", "loading", "empty"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "이닝별 스코어보드 테이블"
+      }
+    },
+    {
+      "name": "ScoreboardFooter",
+      "type": "organism",
+      "description": "스코어보드 하단 영역. 범례(ScoreboardLegend)와 경기 관련 부가 정보(중계 채널, 날씨 등)를 포함",
+      "props": {
+        "lastUpdated": {
+          "type": "string",
+          "required": false,
+          "description": "마지막 업데이트 시각"
+        },
+        "broadcastChannel": {
+          "type": "string",
+          "required": false,
+          "description": "중계 채널 이름 (예: 'MBC Sports')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col gap-1 bg-gray-900 rounded-b-2xl overflow-hidden"
+      },
+      "children": [
+        { "name": "ScoreboardLegend", "type": "molecule" },
+        {
+          "element": "div",
+          "tailwind": "flex items-center justify-between px-3 pb-3 gap-2",
+          "visibleWhen": "!!broadcastChannel",
+          "children": [
+            {
+              "element": "span",
+              "tailwind": "text-xs text-gray-600",
+              "content": "📺 {broadcastChannel} 중계"
+            }
+          ]
+        }
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "contentinfo",
+        "ariaLabel": "스코어보드 하단 정보"
+      }
+    },
+    {
+      "name": "ScoreboardTemplate",
+      "type": "template",
+      "description": "스코어보드 전체 레이아웃 뼈대. ScoreboardHeader(상단) + ScoreboardTable(중앙) + ScoreboardFooter(하단)를 수직 배치. 카드 스타일 컨테이너로 감쌈",
+      "props": {
+        "header": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "ScoreboardHeader 슬롯"
+        },
+        "table": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "ScoreboardTable 슬롯"
+        },
+        "footer": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "ScoreboardFooter 슬롯"
+        },
+        "isLoading": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "데이터 로딩 중 여부. true이면 스켈레톤 오버레이 표시"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col w-full max-w-3xl mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-800"
+      },
+      "children": [
+        { "slot": "header", "tailwind": "w-full flex-shrink-0" },
+        {
+          "element": "div",
+          "tailwind": "relative",
+          "children": [
+            { "slot": "table", "tailwind": "w-full" },
+            {
+              "element": "div",
+              "description": "로딩 스켈레톤 오버레이",
+              "tailwind": "absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-20 animate-pulse",
+              "visibleWhen": "isLoading",
+              "children": [
+                { "element": "span", "tailwind": "text-gray-400 text-sm", "content": "데이터 불러오는 중..." }
+              ]
+            }
+          ]
+        },
+        { "slot": "footer", "tailwind": "w-full flex-shrink-0" }
+      ],
+      "states": ["default", "loading"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "야구 경기 스코어보드"
+      }
+    },
+    {
+      "name": "ScoreboardPage",
+      "type": "page",
+      "description": "스코어보드 최상위 페이지. 경기 데이터(gameStatus, 이닝 점수, 팀 정보)를 관리하고 ScoreboardTemplate에 전달. 실시간 업데이트 폴링 로직 포함",
+      "props": {
+        "gameId": {
+          "type": "string",
+          "required": true,
+          "description": "경기 고유 ID (URL 파라미터)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col items-center min-h-screen bg-gray-950 px-4 sm:px-6 py-6 sm:py-10"
+      },
+      "pageStateMachine": {
+        "states": {
+          "loading":   { "displays": "ScoreboardTemplate (isLoading=true)",  "description": "경기 데이터 초기 로드 중" },
+          "scheduled": { "displays": "ScoreboardTemplate",                   "description": "경기 전 — 이닝 점수 모두 null" },
+          "live":      { "displays": "ScoreboardTemplate",                   "description": "경기 진행 중 — 실시간 점수 갱신, currentInning 하이라이트" },
+          "final":     { "displays": "ScoreboardTemplate",                   "description": "경기 종료 — FINAL 배지, 전체 이닝 점수 표시" },
+          "error":     { "displays": "에러 메시지 컨테이너",                 "description": "데이터 로드 실패 시 재시도 안내" }
+        },
+        "transitions": [
+          { "from": "loading",   "to": "scheduled", "trigger": "gameStatus === 'scheduled' 데이터 수신" },
+          { "from": "loading",   "to": "live",       "trigger": "gameStatus === 'live' 데이터 수신" },
+          { "from": "loading",   "to": "final",      "trigger": "gameStatus === 'final' 데이터 수신" },
+          { "from": "loading",   "to": "error",      "trigger": "API 요청 실패" },
+          { "from": "scheduled", "to": "live",       "trigger": "경기 시작 (폴링으로 상태 전환 감지)" },
+          { "from": "live",      "to": "final",      "trigger": "경기 종료 (gameStatus → 'final')" }
+        ]
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "w-full max-w-3xl mb-4 flex items-center justify-between",
+          "description": "페이지 상단 네비게이션 바",
+          "children": [
+            {
+              "element": "button",
+              "tailwind": "flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors",
+              "content": "← 경기 목록",
+              "accessibility": { "role": "button", "ariaLabel": "경기 목록으로 돌아가기" }
+            },
+            {
+              "element": "span",
+              "tailwind": "text-xs text-gray-600",
+              "content": "KBO 리그"
+            }
+          ]
+        },
+        {
+          "name": "ScoreboardTemplate",
+          "type": "template",
+          "children": [
+            { "name": "ScoreboardHeader", "type": "organism" },
+            { "name": "ScoreboardTable",  "type": "organism" },
+            { "name": "ScoreboardFooter", "type": "organism" }
+          ]
+        },
+        {
+          "element": "div",
+          "description": "에러 상태 컨테이너",
+          "tailwind": "w-full max-w-3xl flex flex-col items-center justify-center gap-4 py-20",
+          "visibleWhen": "pageState === 'error'",
+          "children": [
+            { "element": "span", "tailwind": "text-5xl", "content": "⚾" },
+            { "element": "p",    "tailwind": "text-gray-400 text-center", "content": "경기 정보를 불러올 수 없습니다." },
+            {
+              "element": "button",
+              "tailwind": "px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-semibold transition-colors",
+              "content": "다시 시도",
+              "accessibility": { "role": "button", "ariaLabel": "경기 데이터 다시 불러오기" }
+            }
+          ]
+        }
+      ],
+      "states": ["loading", "scheduled", "live", "final", "error"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "야구 경기 스코어보드 페이지",
+        "lang": "ko"
+      }
+    }
+  ],
+  "colorPalette": {
+    "background":           "#030712",
+    "surface":              "#111827",
+    "surfaceAlt":           "#1f2937",
+    "surfaceBorder":        "#374151",
+    "cardBg":               "#111827",
+    "cardBorder":           "#1f2937",
+    "currentInningBg":      "#facc15",
+    "currentInningText":    "#1a1100",
+    "currentInningRing":    "#fde047",
+    "statH":                "#4ade80",
+    "statE":                "#f87171",
+    "statBB":               "#60a5fa",
+    "statR":                "#fde68a",
+    "badgeFinal":           "#facc15",
+    "badgeFinalText":       "#1a1100",
+    "badgeLive":            "#dc2626",
+    "badgeLiveText":        "#ffffff",
+    "badgeScheduled":       "#374151",
+    "badgeScheduledText":   "#d1d5db",
+    "teamAvatarDefault":    "#374151",
+    "headerBg":             "#111827",
+    "tableRowHover":        "#1f2937",
+    "textPrimary":          "#f9fafb",
+    "textSecondary":        "#9ca3af",
+    "textMuted":            "#6b7280",
+    "textWinning":          "#fde68a",
+    "scrollbarTrack":       "#111827",
+    "scrollbarThumb":       "#374151"
+  },
+  "typography": {
+    "bigScore":        "text-4xl sm:text-5xl font-black tabular-nums text-white",
+    "inningScore":     "text-sm font-bold tabular-nums",
+    "totalScore":      "text-lg font-black tabular-nums",
+    "teamName":        "text-sm font-bold text-gray-100 truncate",
+    "headerLabel":     "text-xs font-semibold uppercase tracking-wider text-gray-500",
+    "statusBadge":     "text-xs font-extrabold tracking-widest uppercase",
+    "statValue":       "text-sm font-bold tabular-nums",
+    "legendText":      "text-xs text-gray-400",
+    "pageTitle":       "text-lg sm:text-xl font-extrabold text-white",
+    "meta":            "text-xs text-gray-600"
+  },
+  "breakpoints": {
+    "strategy": "mobile-first",
+    "base":  "< 640px  — 팀 단축명, 셀 축소(w-8 h-9), 아바타 sm, 빅스코어 text-4xl",
+    "sm":    "≥ 640px  — 팀 전체명, 셀 확대(w-10 h-10), 아바타 md/lg, 빅스코어 text-5xl, 여백 확대",
+    "md":    "≥ 768px  — 최대 너비(max-w-3xl) 중앙 고정, 전체 이닝 행 여유 있게 표시",
+    "lg":    "≥ 1024px — 이닝 헤더/셀 폰트 크기 유지, 카드 패딩 확대"
+  },
+  "interactions": [
+    {
+      "trigger": "mount",
+      "element": "ScoreboardPage",
+      "action": "gameId 기반 경기 데이터 API 호출 → pageState를 'loading'으로 설정. 응답 수신 시 gameStatus에 따라 페이지 상태 전환"
+    },
+    {
+      "trigger": "poll (interval)",
+      "element": "ScoreboardPage — 실시간 업데이트",
+      "action": "gameStatus가 'live'인 경우 30초 간격으로 데이터 재조회. 새 이닝 점수 또는 통계 변경 시 관련 셀 값 갱신"
+    },
+    {
+      "trigger": "data-change",
+      "element": "InningCell (currentInning 변경)",
+      "action": "이전 이닝 셀의 노란 하이라이트 제거, 새 currentInning 셀에 bg-yellow-400 + ring-2 + shadow 적용 (transition-colors 200ms)"
+    },
+    {
+      "trigger": "data-change",
+      "element": "GameStatusBadge",
+      "action": "gameStatus가 'live' → 'final'로 바뀌면 배지가 빨간 LIVE → 노란 FINAL로 전환. ariaLive='polite'로 스크린리더 알림"
+    },
+    {
+      "trigger": "data-change",
+      "element": "TotalScoreCell / StatCell",
+      "action": "점수나 통계 수치 변경 시 짧은 scale-up + 색상 flash 트랜지션으로 변경 강조 (300ms)"
+    },
+    {
+      "trigger": "hover",
+      "element": "InningScoreRow",
+      "action": "행 전체에 bg-gray-800/30 hover 배경 적용 (transition-colors 150ms)"
+    },
+    {
+      "trigger": "scroll (horizontal)",
+      "element": "ScoreboardTable — overflow-x-auto 컨테이너",
+      "action": "이닝 수가 많아 테이블이 넘칠 경우 가로 스크롤. TeamInfoRow는 sticky left-0로 고정하여 팀명 항상 표시"
+    },
+    {
+      "trigger": "click",
+      "element": "ScoreboardPage — 뒤로가기 버튼",
+      "action": "경기 목록 페이지 또는 직전 라우트로 네비게이션"
+    },
+    {
+      "trigger": "click",
+      "element": "ScoreboardPage — 에러 상태 재시도 버튼",
+      "action": "pageState를 'loading'으로 리셋 후 데이터 API 재호출"
+    },
+    {
+      "trigger": "resize",
+      "element": "ScoreboardTemplate 전체",
+      "action": "뷰포트 변경에 따라 Tailwind 반응형 클래스 적용: 모바일↔태블릿↔데스크톱 레이아웃 자동 전환"
+    }
+  ],
+  "animationGuidelines": {
+    "currentInningHighlight":  "transition-colors duration-200 ease-in-out — isCurrent 변경 시 셀 배경/텍스트 색상 전환",
+    "scoreUpdate":             "scale 1 → 1.15 → 1 + color flash, 300ms ease-out — 점수/통계 수치 변경 시",
+    "statusBadgeChange":       "opacity 0 → 1, 200ms ease-in — 배지 상태 전환 시",
+    "liveBadgePulse":          "animate-pulse (Tailwind 기본) — live 상태 배지 지속 점멸",
+    "rowHover":                "transition-colors duration-150 ease-in-out — 행 hover 배경",
+    "pageLoadSkeleton":        "animate-pulse on 스켈레톤 오버레이 — 데이터 로딩 중 시각 피드백"
+  },
+  "dataModel": {
+    "note": "UI 명세 참고용 — 백엔드 API 스펙 아님",
+    "GameData": {
+      "gameId":        "string",
+      "gameStatus":    "'scheduled' | 'live' | 'final'",
+      "currentInning": "number (1~12)",
+      "inningHalf":    "'top' | 'bottom'",
+      "gameDate":      "string (YYYY.MM.DD)",
+      "venue":         "string",
+      "broadcastChannel": "string | null",
+      "lastUpdated":   "string (HH:mm 기준)",
+      "homeTeam":      "TeamData",
+      "awayTeam":      "TeamData"
+    },
+    "TeamData": {
+      "name":       "string",
+      "shortName":  "string",
+      "initials":   "string (2자)",
+      "teamColor":  "string (HEX)",
+      "logoSrc":    "string | null",
+      "scores":     "Array<number | null> (length 9~12, null = 미진행)",
+      "totalRuns":  "number",
+      "hits":       "number",
+      "errors":     "number",
+      "walks":      "number"
+    }
+  }
+}
