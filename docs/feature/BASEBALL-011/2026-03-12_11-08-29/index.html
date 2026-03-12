@@ -1,0 +1,623 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>웹 기반 야구 게임</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; background-color: #000; display: flex; justify-content: center; }
+    #root { width: 100%; max-width: 500px; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react,typescript">
+    const { useState, useEffect, useRef } = React;
+
+
+
+const StrikeIndicator = ({ active, total }) => {
+  return (
+    <div className="flex items-center gap-1.5" aria-label={`스트라이크 ${active}/${total}`}>
+      <span className="text-xs font-semibold text-red-400 mr-1">S</span>
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className={`w-3 h-3 rounded-full ${i < active ? 'bg-red-500' : 'bg-gray-600'}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+
+
+
+const OutIndicator = ({ active, total }) => {
+  return (
+    <div className="flex items-center gap-1.5" aria-label={`아웃 ${active}/${total}`}>
+      <span className="text-xs font-semibold text-orange-400 mr-1">O</span>
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className={`w-3 h-3 rounded-full ${i < active ? 'bg-orange-500' : 'bg-gray-600'}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+
+
+const FieldBackground = () => {
+  return (
+    <div className="absolute inset-0 bg-gradient-to-b from-sky-900 via-green-900 to-green-950" aria-hidden="true">
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-48 border-2 border-white/10 rotate-45 origin-bottom" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full border border-white/20 bg-yellow-900/30" />
+    </div>
+  );
+};
+
+
+
+
+const Ball = ({ size, positionX, positionY, isVisible }) => {
+  if (!isVisible) return null;
+  return (
+    <div
+      className="absolute rounded-full bg-white shadow-lg shadow-white/40 pointer-events-none"
+      style={{
+        width: size,
+        height: size,
+        left: `${positionX}%`,
+        top: `${positionY}%`,
+        transform: 'translate(-50%, -50%)',
+        transition: 'all 100ms linear'
+      }}
+      aria-hidden="true"
+    >
+      <span className="block w-full h-full rounded-full border border-red-400/60" />
+    </div>
+  );
+};
+
+
+
+const BattingZone = () => {
+  return (
+    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-10 pointer-events-none" aria-hidden="true">
+      <div 
+        className="w-full h-full bg-white/20 border-2 border-white/40 rounded-sm"
+        style={{ clipPath: 'polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%)' }}
+      />
+    </div>
+  );
+};
+
+
+
+
+const HitResultBadge = ({ result, isVisible }) => {
+  if (!isVisible || !result) return null;
+
+  const variants = {
+    homerun: {
+      className: 'text-6xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.9)] animate-bounce',
+      text: 'HOME RUN!'
+    },
+    triple: {
+      className: 'text-5xl font-black text-cyan-300 drop-shadow-[0_0_16px_rgba(103,232,249,0.8)]',
+      text: '3루타!'
+    },
+    double: {
+      className: 'text-5xl font-black text-green-400 drop-shadow-[0_0_16px_rgba(74,222,128,0.8)]',
+      text: '2루타!'
+    },
+    single: {
+      className: 'text-5xl font-black text-blue-300 drop-shadow-[0_0_16px_rgba(147,197,253,0.8)]',
+      text: '1루타!'
+    },
+    strike: {
+      className: 'text-5xl font-black text-red-500 drop-shadow-[0_0_16px_rgba(239,68,68,0.8)]',
+      text: 'STRIKE'
+    }
+  };
+
+  const { className, text } = variants[result];
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20" role="alert" aria-live="assertive" aria-atomic="true">
+      <span className={className}>{text}</span>
+    </div>
+  );
+};
+
+
+
+
+const SwingEffect = ({ isActive }) => {
+  return (
+    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-40 h-40 pointer-events-none z-10" aria-hidden="true">
+      <div 
+        data-active={isActive}
+        className="w-full h-full rounded-full border-4 border-white/60 border-b-transparent rotate-[-30deg] opacity-0 data-[active=true]:opacity-100 data-[active=true]:animate-ping"
+      />
+    </div>
+  );
+};
+
+
+
+
+const StartPauseButton = ({ gameState, onClick }) => {
+  const icon = gameState === 'playing' ? '⏸' : '▶';
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center w-14 h-14 rounded-full bg-yellow-400 hover:bg-yellow-300 active:scale-95 transition-all duration-150 shadow-lg shadow-yellow-400/40"
+      aria-label="게임 시작/일시정지"
+    >
+      <span className="text-gray-900 text-2xl font-black">{icon}</span>
+    </button>
+  );
+};
+
+
+
+
+const ResultTitle = ({ message }) => {
+  return (
+    <div className="text-center">
+      <h2 className="text-3xl font-black text-yellow-400 tracking-tight" role="heading" aria-level={2}>
+        {message}
+      </h2>
+    </div>
+  );
+};
+
+
+
+
+const RestartButton = ({ onClick }) => {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center w-full max-w-xs h-14 rounded-2xl bg-yellow-400 hover:bg-yellow-300 active:scale-95 transition-all duration-150 shadow-lg shadow-yellow-400/30"
+      aria-label="게임 다시 시작"
+    >
+      <span className="text-gray-900 text-lg font-black tracking-wide">다시 하기</span>
+    </button>
+  );
+};
+
+
+
+
+const ScoreDisplay = ({ score }) => {
+  return (
+    <div className="flex flex-col items-start gap-0.5" role="status" aria-label="현재 점수" aria-live="polite">
+      <span className="text-xs font-semibold uppercase tracking-widest text-yellow-400">SCORE</span>
+      <span className="text-4xl font-black tabular-nums text-white leading-none">{score}</span>
+    </div>
+  );
+};
+
+
+
+
+const CountBoard = ({ strikes, maxStrikes = 3, outs, maxOuts = 3 }) => {
+  return (
+    <div className="flex flex-col items-end gap-1" role="group" aria-label="스트라이크 및 아웃 현황">
+      <StrikeIndicator active={strikes} total={maxStrikes} />
+      <OutIndicator active={outs} total={maxOuts} />
+    </div>
+  );
+};
+
+
+
+
+const TimingBar = ({ markerPosition, isActive }) => {
+  return (
+    <div 
+      className={`absolute bottom-24 left-4 right-4 h-6 rounded-full bg-gray-800/80 overflow-hidden border border-gray-600 ${!isActive ? 'opacity-50' : ''}`}
+      role="progressbar" aria-label="타이밍 게이지" aria-valuemin={0} aria-valuemax={100} aria-valuenow={markerPosition}
+    >
+      <div className="absolute left-[30%] w-[20%] h-full bg-green-500/40" />
+      <div className="absolute left-[42%] w-[16%] h-full bg-yellow-400/70" />
+      <div className="absolute left-[50%] w-[20%] h-full bg-green-500/40" />
+      <div 
+        className="absolute top-0 h-full w-1.5 rounded-full bg-white shadow-md shadow-white/60 transition-none"
+        style={{ left: `${markerPosition}%`, transform: 'translateX(-50%)' }}
+      />
+    </div>
+  );
+};
+
+
+
+
+const DiamondBaseMap = ({ basesOccupied }) => {
+  return (
+    <div className="relative w-16 h-16" role="img" aria-label="베이스 점유 현황 다이아몬드">
+      <div 
+        data-occupied={basesOccupied.second}
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-2 border-white/60 data-[occupied=true]:bg-yellow-400 data-[occupied=false]:bg-transparent transition-colors"
+      />
+      <div 
+        data-occupied={basesOccupied.third}
+        className="absolute top-1/2 left-0 -translate-y-1/2 w-4 h-4 rotate-45 border-2 border-white/60 data-[occupied=true]:bg-yellow-400 data-[occupied=false]:bg-transparent transition-colors"
+      />
+      <div 
+        data-occupied={basesOccupied.first}
+        className="absolute top-1/2 right-0 -translate-y-1/2 w-4 h-4 rotate-45 border-2 border-white/60 data-[occupied=true]:bg-yellow-400 data-[occupied=false]:bg-transparent transition-colors"
+      />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white/80" />
+    </div>
+  );
+};
+
+
+
+
+const FinalScoreDisplay = ({ score }) => {
+  return (
+    <div className="flex flex-col items-center gap-1" role="status" aria-label="최종 점수">
+      <span className="text-sm font-semibold uppercase tracking-widest text-gray-400">FINAL SCORE</span>
+      <span className="text-8xl font-black tabular-nums text-white drop-shadow-[0_0_30px_rgba(250,204,21,0.7)]">
+        {score}
+      </span>
+    </div>
+  );
+};
+
+
+
+
+const HitSummaryTable = ({ summary }) => {
+  const items = [
+    { label: 'HR', count: summary.homeruns },
+    { label: '3B', count: summary.triples },
+    { label: '2B', count: summary.doubles },
+    { label: '1B', count: summary.singles },
+    { label: 'ST', count: summary.strikes },
+  ];
+
+  return (
+    <div className="grid grid-cols-5 gap-3 w-full max-w-sm" role="table" aria-label="타격 결과 요약">
+      {items.map((item, i) => (
+        <div key={i} className="flex flex-col items-center gap-1 bg-gray-800 rounded-xl p-3">
+          <span className="text-xs text-gray-400 font-medium">{item.label}</span>
+          <span className="text-2xl font-black text-white">{item.count}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+
+
+
+const GameHeader = ({ score, strikes, outs }) => {
+  return (
+    <header className="flex items-center justify-between w-full px-4 py-3 bg-gray-900 border-b border-gray-700 z-10" role="banner" aria-label="게임 상태 헤더">
+      <ScoreDisplay score={score} />
+      <CountBoard strikes={strikes} outs={outs} />
+    </header>
+  );
+};
+
+
+
+
+const GameField = ({
+  isPlaying, onSwing, ballPosition, hitResult, isHitBadgeVisible, isSwingActive, markerPosition, ballSize, isBallVisible
+}) => {
+  return (
+    <div 
+      className="relative flex-1 w-full overflow-hidden cursor-pointer touch-none"
+      onClick={onSwing}
+      role="button"
+      aria-label="배팅 영역 - 탭하여 스윙"
+      aria-pressed="false"
+    >
+      <FieldBackground />
+      <Ball size={ballSize} positionX={ballPosition?.x || 50} positionY={ballPosition?.y || 30} isVisible={isBallVisible} />
+      <BattingZone />
+      <HitResultBadge result={hitResult} isVisible={isHitBadgeVisible} />
+      <SwingEffect isActive={isSwingActive} />
+      <TimingBar markerPosition={markerPosition} isActive={isPlaying} />
+    </div>
+  );
+};
+
+
+
+
+const GameHUD = ({ gameState, onStart, onPause, basesOccupied }) => {
+  const handleClick = () => {
+    if (gameState === 'idle') onStart();
+    else onPause();
+  };
+
+  return (
+    <div className="flex items-center justify-between w-full px-6 py-4 bg-gray-900/90 backdrop-blur-sm border-t border-gray-700" role="toolbar" aria-label="게임 컨트롤">
+      <DiamondBaseMap basesOccupied={basesOccupied} />
+      <StartPauseButton gameState={gameState} onClick={handleClick} />
+    </div>
+  );
+};
+
+
+
+
+const ResultOverlay = ({ isVisible, finalScore, summary, onRestart }) => {
+  if (!isVisible) return null;
+  
+  const message = finalScore > 20 ? '대박이다!' : finalScore > 10 ? '게임 종료!' : '연습이 필요해!';
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-gray-950/95 backdrop-blur-md z-50 px-6 transition-opacity duration-400 ease-out" role="dialog" aria-modal="true" aria-label="게임 결과">
+      <ResultTitle message={message} />
+      <FinalScoreDisplay score={finalScore} />
+      <HitSummaryTable summary={summary} />
+      <RestartButton onClick={onRestart} />
+    </div>
+  );
+};
+
+
+
+
+const IdleScreen = ({ onStart }) => {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 bg-gray-950/90 backdrop-blur-sm z-40 px-8" role="region" aria-label="게임 시작 화면">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="text-6xl">⚾</span>
+        <h1 className="text-4xl font-black text-white tracking-tight">TAP BATTER</h1>
+        <p className="text-sm text-gray-400 max-w-xs leading-relaxed">공이 날아올 때 타이밍에 맞춰 화면을 탭하세요! 기회는 단 3번.</p>
+      </div>
+      
+      <div className="flex flex-col gap-2 w-full max-w-xs bg-gray-800/80 rounded-2xl p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">SCORING</p>
+        <div className="flex justify-between text-sm text-white"><span>HOME RUN</span><span className="text-yellow-400 font-black">+4</span></div>
+        <div className="flex justify-between text-sm text-white"><span>3루타</span><span className="text-cyan-300 font-black">+3</span></div>
+        <div className="flex justify-between text-sm text-white"><span>2루타</span><span className="text-green-400 font-black">+2</span></div>
+        <div className="flex justify-between text-sm text-white"><span>1루타</span><span className="text-blue-300 font-black">+1</span></div>
+        <div className="flex justify-between text-sm text-white"><span>STRIKE</span><span className="text-red-500 font-black">0</span></div>
+      </div>
+      
+      <button
+        onClick={onStart}
+        className="w-full max-w-xs h-14 rounded-2xl bg-yellow-400 hover:bg-yellow-300 active:scale-95 transition-all duration-150 text-gray-900 text-lg font-black shadow-lg shadow-yellow-400/30"
+      >
+        게임 시작
+      </button>
+    </div>
+  );
+};
+
+
+
+
+const GamePage = ({ gameState: initialGameState = 'idle' }) => {
+  const [gameState, setGameState] = useState(initialGameState);
+  const [score, setScore] = useState(0);
+  const [strikes, setStrikes] = useState(0);
+  const [outs, setOuts] = useState(0);
+  const [basesOccupied, setBasesOccupied] = useState({ first: false, second: false, third: false });
+  const [summary, setSummary] = useState({ homeruns: 0, triples: 0, doubles: 0, singles: 0, strikes: 0 });
+
+  const [hitResult, setHitResult] = useState(null);
+  const [isHitBadgeVisible, setIsHitBadgeVisible] = useState(false);
+  const [isSwingActive, setIsSwingActive] = useState(false);
+
+  const [markerPosition, setMarkerPosition] = useState(50);
+  const [ballPositionX, setBallPositionX] = useState(50);
+  const [ballPositionY, setBallPositionY] = useState(30);
+  const [ballSize, setBallSize] = useState(16);
+  const [isBallVisible, setIsBallVisible] = useState(false);
+  const [ballPhase, setBallPhase] = useState('hidden');
+
+  const gameLoopRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const pitchStartTimeRef = useRef(null);
+  const lastPitchTimeRef = useRef(0);
+
+  // Use refs for state accessed inside animation frame
+  const stateRef = useRef({ gameState, ballPhase, strikes, outs, basesOccupied, markerPosition, ballPositionY, score });
+  useEffect(() => {
+    stateRef.current = { gameState, ballPhase, strikes, outs, basesOccupied, markerPosition, ballPositionY, score };
+  }, [gameState, ballPhase, strikes, outs, basesOccupied, markerPosition, ballPositionY, score]);
+
+  const registerHit = (hit: 'homerun'|'triple'|'double'|'single'|'strike') => {
+    setHitResult(hit);
+    setIsHitBadgeVisible(true);
+    setTimeout(() => setIsHitBadgeVisible(false), 1200);
+    
+    setSummary(s => ({ ...s, [`${hit}s`]: s[hit as keyof typeof s] + 1 }));
+    
+    if (hit === 'strike') {
+      const newStrikes = stateRef.current.strikes + 1;
+      if (newStrikes >= 3) {
+        const newOuts = stateRef.current.outs + 1;
+        if (newOuts >= 3) {
+          setGameState('result');
+        } else {
+          setOuts(newOuts);
+          setStrikes(0);
+        }
+      } else {
+        setStrikes(newStrikes);
+      }
+    } else {
+      setStrikes(0);
+      let points = 0;
+      if (hit === 'homerun') points = 4;
+      if (hit === 'triple') points = 3;
+      if (hit === 'double') points = 2;
+      if (hit === 'single') points = 1;
+      
+      let newBases = { ...stateRef.current.basesOccupied };
+      if (hit === 'homerun') {
+        newBases = { first: false, second: false, third: false };
+      } else if (hit === 'triple') {
+        newBases = { first: false, second: false, third: true };
+      } else if (hit === 'double') {
+        newBases.third = newBases.first;
+        newBases.second = true;
+        newBases.first = false;
+      } else if (hit === 'single') {
+        newBases.third = newBases.second;
+        newBases.second = newBases.first;
+        newBases.first = true;
+      }
+      
+      setBasesOccupied(newBases);
+      setScore(stateRef.current.score + points);
+    }
+  };
+
+  const handleMiss = () => {
+    setBallPhase('hidden');
+    setIsBallVisible(false);
+    registerHit('strike');
+  };
+
+  const handleSwing = () => {
+    if (gameState !== 'playing') return;
+    setIsSwingActive(true);
+    setTimeout(() => setIsSwingActive(false), 300);
+    
+    if (stateRef.current.ballPhase === 'flying' && stateRef.current.ballPositionY > 70) {
+      const distance = Math.abs(stateRef.current.markerPosition - 50);
+      const accuracy = 100 - (distance / 50) * 100;
+      
+      let hit = 'strike';
+      if (accuracy >= 84) hit = 'homerun';
+      else if (accuracy >= 75) hit = 'triple';
+      else if (accuracy >= 60) hit = 'double';
+      else if (accuracy >= 50) hit = 'single';
+      
+      registerHit(hit);
+      setBallPhase('hidden');
+      setIsBallVisible(false);
+    } else {
+      registerHit('strike');
+      if (stateRef.current.ballPhase === 'flying') {
+        setBallPhase('hidden');
+        setIsBallVisible(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const loop = (time) => {
+      if (!startTimeRef.current) startTimeRef.current = time;
+      
+      if (stateRef.current.gameState === 'playing') {
+        const elapsed = time - startTimeRef.current;
+        const markerCycle = (elapsed % 3000) / 1500;
+        const pos = markerCycle <= 1 ? markerCycle * 100 : (2 - markerCycle) * 100;
+        setMarkerPosition(pos);
+        
+        if (stateRef.current.ballPhase === 'hidden') {
+          if (time - lastPitchTimeRef.current > 2000 && Math.random() < 0.02) {
+            setBallPhase('flying');
+            pitchStartTimeRef.current = time;
+            setIsBallVisible(true);
+            lastPitchTimeRef.current = time;
+          }
+        } else if (stateRef.current.ballPhase === 'flying') {
+          const pitchElapsed = time - (pitchStartTimeRef.current || 0);
+          const pitchDuration = 1000;
+          if (pitchElapsed < pitchDuration) {
+            const progress = pitchElapsed / pitchDuration;
+            setBallPositionY(30 + progress * 70);
+            setBallSize(16 + progress * 48); // up to 64px
+            setBallPositionX(50 + Math.sin(progress * Math.PI) * 5); 
+          } else {
+            handleMiss();
+          }
+        }
+      } else {
+        startTimeRef.current = time - (markerPosition / 100) * 1500; // retain marker pos
+      }
+      
+      gameLoopRef.current = requestAnimationFrame(loop);
+    };
+
+    if (gameState === 'playing' || gameState === 'paused') {
+       gameLoopRef.current = requestAnimationFrame(loop);
+    }
+    
+    return () => {
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    };
+  }, [gameState]);
+
+  const handleStart = () => {
+    setGameState('playing');
+  };
+
+  const handlePause = () => {
+    setGameState(gameState === 'playing' ? 'paused' : 'playing');
+  };
+
+  const handleRestart = () => {
+    setScore(0);
+    setStrikes(0);
+    setOuts(0);
+    setBasesOccupied({ first: false, second: false, third: false });
+    setSummary({ homeruns: 0, triples: 0, doubles: 0, singles: 0, strikes: 0 });
+    setBallPhase('hidden');
+    setIsBallVisible(false);
+    setGameState('idle');
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen w-full bg-gray-950 text-white overflow-hidden select-none max-w-sm mx-auto md:max-w-md lg:max-w-lg relative" role="main" aria-label="야구 게임 메인 화면">
+      <GameHeader score={score} strikes={strikes} outs={outs} />
+      <GameField 
+        isPlaying={gameState === 'playing'} 
+        onSwing={handleSwing} 
+        ballPosition={{ x: ballPositionX, y: ballPositionY }}
+        hitResult={hitResult}
+        isHitBadgeVisible={isHitBadgeVisible}
+        isSwingActive={isSwingActive}
+        markerPosition={markerPosition}
+        ballSize={ballSize}
+        isBallVisible={isBallVisible}
+      />
+      <GameHUD 
+        gameState={gameState} 
+        onStart={handleStart} 
+        onPause={handlePause} 
+        basesOccupied={basesOccupied} 
+      />
+      {gameState === 'idle' && <IdleScreen onStart={handleStart} />}
+      <ResultOverlay 
+        isVisible={gameState === 'result'} 
+        finalScore={score} 
+        summary={summary} 
+        onRestart={handleRestart} 
+      />
+    </div>
+  );
+};
+
+
+    const App = () => {
+      return <GamePage />;
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

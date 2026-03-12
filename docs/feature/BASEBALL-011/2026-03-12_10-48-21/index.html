@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Baseball Player Stats Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- ATOMS ---
+    const AvatarImage = ({ src, alt, initials, size = 'md' }) => {
+      const [hasError, setHasError] = useState(false);
+      const sizeClasses = {
+        sm: 'w-10 h-10 text-sm',
+        md: 'w-16 h-16 text-lg',
+        lg: 'w-24 h-24 text-2xl',
+      };
+      const showFallback = !src || hasError;
+      return (
+        <div
+          role="img"
+          aria-label={alt || "Player profile photo"}
+          className={`flex items-center justify-center rounded-full overflow-hidden bg-gray-200 text-gray-600 font-bold shrink-0 ${sizeClasses[size]}`}
+        >
+          {showFallback ? (
+            <span>{initials}</span>
+          ) : (
+            <img
+              src={src}
+              alt={alt}
+              onError={() => setHasError(true)}
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+      );
+    };
+
+    const StatBadge = ({ label, value, variant = 'neutral' }) => {
+      const variantClasses = {
+        primary: 'bg-blue-100 text-blue-800',
+        success: 'bg-emerald-100 text-emerald-800',
+        warning: 'bg-amber-100 text-amber-800',
+        danger: 'bg-red-100 text-red-800',
+        neutral: 'bg-gray-100 text-gray-700',
+      };
+      return (
+        <div
+          role="status"
+          aria-label={`Stat badge for ${label}: ${value}`}
+          className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-lg gap-0.5 min-w-[64px] ${variantClasses[variant]}`}
+        >
+          <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wider">{label}</span>
+          <span className="text-sm font-bold">{value}</span>
+        </div>
+      );
+    };
+
+    const TrendIndicator = ({ direction, value }) => {
+      const variantClasses = {
+        up: 'text-emerald-600',
+        down: 'text-red-500',
+        neutral: 'text-gray-400',
+      };
+      const icon = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '−';
+      return (
+        <span
+          role="img"
+          aria-label={`Trend direction: ${direction}`}
+          className={`inline-flex items-center gap-1 text-sm font-medium ${variantClasses[direction]}`}
+        >
+          <span>{icon}</span>
+          {value && <span>{value}</span>}
+        </span>
+      );
+    };
+
+    const SectionHeading = ({ title, subtitle }) => (
+      <div className="flex flex-col gap-0.5">
+        <h2 aria-level={2} className="text-lg font-bold text-gray-900">{title}</h2>
+        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+      </div>
+    );
+
+    const GameResultBadge = ({ result, opponent, date }) => {
+      const variantClasses = {
+        W: 'bg-emerald-100 text-emerald-700',
+        L: 'bg-red-100 text-red-600',
+        ND: 'bg-gray-100 text-gray-500',
+      };
+      return (
+        <span
+          role="status"
+          aria-label={`Game result: ${result} vs ${opponent || 'Unknown'}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${variantClasses[result]}`}
+        >
+          {result}
+          {opponent && <span className="opacity-75">vs {opponent}</span>}
+          {date && <span className="opacity-75">{date}</span>}
+        </span>
+      );
+    };
+
+    const PerformanceChartBar = ({ value, maxValue, label, isActive, gameResult = 'ND', onClick, onMouseEnter, onMouseLeave }) => {
+      const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0;
+      const barStyles = {
+        W: 'bg-emerald-400 group-hover:bg-emerald-500',
+        L: 'bg-red-400 group-hover:bg-red-500',
+        ND: 'bg-gray-300 group-hover:bg-gray-400',
+      };
+      const activeStyle = isActive ? 'ring-2 ring-offset-1 ring-blue-500' : '';
+      return (
+        <div
+          role="img"
+          aria-label={`Game on ${label}: ${value} hits, result ${gameResult}`}
+          className="flex flex-col items-center justify-end gap-1 cursor-pointer group h-full w-8"
+          onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <div 
+            className={`w-8 rounded-t-md transition-all duration-300 ease-in-out ${barStyles[gameResult]} ${activeStyle}`}
+            style={{ height: `${heightPercent}%`, minHeight: '4px' }}
+          ></div>
+        </div>
+      );
+    };
+
+    const PerformanceChartTooltip = ({ visible, date, opponent, stats, style }) => {
+      if (!visible) return null;
+      return (
+        <div
+          role="tooltip"
+          aria-live="polite"
+          className="flex flex-col gap-1 absolute z-10 bg-gray-900 text-white text-xs rounded-xl px-3 py-2 shadow-xl pointer-events-none min-w-[120px] -translate-x-1/2 -translate-y-full mb-2"
+          style={style}
+        >
+          <div className="font-bold border-b border-gray-700 pb-1 mb-1">{date} vs {opponent}</div>
+          {Object.entries(stats).map(([key, value]) => (
+            <div key={key} className="flex justify-between">
+              <span className="capitalize">{key}</span>
+              <span className="font-semibold">{value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    // --- MOLECULES ---
+    const PlayerProfileCard = ({ playerName, teamName, position, jerseyNumber, avatarSrc, battingAverage, homeRuns, rbi, isLoading, hasError }) => {
+      if (isLoading) return <div className="animate-pulse bg-gray-200 rounded-2xl h-32 w-full"></div>;
+      if (hasError) return <div className="p-6 bg-red-50 text-red-500 rounded-2xl w-full text-center">Failed to load profile</div>;
+      const formatAvg = (avg) => avg.toFixed(3).replace(/^0+/, '');
+      return (
+        <div role="region" aria-label={`Player profile card for ${playerName}`} className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full">
+          <AvatarImage src={avatarSrc} alt={playerName} initials={playerName.charAt(0)} size="lg" />
+          <div className="flex flex-col gap-1 flex-1 text-center sm:text-left">
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{playerName}</h2>
+            <p className="text-sm text-gray-500 font-medium">#{jerseyNumber} · {position} · {teamName}</p>
+          </div>
+          <div className="flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-end">
+            <StatBadge label="AVG" value={formatAvg(battingAverage)} variant="primary" />
+            <StatBadge label="HR" value={homeRuns} variant="warning" />
+            <StatBadge label="RBI" value={rbi} variant="success" />
+          </div>
+        </div>
+      );
+    };
+
+    const StatsTableRow = ({ statLabel, value, rank, trend, delta, isHighlighted }) => (
+      <div role="row" aria-label={`${statLabel}: ${value}`} className={`grid grid-cols-[2fr_1fr_1fr_1fr] items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150 ${isHighlighted ? 'bg-yellow-50' : ''}`}>
+        <span className="text-sm font-medium text-gray-700">{statLabel}</span>
+        <span className="text-sm font-bold text-gray-900 text-right">{value}</span>
+        <div className="text-right flex justify-end">
+          {trend && <TrendIndicator direction={trend} value={delta} />}
+        </div>
+        <span className="text-xs text-gray-400 text-right">{rank ? `Rank #${rank}` : '-'}</span>
+      </div>
+    );
+
+    const DashboardHeader = ({ title, selectedSeason, seasons, onSeasonChange, onExport }) => (
+      <div role="banner" aria-label="Dashboard header" className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20 w-full">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">⚾</span>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <select aria-label="Select season" className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" value={selectedSeason} onChange={(e) => onSeasonChange?.(e.target.value)}>
+            {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button onClick={onExport} className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            Export
+          </button>
+        </div>
+      </div>
+    );
+
+    // --- ORGANISMS ---
+    const StatsTable = ({ stats, caption, isLoading }) => {
+      if (isLoading) return <div className="animate-pulse bg-gray-200 rounded-2xl h-64 w-full"></div>;
+      return (
+        <div role="table" aria-label="Player season statistics table" aria-caption={caption} className="flex flex-col w-full bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <SectionHeading title="Season Statistics" subtitle="2026 Regular Season" />
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-gray-50">
+            <span>Stat</span>
+            <span className="text-right">Value</span>
+            <span className="text-right">Trend</span>
+            <span className="text-right">Rank</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {stats.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">No statistics available.</div>
+            ) : (
+              stats.map((stat) => <StatsTableRow key={stat.statKey} {...stat} />)
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const PerformanceChart = ({ games, statKey = 'hits', title = "Recent Game Performance", maxGames = 10, isLoading, hasError }) => {
+      const [activeStat, setActiveStat] = useState(statKey);
+      const [hoveredIndex, setHoveredIndex] = useState(null);
+      const [selectedIndex, setSelectedIndex] = useState(null);
+      const chartRef = useRef(null);
+
+      if (isLoading) return <div className="animate-pulse bg-gray-200 rounded-2xl h-64 w-full"></div>;
+      if (hasError) return <div className="flex items-center justify-center h-48 text-red-500 text-sm">Failed to load chart</div>;
+      if (!games || games.length === 0) return (
+        <div className="flex flex-col gap-4 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full">
+          <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No recent game data available.</div>
+        </div>
+      );
+
+      const displayGames = games.slice(-maxGames);
+      const maxValue = Math.max(...displayGames.map(g => g[activeStat]), 1);
+      const statTabs = [
+        { key: 'hits', label: 'Hits' },
+        { key: 'homeRuns', label: 'HR' },
+        { key: 'rbi', label: 'RBI' }
+      ];
+
+      return (
+        <div role="img" aria-label="Bar chart of player's recent game performance" className="flex flex-col gap-4 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <SectionHeading title={title} subtitle={`Last ${maxGames} games`} />
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><span className="text-emerald-500">●</span> Win</span>
+              <span className="flex items-center gap-1"><span className="text-red-500">●</span> Loss</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {statTabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveStat(tab.key)}
+                className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${activeStat === tab.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div ref={chartRef} className="relative flex items-end justify-between gap-2 h-48 px-1 mt-4 border-b border-gray-200" onMouseLeave={() => setHoveredIndex(null)}>
+            {displayGames.map((game, i) => (
+              <PerformanceChartBar
+                key={i}
+                value={game[activeStat]}
+                maxValue={maxValue}
+                label={game.date}
+                gameResult={game.result}
+                isActive={selectedIndex === i}
+                onClick={() => setSelectedIndex(i === selectedIndex ? null : i)}
+                onMouseEnter={() => setHoveredIndex(i)}
+              />
+            ))}
+            {hoveredIndex !== null && (
+              <PerformanceChartTooltip
+                visible={true}
+                date={displayGames[hoveredIndex].date}
+                opponent={displayGames[hoveredIndex].opponent}
+                stats={{
+                  hits: displayGames[hoveredIndex].hits,
+                  'home runs': displayGames[hoveredIndex].homeRuns,
+                  rbi: displayGames[hoveredIndex].rbi,
+                  'at bats': displayGames[hoveredIndex].atBats
+                }}
+                style={{ left: `calc(${(hoveredIndex + 0.5) * (100 / displayGames.length)}% - 6px)`, top: '0' }}
+              />
+            )}
+          </div>
+          <div className="flex justify-between px-1 text-xs text-gray-400">
+            {displayGames.map((game, i) => (
+              <div key={i} className="w-8 text-center overflow-hidden text-ellipsis whitespace-nowrap">{game.date.split(' ')[0]}</div>
+            ))}
+          </div>
+          {selectedIndex !== null && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-blue-900 border border-blue-100">
+              <strong>Selected Game:</strong> {displayGames[selectedIndex].date} vs {displayGames[selectedIndex].opponent} - 
+              Result: {displayGames[selectedIndex].result} - 
+              Hits: {displayGames[selectedIndex].hits}, HR: {displayGames[selectedIndex].homeRuns}, RBI: {displayGames[selectedIndex].rbi}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- TEMPLATES ---
+    const PlayerStatsDashboard = ({ playerId, season, isLoading, hasError, onSeasonChange, playerData, statsData = [], gamesData = [] }) => {
+      if (hasError) {
+        return (
+          <div className="flex flex-col min-h-screen bg-gray-50">
+            <DashboardHeader title="Baseball Stats" selectedSeason={season} seasons={['2026', '2025', '2024']} />
+            <div className="flex flex-col items-center justify-center gap-4 text-center py-24 text-gray-500">
+              <p className="text-xl">Error loading dashboard data.</p>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div role="main" aria-label="Baseball player statistics dashboard" className="flex flex-col min-h-screen bg-gray-50">
+          <DashboardHeader title="Baseball Stats" selectedSeason={season} seasons={['2026', '2025', '2024']} onSeasonChange={onSeasonChange} />
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="mb-6 w-full">
+              <PlayerProfileCard 
+                playerName={playerData?.name || "Loading..."}
+                teamName={playerData?.team || "Loading..."}
+                position={playerData?.position || "-"}
+                jerseyNumber={playerData?.jerseyNumber || 0}
+                battingAverage={playerData?.avg || 0}
+                homeRuns={playerData?.hr || 0}
+                rbi={playerData?.rbi || 0}
+                isLoading={isLoading}
+              />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <StatsTable stats={statsData} isLoading={isLoading} />
+              <PerformanceChart games={gamesData} isLoading={isLoading} />
+            </div>
+          </main>
+        </div>
+      );
+    };
+
+    // --- PAGES ---
+    const MOCK_PLAYER = {
+      name: "Aaron Judge",
+      team: "New York Yankees",
+      position: "OF",
+      jerseyNumber: 99,
+      avg: 0.322,
+      hr: 58,
+      rbi: 144
+    };
+
+    const MOCK_STATS = [
+      { statLabel: "Batting Average", statKey: "AVG", value: ".322", rank: 1, trend: "up", delta: "+.002" },
+      { statLabel: "Home Runs", statKey: "HR", value: 58, rank: 1, trend: "up", delta: "+2", isHighlighted: true },
+      { statLabel: "Runs Batted In", statKey: "RBI", value: 144, rank: 1, trend: "up", delta: "+4" },
+      { statLabel: "On-Base Percentage", statKey: "OBP", value: ".458", rank: 1, trend: "neutral" },
+      { statLabel: "Slugging Percentage", statKey: "SLG", value: ".701", rank: 1, trend: "down", delta: "-.005" },
+    ];
+
+    const MOCK_GAMES = Array.from({ length: 10 }).map((_, i) => ({
+      date: `Oct ${10 + i}`,
+      opponent: ["BOS", "TOR", "BAL", "TB"][i % 4],
+      result: i % 3 === 0 ? 'L' : 'W',
+      hits.floor(Math.random() * 4),
+      atBats: 4,
+      rbi.floor(Math.random() * 3),
+      homeRuns.floor(Math.random() * 2)
+    }));
+
+    const PlayerStatsDashboardPage = ({ routeParams }) => {
+      const [isLoading, setIsLoading] = useState(true);
+      const [season, setSeason] = useState(routeParams.season || '2026');
+
+      useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }, [season, routeParams.playerId]);
+
+      return (
+        <div role="document" aria-label="Baseball player stats dashboard page" lang="en" className="min-h-screen w-full bg-gray-50">
+          <PlayerStatsDashboard
+            playerId={routeParams.playerId}
+            season={season}
+            isLoading={isLoading}
+            onSeasonChange={setSeason}
+            playerData={MOCK_PLAYER}
+            statsData={MOCK_STATS}
+            gamesData={MOCK_GAMES}
+          />
+        </div>
+      );
+    };
+
+    const App = () => {
+      return <PlayerStatsDashboardPage routeParams={{ playerId: 'judge-99', season: '2026' }} />;
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
