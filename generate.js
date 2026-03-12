@@ -1,68 +1,68 @@
+const fs = require('fs');
+const path = require('path');
 
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>웹 기반 야구 게임</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    body { margin: 0; background-color: #000; display: flex; justify-content: center; }
-    #root { width: 100%; max-width: 500px; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" data-presets="react,typescript">
-    const { useState, useEffect, useRef } = React;
+const dirs = [
+  'src/components/atoms',
+  'src/components/molecules',
+  'src/components/organisms',
+  'src/components/templates',
+  'src/components/pages'
+];
 
+dirs.forEach(d => fs.mkdirSync(d, { recursive: true }));
 
-interface StrikeIndicatorProps {
+const files = {};
+
+files['src/components/atoms/StrikeIndicator.tsx'] = `
+import React from 'react';
+
+export interface StrikeIndicatorProps {
   active: number;
   total: number;
 }
 
-const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({ active, total }) => {
+export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({ active, total }) => {
   return (
-    <div className="flex items-center gap-1.5" aria-label={`스트라이크 ${active}/${total}`}>
+    <div className="flex items-center gap-1.5" aria-label={\`스트라이크 \${active}/\${total}\`}>
       <span className="text-xs font-semibold text-red-400 mr-1">S</span>
       {Array.from({ length: total }).map((_, i) => (
         <span
           key={i}
-          className={`w-3 h-3 rounded-full ${i < active ? 'bg-red-500' : 'bg-gray-600'}`}
+          className={\`w-3 h-3 rounded-full \${i < active ? 'bg-red-500' : 'bg-gray-600'}\`}
         />
       ))}
     </div>
   );
 };
+`;
 
+files['src/components/atoms/OutIndicator.tsx'] = `
+import React from 'react';
 
-
-interface OutIndicatorProps {
+export interface OutIndicatorProps {
   active: number;
   total: number;
 }
 
-const OutIndicator: React.FC<OutIndicatorProps> = ({ active, total }) => {
+export const OutIndicator: React.FC<OutIndicatorProps> = ({ active, total }) => {
   return (
-    <div className="flex items-center gap-1.5" aria-label={`아웃 ${active}/${total}`}>
+    <div className="flex items-center gap-1.5" aria-label={\`아웃 \${active}/\${total}\`}>
       <span className="text-xs font-semibold text-orange-400 mr-1">O</span>
       {Array.from({ length: total }).map((_, i) => (
         <span
           key={i}
-          className={`w-3 h-3 rounded-full ${i < active ? 'bg-orange-500' : 'bg-gray-600'}`}
+          className={\`w-3 h-3 rounded-full \${i < active ? 'bg-orange-500' : 'bg-gray-600'}\`}
         />
       ))}
     </div>
   );
 };
+`;
 
+files['src/components/atoms/FieldBackground.tsx'] = `
+import React from 'react';
 
-
-const FieldBackground: React.FC = () => {
+export const FieldBackground: React.FC = () => {
   return (
     <div className="absolute inset-0 bg-gradient-to-b from-sky-900 via-green-900 to-green-950" aria-hidden="true">
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-48 border-2 border-white/10 rotate-45 origin-bottom" />
@@ -70,17 +70,19 @@ const FieldBackground: React.FC = () => {
     </div>
   );
 };
+`;
 
+files['src/components/atoms/Ball.tsx'] = `
+import React from 'react';
 
-
-interface BallProps {
+export interface BallProps {
   size: number;
   positionX: number;
   positionY: number;
   isVisible: boolean;
 }
 
-const Ball: React.FC<BallProps> = ({ size, positionX, positionY, isVisible }) => {
+export const Ball: React.FC<BallProps> = ({ size, positionX, positionY, isVisible }) => {
   if (!isVisible) return null;
   return (
     <div
@@ -88,8 +90,8 @@ const Ball: React.FC<BallProps> = ({ size, positionX, positionY, isVisible }) =>
       style={{
         width: size,
         height: size,
-        left: `${positionX}%`,
-        top: `${positionY}%`,
+        left: \`\${positionX}%\`,
+        top: \`\${positionY}%\`,
         transform: 'translate(-50%, -50%)',
         transition: 'all 100ms linear'
       }}
@@ -99,10 +101,12 @@ const Ball: React.FC<BallProps> = ({ size, positionX, positionY, isVisible }) =>
     </div>
   );
 };
+`;
 
+files['src/components/atoms/BattingZone.tsx'] = `
+import React from 'react';
 
-
-const BattingZone: React.FC = () => {
+export const BattingZone: React.FC = () => {
   return (
     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-10 pointer-events-none" aria-hidden="true">
       <div 
@@ -112,15 +116,17 @@ const BattingZone: React.FC = () => {
     </div>
   );
 };
+`;
 
+files['src/components/atoms/HitResultBadge.tsx'] = `
+import React from 'react';
 
-
-interface HitResultBadgeProps {
+export interface HitResultBadgeProps {
   result: 'homerun' | 'triple' | 'double' | 'single' | 'strike' | null;
   isVisible: boolean;
 }
 
-const HitResultBadge: React.FC<HitResultBadgeProps> = ({ result, isVisible }) => {
+export const HitResultBadge: React.FC<HitResultBadgeProps> = ({ result, isVisible }) => {
   if (!isVisible || !result) return null;
 
   const variants = {
@@ -154,14 +160,16 @@ const HitResultBadge: React.FC<HitResultBadgeProps> = ({ result, isVisible }) =>
     </div>
   );
 };
+`;
 
+files['src/components/atoms/SwingEffect.tsx'] = `
+import React from 'react';
 
-
-interface SwingEffectProps {
+export interface SwingEffectProps {
   isActive: boolean;
 }
 
-const SwingEffect: React.FC<SwingEffectProps> = ({ isActive }) => {
+export const SwingEffect: React.FC<SwingEffectProps> = ({ isActive }) => {
   return (
     <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-40 h-40 pointer-events-none z-10" aria-hidden="true">
       <div 
@@ -171,15 +179,17 @@ const SwingEffect: React.FC<SwingEffectProps> = ({ isActive }) => {
     </div>
   );
 };
+`;
 
+files['src/components/atoms/StartPauseButton.tsx'] = `
+import React from 'react';
 
-
-interface StartPauseButtonProps {
+export interface StartPauseButtonProps {
   gameState: 'idle' | 'playing' | 'paused' | 'result';
   onClick: () => void;
 }
 
-const StartPauseButton: React.FC<StartPauseButtonProps> = ({ gameState, onClick }) => {
+export const StartPauseButton: React.FC<StartPauseButtonProps> = ({ gameState, onClick }) => {
   const icon = gameState === 'playing' ? '⏸' : '▶';
   return (
     <button
@@ -191,14 +201,16 @@ const StartPauseButton: React.FC<StartPauseButtonProps> = ({ gameState, onClick 
     </button>
   );
 };
+`;
 
+files['src/components/atoms/ResultTitle.tsx'] = `
+import React from 'react';
 
-
-interface ResultTitleProps {
+export interface ResultTitleProps {
   message: string;
 }
 
-const ResultTitle: React.FC<ResultTitleProps> = ({ message }) => {
+export const ResultTitle: React.FC<ResultTitleProps> = ({ message }) => {
   return (
     <div className="text-center">
       <h2 className="text-3xl font-black text-yellow-400 tracking-tight" role="heading" aria-level={2}>
@@ -207,14 +219,16 @@ const ResultTitle: React.FC<ResultTitleProps> = ({ message }) => {
     </div>
   );
 };
+`;
 
+files['src/components/atoms/RestartButton.tsx'] = `
+import React from 'react';
 
-
-interface RestartButtonProps {
+export interface RestartButtonProps {
   onClick: () => void;
 }
 
-const RestartButton: React.FC<RestartButtonProps> = ({ onClick }) => {
+export const RestartButton: React.FC<RestartButtonProps> = ({ onClick }) => {
   return (
     <button
       onClick={onClick}
@@ -225,14 +239,16 @@ const RestartButton: React.FC<RestartButtonProps> = ({ onClick }) => {
     </button>
   );
 };
+`;
 
+files['src/components/molecules/ScoreDisplay.tsx'] = `
+import React from 'react';
 
-
-interface ScoreDisplayProps {
+export interface ScoreDisplayProps {
   score: number;
 }
 
-const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
+export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
   return (
     <div className="flex flex-col items-start gap-0.5" role="status" aria-label="현재 점수" aria-live="polite">
       <span className="text-xs font-semibold uppercase tracking-widest text-yellow-400">SCORE</span>
@@ -240,17 +256,21 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => {
     </div>
   );
 };
+`;
 
+files['src/components/molecules/CountBoard.tsx'] = `
+import React from 'react';
+import { StrikeIndicator } from '../atoms/StrikeIndicator';
+import { OutIndicator } from '../atoms/OutIndicator';
 
-
-interface CountBoardProps {
+export interface CountBoardProps {
   strikes: number;
   maxStrikes?: number;
   outs: number;
   maxOuts?: number;
 }
 
-const CountBoard: React.FC<CountBoardProps> = ({ strikes, maxStrikes = 3, outs, maxOuts = 3 }) => {
+export const CountBoard: React.FC<CountBoardProps> = ({ strikes, maxStrikes = 3, outs, maxOuts = 3 }) => {
   return (
     <div className="flex flex-col items-end gap-1" role="group" aria-label="스트라이크 및 아웃 현황">
       <StrikeIndicator active={strikes} total={maxStrikes} />
@@ -258,18 +278,20 @@ const CountBoard: React.FC<CountBoardProps> = ({ strikes, maxStrikes = 3, outs, 
     </div>
   );
 };
+`;
 
+files['src/components/molecules/TimingBar.tsx'] = `
+import React from 'react';
 
-
-interface TimingBarProps {
+export interface TimingBarProps {
   markerPosition: number;
   isActive: boolean;
 }
 
-const TimingBar: React.FC<TimingBarProps> = ({ markerPosition, isActive }) => {
+export const TimingBar: React.FC<TimingBarProps> = ({ markerPosition, isActive }) => {
   return (
     <div 
-      className={`absolute bottom-24 left-4 right-4 h-6 rounded-full bg-gray-800/80 overflow-hidden border border-gray-600 ${!isActive ? 'opacity-50' : ''}`}
+      className={\`absolute bottom-24 left-4 right-4 h-6 rounded-full bg-gray-800/80 overflow-hidden border border-gray-600 \${!isActive ? 'opacity-50' : ''}\`}
       role="progressbar" aria-label="타이밍 게이지" aria-valuemin={0} aria-valuemax={100} aria-valuenow={markerPosition}
     >
       <div className="absolute left-[30%] w-[20%] h-full bg-green-500/40" />
@@ -277,19 +299,21 @@ const TimingBar: React.FC<TimingBarProps> = ({ markerPosition, isActive }) => {
       <div className="absolute left-[50%] w-[20%] h-full bg-green-500/40" />
       <div 
         className="absolute top-0 h-full w-1.5 rounded-full bg-white shadow-md shadow-white/60 transition-none"
-        style={{ left: `${markerPosition}%`, transform: 'translateX(-50%)' }}
+        style={{ left: \`\${markerPosition}%\`, transform: 'translateX(-50%)' }}
       />
     </div>
   );
 };
+`;
 
+files['src/components/molecules/DiamondBaseMap.tsx'] = `
+import React from 'react';
 
-
-interface DiamondBaseMapProps {
+export interface DiamondBaseMapProps {
   basesOccupied: { first: boolean; second: boolean; third: boolean };
 }
 
-const DiamondBaseMap: React.FC<DiamondBaseMapProps> = ({ basesOccupied }) => {
+export const DiamondBaseMap: React.FC<DiamondBaseMapProps> = ({ basesOccupied }) => {
   return (
     <div className="relative w-16 h-16" role="img" aria-label="베이스 점유 현황 다이아몬드">
       <div 
@@ -308,14 +332,16 @@ const DiamondBaseMap: React.FC<DiamondBaseMapProps> = ({ basesOccupied }) => {
     </div>
   );
 };
+`;
 
+files['src/components/molecules/FinalScoreDisplay.tsx'] = `
+import React from 'react';
 
-
-interface FinalScoreDisplayProps {
+export interface FinalScoreDisplayProps {
   score: number;
 }
 
-const FinalScoreDisplay: React.FC<FinalScoreDisplayProps> = ({ score }) => {
+export const FinalScoreDisplay: React.FC<FinalScoreDisplayProps> = ({ score }) => {
   return (
     <div className="flex flex-col items-center gap-1" role="status" aria-label="최종 점수">
       <span className="text-sm font-semibold uppercase tracking-widest text-gray-400">FINAL SCORE</span>
@@ -325,14 +351,16 @@ const FinalScoreDisplay: React.FC<FinalScoreDisplayProps> = ({ score }) => {
     </div>
   );
 };
+`;
 
+files['src/components/molecules/HitSummaryTable.tsx'] = `
+import React from 'react';
 
-
-interface HitSummaryTableProps {
+export interface HitSummaryTableProps {
   summary: { homeruns: number; triples: number; doubles: number; singles: number; strikes: number };
 }
 
-const HitSummaryTable: React.FC<HitSummaryTableProps> = ({ summary }) => {
+export const HitSummaryTable: React.FC<HitSummaryTableProps> = ({ summary }) => {
   const items = [
     { label: 'HR', count: summary.homeruns },
     { label: '3B', count: summary.triples },
@@ -352,16 +380,20 @@ const HitSummaryTable: React.FC<HitSummaryTableProps> = ({ summary }) => {
     </div>
   );
 };
+`;
 
+files['src/components/organisms/GameHeader.tsx'] = `
+import React from 'react';
+import { ScoreDisplay } from '../molecules/ScoreDisplay';
+import { CountBoard } from '../molecules/CountBoard';
 
-
-interface GameHeaderProps {
+export interface GameHeaderProps {
   score: number;
   strikes: number;
   outs: number;
 }
 
-const GameHeader: React.FC<GameHeaderProps> = ({ score, strikes, outs }) => {
+export const GameHeader: React.FC<GameHeaderProps> = ({ score, strikes, outs }) => {
   return (
     <header className="flex items-center justify-between w-full px-4 py-3 bg-gray-900 border-b border-gray-700 z-10" role="banner" aria-label="게임 상태 헤더">
       <ScoreDisplay score={score} />
@@ -369,10 +401,18 @@ const GameHeader: React.FC<GameHeaderProps> = ({ score, strikes, outs }) => {
     </header>
   );
 };
+`;
 
+files['src/components/organisms/GameField.tsx'] = `
+import React from 'react';
+import { FieldBackground } from '../atoms/FieldBackground';
+import { Ball } from '../atoms/Ball';
+import { TimingBar } from '../molecules/TimingBar';
+import { BattingZone } from '../atoms/BattingZone';
+import { HitResultBadge } from '../atoms/HitResultBadge';
+import { SwingEffect } from '../atoms/SwingEffect';
 
-
-interface GameFieldProps {
+export interface GameFieldProps {
   isPlaying: boolean;
   onSwing: () => void;
   ballPosition?: { x: number; y: number };
@@ -384,7 +424,7 @@ interface GameFieldProps {
   isBallVisible: boolean;
 }
 
-const GameField: React.FC<GameFieldProps> = ({
+export const GameField: React.FC<GameFieldProps> = ({
   isPlaying, onSwing, ballPosition, hitResult, isHitBadgeVisible, isSwingActive, markerPosition, ballSize, isBallVisible
 }) => {
   return (
@@ -404,17 +444,21 @@ const GameField: React.FC<GameFieldProps> = ({
     </div>
   );
 };
+`;
 
+files['src/components/organisms/GameHUD.tsx'] = `
+import React from 'react';
+import { DiamondBaseMap } from '../molecules/DiamondBaseMap';
+import { StartPauseButton } from '../atoms/StartPauseButton';
 
-
-interface GameHUDProps {
+export interface GameHUDProps {
   gameState: 'idle' | 'playing' | 'paused' | 'result';
   onStart: () => void;
   onPause: () => void;
   basesOccupied: { first: boolean; second: boolean; third: boolean };
 }
 
-const GameHUD: React.FC<GameHUDProps> = ({ gameState, onStart, onPause, basesOccupied }) => {
+export const GameHUD: React.FC<GameHUDProps> = ({ gameState, onStart, onPause, basesOccupied }) => {
   const handleClick = () => {
     if (gameState === 'idle') onStart();
     else onPause();
@@ -427,17 +471,23 @@ const GameHUD: React.FC<GameHUDProps> = ({ gameState, onStart, onPause, basesOcc
     </div>
   );
 };
+`;
 
+files['src/components/organisms/ResultOverlay.tsx'] = `
+import React from 'react';
+import { ResultTitle } from '../atoms/ResultTitle';
+import { FinalScoreDisplay } from '../molecules/FinalScoreDisplay';
+import { HitSummaryTable } from '../molecules/HitSummaryTable';
+import { RestartButton } from '../atoms/RestartButton';
 
-
-interface ResultOverlayProps {
+export interface ResultOverlayProps {
   isVisible: boolean;
   finalScore: number;
   summary: { homeruns: number; triples: number; doubles: number; singles: number; strikes: number };
   onRestart: () => void;
 }
 
-const ResultOverlay: React.FC<ResultOverlayProps> = ({ isVisible, finalScore, summary, onRestart }) => {
+export const ResultOverlay: React.FC<ResultOverlayProps> = ({ isVisible, finalScore, summary, onRestart }) => {
   if (!isVisible) return null;
   
   const message = finalScore > 20 ? '대박이다!' : finalScore > 10 ? '게임 종료!' : '연습이 필요해!';
@@ -451,14 +501,16 @@ const ResultOverlay: React.FC<ResultOverlayProps> = ({ isVisible, finalScore, su
     </div>
   );
 };
+`;
 
+files['src/components/templates/IdleScreen.tsx'] = `
+import React from 'react';
 
-
-interface IdleScreenProps {
+export interface IdleScreenProps {
   onStart: () => void;
 }
 
-const IdleScreen: React.FC<IdleScreenProps> = ({ onStart }) => {
+export const IdleScreen: React.FC<IdleScreenProps> = ({ onStart }) => {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 bg-gray-950/90 backdrop-blur-sm z-40 px-8" role="region" aria-label="게임 시작 화면">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -485,14 +537,21 @@ const IdleScreen: React.FC<IdleScreenProps> = ({ onStart }) => {
     </div>
   );
 };
+`;
 
+files['src/components/pages/GamePage.tsx'] = `
+import React, { useState, useEffect, useRef } from 'react';
+import { GameHeader } from '../organisms/GameHeader';
+import { GameField } from '../organisms/GameField';
+import { GameHUD } from '../organisms/GameHUD';
+import { ResultOverlay } from '../organisms/ResultOverlay';
+import { IdleScreen } from '../templates/IdleScreen';
 
-
-interface GamePageProps {
+export interface GamePageProps {
   gameState?: 'idle' | 'playing' | 'result' | 'paused';
 }
 
-const GamePage: React.FC<GamePageProps> = ({ gameState: initialGameState = 'idle' }) => {
+export const GamePage: React.FC<GamePageProps> = ({ gameState: initialGameState = 'idle' }) => {
   const [gameState, setGameState] = useState<'idle'|'playing'|'paused'|'result'>(initialGameState);
   const [score, setScore] = useState(0);
   const [strikes, setStrikes] = useState(0);
@@ -527,7 +586,7 @@ const GamePage: React.FC<GamePageProps> = ({ gameState: initialGameState = 'idle
     setIsHitBadgeVisible(true);
     setTimeout(() => setIsHitBadgeVisible(false), 1200);
     
-    setSummary(s => ({ ...s, [`${hit}s`]: s[hit as keyof typeof s] + 1 }));
+    setSummary(s => ({ ...s, [\`\${hit}s\`]: s[hit as keyof typeof s] + 1 }));
     
     if (hit === 'strike') {
       const newStrikes = stateRef.current.strikes + 1;
@@ -697,8 +756,44 @@ const GamePage: React.FC<GamePageProps> = ({ gameState: initialGameState = 'idle
     </div>
   );
 };
+`;
 
+for (const [filepath, content] of Object.entries(files)) {
+  fs.writeFileSync(filepath, content);
+}
 
+// Generate preview.html
+let previewHtml = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>웹 기반 야구 게임</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; background-color: #000; display: flex; justify-content: center; }
+    #root { width: 100%; max-width: 500px; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+`;
+
+// Extract component functions and remove imports/exports
+for (const filepath of Object.keys(files)) {
+  let content = files[filepath];
+  content = content.replace(/import\s+.*?from\s+['"].*?['"];?\n/g, '');
+  content = content.replace(/export\s+(interface|const)/g, '$1');
+  previewHtml += content + '\n';
+}
+
+previewHtml += `
     const App = () => {
       return <GamePage />;
     };
@@ -708,3 +803,8 @@ const GamePage: React.FC<GamePageProps> = ({ gameState: initialGameState = 'idle
   </script>
 </body>
 </html>
+`;
+
+fs.writeFileSync('preview.html', previewHtml);
+console.log('All files generated successfully.');
+

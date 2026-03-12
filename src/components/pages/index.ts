@@ -1,1 +1,1 @@
-export * from './PlayerStatsDashboardPage';
+export * from "./GamePage";

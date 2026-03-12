@@ -1,2 +1,4 @@
-export * from './StatsTable';
-export * from './PerformanceChart';
+export * from "./ResultOverlay";
+export * from "./GameHeader";
+export * from "./GameField";
+export * from "./GameHUD";
