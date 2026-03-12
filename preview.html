@@ -21,14 +21,9 @@ const { useState, useEffect, useCallback, useRef } = React;
 
 // --- atoms/PitchBall.tsx ---
 
-interface PitchBallProps {
-  speedMs: number;
-  isActive: boolean;
-  hitQuality?: 'perfect' | 'good' | 'miss' | null;
-}
 
-const PitchBall: React.FC<PitchBallProps> = ({ speedMs, isActive, hitQuality }) => {
-  const [style, setStyle] = useState<React.CSSProperties>({});
+const PitchBall = ({ speedMs, isActive, hitQuality }) => {
+  const [style, setStyle] = useState({});
   
   useEffect(() => {
     if (isActive) {
@@ -76,12 +71,8 @@ const PitchBall: React.FC<PitchBallProps> = ({ speedMs, isActive, hitQuality }) 
 
 // --- atoms/SwingResultLabel.tsx ---
 
-interface SwingResultLabelProps {
-  result: 'homerun' | 'triple' | 'double' | 'single' | 'strike';
-  visible: boolean;
-}
 
-const SwingResultLabel: React.FC<SwingResultLabelProps> = ({ result, visible }) => {
+const SwingResultLabel = ({ result, visible }) => {
   const [show, setShow] = useState(visible);
 
   useEffect(() => {
@@ -149,12 +140,8 @@ const SwingResultLabel: React.FC<SwingResultLabelProps> = ({ result, visible }) 
 
 // --- atoms/StrikeIndicator.tsx ---
 
-interface StrikeIndicatorProps {
-  used: boolean;
-  index: number;
-}
 
-const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({ used, index }) => {
+const StrikeIndicator = ({ used, index }) => {
   return (
     <div
       role="img"
@@ -170,12 +157,8 @@ const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({ used, index }) => {
 
 // --- atoms/ScoreBadge.tsx ---
 
-interface ScoreBadgeProps {
-  score: number;
-  animated?: boolean;
-}
 
-const ScoreBadge: React.FC<ScoreBadgeProps> = ({ score, animated = false }) => {
+const ScoreBadge = ({ score, animated = false }) => {
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -205,12 +188,8 @@ const ScoreBadge: React.FC<ScoreBadgeProps> = ({ score, animated = false }) => {
 
 // --- atoms/CountdownTimer.tsx ---
 
-interface CountdownTimerProps {
-  count: number | string;
-  visible: boolean;
-}
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ count, visible }) => {
+const CountdownTimer = ({ count, visible }) => {
   const [key, setKey] = useState(0);
 
   useEffect(() => {
@@ -244,15 +223,11 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ count, visible }) => {
 
 // --- atoms/TapButton.tsx ---
 
-interface TapButtonProps {
-  disabled?: boolean;
-  onTap: () => void;
-}
 
-const TapButton: React.FC<TapButtonProps> = ({ disabled = false, onTap }) => {
+const TapButton = ({ disabled = false, onTap }) => {
   const [pressed, setPressed] = useState(false);
 
-  const handlePointerDown = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = (e) => {
     if (disabled) return;
     setPressed(true);
     onTap();
@@ -263,7 +238,7 @@ const TapButton: React.FC<TapButtonProps> = ({ disabled = false, onTap }) => {
     setPressed(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e) => {
     if (disabled) return;
     if (e.key === ' ' || e.key === 'Enter') {
       setPressed(true);
@@ -271,7 +246,7 @@ const TapButton: React.FC<TapButtonProps> = ({ disabled = false, onTap }) => {
     }
   };
 
-  const handleKeyUp = (e: React.KeyboardEvent) => {
+  const handleKeyUp = (e) => {
     if (disabled) return;
     if (e.key === ' ' || e.key === 'Enter') {
       setPressed(false);
@@ -313,19 +288,9 @@ const TapButton: React.FC<TapButtonProps> = ({ disabled = false, onTap }) => {
 
 // --- atoms/HitZoneBar.tsx ---
 
-interface WindowRange {
-  start: number;
-  end: number;
-}
 
-interface HitZoneBarProps {
-  ballProgress: number; // 0.0 ~ 1.0
-  perfectWindow: WindowRange;
-  goodWindow: WindowRange;
-  visible?: boolean;
-}
 
-const HitZoneBar: React.FC<HitZoneBarProps> = ({ 
+const HitZoneBar = ({ 
   ballProgress, 
   perfectWindow, 
   goodWindow, 
@@ -333,7 +298,7 @@ const HitZoneBar: React.FC<HitZoneBarProps> = ({
 }) => {
   if (!visible) return null;
 
-  const getStyle = (window: WindowRange) => {
+  const getStyle = (window) => {
     const left = `${window.start * 100}%`;
     const width = `${(window.end - window.start) * 100}%`;
     return { left, width };
@@ -371,12 +336,8 @@ const HitZoneBar: React.FC<HitZoneBarProps> = ({
 
 // --- molecules/StrikeCounter.tsx ---
 
-interface StrikeCounterProps {
-  usedCount: number;
-  maxCount?: number;
-}
 
-const StrikeCounter: React.FC<StrikeCounterProps> = ({ usedCount, maxCount = 3 }) => {
+const StrikeCounter = ({ usedCount, maxCount = 3 }) => {
   const isLastChance = usedCount === maxCount - 1;
 
   return (
@@ -399,13 +360,8 @@ const StrikeCounter: React.FC<StrikeCounterProps> = ({ usedCount, maxCount = 3 }
 
 // --- molecules/ScoreDisplay.tsx ---
 
-interface ScoreDisplayProps {
-  score: number;
-  bestScore?: number;
-  scoreUpdated?: boolean;
-}
 
-const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, bestScore, scoreUpdated = false }) => {
+const ScoreDisplay = ({ score, bestScore, scoreUpdated = false }) => {
   return (
     <div 
       className="flex flex-col items-center gap-1"
@@ -424,13 +380,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, bestScore, scoreUpda
 
 // --- molecules/ResultOverlay.tsx ---
 
-interface ResultOverlayProps {
-  result: 'homerun' | 'triple' | 'double' | 'single' | 'strike';
-  timing?: 'perfect' | 'good' | 'early' | 'late' | null;
-  visible: boolean;
-}
 
-const ResultOverlay: React.FC<ResultOverlayProps> = ({ result, timing, visible }) => {
+const ResultOverlay = ({ result, timing, visible }) => {
   if (!visible) return null;
 
   const timingText = timing === 'perfect' ? '🎯 Perfect Timing!' :
@@ -459,16 +410,8 @@ const ResultOverlay: React.FC<ResultOverlayProps> = ({ result, timing, visible }
 
 // --- molecules/PitchLane.tsx ---
 
-interface PitchLaneProps {
-  ballSpeedMs: number;
-  isActive: boolean;
-  ballProgress: number;
-  hitQuality?: 'perfect' | 'good' | 'miss' | null;
-  perfectWindow: WindowRange;
-  goodWindow: WindowRange;
-}
 
-const PitchLane: React.FC<PitchLaneProps> = ({
+const PitchLane = ({
   ballSpeedMs,
   isActive,
   ballProgress,
@@ -515,15 +458,8 @@ const PitchLane: React.FC<PitchLaneProps> = ({
 
 // --- molecules/GameControlBar.tsx ---
 
-interface GameControlBarProps {
-  isPaused: boolean;
-  isMuted: boolean;
-  onPause: () => void;
-  onRestart: () => void;
-  onMute: () => void;
-}
 
-const GameControlBar: React.FC<GameControlBarProps> = ({
+const GameControlBar = ({
   isPaused,
   isMuted,
   onPause,
@@ -563,19 +499,8 @@ const GameControlBar: React.FC<GameControlBarProps> = ({
 
 // --- organisms/BattingField.tsx ---
 
-interface BattingFieldProps {
-  gamePhase: 'idle' | 'countdown' | 'pitching' | 'swinging' | 'showing-result' | 'paused' | 'game-over';
-  ballSpeedMs: number;
-  ballProgress: number;
-  lastResult?: 'homerun' | 'triple' | 'double' | 'single' | 'strike' | null;
-  lastTiming?: 'perfect' | 'good' | 'early' | 'late' | null;
-  perfectWindow: WindowRange;
-  goodWindow: WindowRange;
-  onSwing: () => void;
-  countdownValue?: string | number;
-}
 
-const BattingField: React.FC<BattingFieldProps> = ({
+const BattingField = ({
   gamePhase,
   ballSpeedMs,
   ballProgress,
@@ -627,19 +552,8 @@ const BattingField: React.FC<BattingFieldProps> = ({
 
 // --- organisms/GameHUD.tsx ---
 
-interface GameHUDProps {
-  score: number;
-  bestScore?: number;
-  strikeCount: number;
-  scoreUpdated?: boolean;
-  isPaused: boolean;
-  isMuted: boolean;
-  onPause: () => void;
-  onRestart: () => void;
-  onMute: () => void;
-}
 
-const GameHUD: React.FC<GameHUDProps> = ({
+const GameHUD = ({
   score,
   bestScore,
   strikeCount,
@@ -673,24 +587,9 @@ const GameHUD: React.FC<GameHUDProps> = ({
 
 // --- organisms/GameOverPanel.tsx ---
 
-interface HitSummary {
-  homerun: number;
-  triple: number;
-  double: number;
-  single: number;
-  strike: number;
-}
 
-interface GameOverPanelProps {
-  finalScore: number;
-  isNewRecord?: boolean;
-  hitSummary: HitSummary;
-  onRestart: () => void;
-  onHome?: () => void;
-  visible: boolean;
-}
 
-const GameOverPanel: React.FC<GameOverPanelProps> = ({
+const GameOverPanel = ({
   finalScore,
   isNewRecord = false,
   hitSummary,
@@ -767,14 +666,10 @@ const GameOverPanel: React.FC<GameOverPanelProps> = ({
 
 // --- organisms/ReadyCountdown.tsx ---
 
-interface ReadyCountdownProps {
-  onCountdownEnd: () => void;
-  visible: boolean;
-}
 
-const ReadyCountdown: React.FC<ReadyCountdownProps> = ({ onCountdownEnd, visible }) => {
-  const [count, setCount] = useState<number | string>(3);
-  const [phase, setPhase] = useState<'showing-guide' | 'counting-down'>('showing-guide');
+const ReadyCountdown = ({ onCountdownEnd, visible }) => {
+  const [count, setCount] = useState(3);
+  const [phase, setPhase] = useState('showing-guide');
 
   useEffect(() => {
     if (visible) {
@@ -849,13 +744,8 @@ const ReadyCountdown: React.FC<ReadyCountdownProps> = ({ onCountdownEnd, visible
 
 // --- templates/GameTemplate.tsx ---
 
-interface GameTemplateProps {
-  hud: ReactNode;
-  field: ReactNode;
-  overlay?: ReactNode;
-}
 
-const GameTemplate: React.FC<GameTemplateProps> = ({ hud, field, overlay }) => {
+const GameTemplate = ({ hud, field, overlay }) => {
   return (
     <div 
       className="relative flex flex-col w-full h-full min-h-[100dvh] max-w-sm mx-auto bg-gray-950 overflow-hidden"
@@ -884,14 +774,7 @@ const GameTemplate: React.FC<GameTemplateProps> = ({ hud, field, overlay }) => {
 
 // --- pages/BaseballGamePage.tsx ---
 
-type GamePhase = 'idle' | 'countdown' | 'pitching' | 'swinging' | 'showing-result' | 'paused' | 'game-over';
-type HitQuality = 'perfect' | 'good' | 'miss' | null;
-type TimingFeedback = 'perfect' | 'good' | 'early' | 'late' | null;
-type HitResult = 'homerun' | 'triple' | 'double' | 'single' | 'strike';
 
-interface BaseballGamePageProps {
-  difficulty?: 'easy' | 'normal' | 'hard';
-}
 
 const TIMING_WINDOWS = {
   easy:   { perfect: { start: 0.42, end: 0.58 }, good: { start: 0.34, end: 0.66 } },
@@ -899,15 +782,15 @@ const TIMING_WINDOWS = {
   hard:   { perfect: { start: 0.48, end: 0.52 }, good: { start: 0.43, end: 0.57 } },
 };
 
-const getPitchSpeed = (pitchCount: number) => {
+const getPitchSpeed = (pitchCount) => {
   if (pitchCount === 0) return 1400;
   if (pitchCount === 1) return 1200;
   if (pitchCount === 2) return 1000;
   return 850;
 };
 
-const BaseballGamePage: React.FC<BaseballGamePageProps> = ({ difficulty = 'normal' }) => {
-  const [phase, setPhase] = useState<GamePhase>('idle');
+const BaseballGamePage = ({ difficulty = 'normal' }) => {
+  const [phase, setPhase] = useState('idle');
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [strikeCount, setStrikeCount] = useState(0);
@@ -916,15 +799,15 @@ const BaseballGamePage: React.FC<BaseballGamePageProps> = ({ difficulty = 'norma
   const [isMuted, setIsMuted] = useState(false);
   const [scoreUpdated, setScoreUpdated] = useState(false);
   
-  const [lastResult, setLastResult] = useState<HitResult | null>(null);
-  const [lastTiming, setLastTiming] = useState<TimingFeedback>(null);
+  const [lastResult, setLastResult] = useState(null);
+  const [lastTiming, setLastTiming] = useState(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [hitSummary, setHitSummary] = useState({
     homerun: 0, triple: 0, double: 0, single: 0, strike: 0
   });
 
-  const timerRef = useRef<number | null>(null);
-  const pitchStartTimeRef = useRef<number>(0);
+  const timerRef = useRef(null);
+  const pitchStartTimeRef = useRef(0);
 
   const currentWindow = TIMING_WINDOWS[difficulty];
   const ballSpeedMs = getPitchSpeed(pitchCount);
@@ -963,8 +846,8 @@ const BaseballGamePage: React.FC<BaseballGamePageProps> = ({ difficulty = 'norma
 
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
-    let result: HitResult = 'strike';
-    let timing: TimingFeedback = null;
+    let result = 'strike';
+    let timing = null;
     let points = 0;
 
     if (!forceMiss) {
