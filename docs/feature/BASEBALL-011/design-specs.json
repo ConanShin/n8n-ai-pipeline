@@ -1,963 +1,1016 @@
 {
   "ticket": "BASEBALL-011",
-  "title": "야구 경기 스코어보드 컴포넌트",
-  "description": "야구 경기의 실시간 스코어보드를 표시하는 React 컴포넌트. 이닝별 점수, 팀 정보, 주요 타격 통계(H/E/BB)를 전통적인 다크 스타일로 제공하며, 현재 이닝 하이라이트와 경기 상태 배지를 포함한다.",
+  "title": "웹 기반 야구 타이밍 배팅 게임",
+  "description": "날아오는 공의 타이밍에 맞춰 화면을 탭/클릭해 배트를 휘두르는 리듬형 야구 게임. 결과는 홈런·3루타·2루타·1루타·스트라이크로 판정되고, 기회는 3번(아웃 3회)이다.",
   "atomicDesignOverview": {
     "atoms": [
-      "TeamAvatar",
-      "InningCell",
-      "StatCell",
-      "GameStatusBadge",
-      "TotalScoreCell",
-      "SectionLabel"
+      "PitchBall",
+      "SwingResultLabel",
+      "StrikeIndicator",
+      "ScoreBadge",
+      "CountdownTimer",
+      "TapButton",
+      "HitZoneBar"
     ],
     "molecules": [
-      "TeamInfoRow",
-      "InningScoreRow",
-      "StatSummaryRow",
-      "InningHeaderRow",
-      "ScoreboardLegend"
+      "StrikeCounter",
+      "ScoreDisplay",
+      "ResultOverlay",
+      "PitchLane",
+      "GameControlBar"
     ],
     "organisms": [
-      "ScoreboardTable",
-      "ScoreboardHeader",
-      "ScoreboardFooter"
+      "BattingField",
+      "GameHUD",
+      "GameOverPanel",
+      "ReadyCountdown"
     ],
     "templates": [
-      "ScoreboardTemplate"
+      "GameTemplate"
     ],
     "pages": [
-      "ScoreboardPage"
+      "BaseballGamePage"
     ]
   },
   "components": [
     {
-      "name": "TeamAvatar",
+      "name": "PitchBall",
       "type": "atom",
-      "description": "팀 로고 이미지가 없을 때 이니셜(2자)을 원형 배경으로 표시하는 아바타. 팀 고유 색상을 배경으로 사용",
+      "description": "투수가 던진 공을 나타내는 원형 요소. 화면 우측(또는 상단)에서 타자 위치까지 CSS 애니메이션으로 이동. 공의 속도와 타이밍 윈도우 크기를 prop으로 받아 애니메이션 duration을 조절함",
       "props": {
-        "initials": {
-          "type": "string",
+        "speedMs": {
+          "type": "number",
           "required": true,
-          "description": "팀 이니셜 (예: 'KT', 'LG', 'SS')"
+          "description": "공이 타자에게 도달하기까지 걸리는 시간(ms). 예: 1200 — 구속에 따라 달라짐"
         },
-        "teamColor": {
-          "type": "string",
-          "required": false,
-          "default": "#374151",
-          "description": "팀 배경 색상 (HEX 또는 Tailwind 색상 토큰)"
-        },
-        "size": {
-          "type": "string",
-          "required": false,
-          "default": "md",
-          "description": "'sm' | 'md' | 'lg' — 아바타 크기"
-        },
-        "logoSrc": {
-          "type": "string",
-          "required": false,
-          "description": "팀 로고 이미지 URL. 제공 시 이미지 우선 렌더링, 없으면 이니셜 폴백"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center justify-center rounded-full font-extrabold tracking-tight select-none shrink-0 overflow-hidden"
-      },
-      "sizeMap": {
-        "sm": "w-7 h-7 text-xs",
-        "md": "w-10 h-10 text-sm",
-        "lg": "w-14 h-14 text-xl"
-      },
-      "states": ["default", "image-loaded", "image-fallback"],
-      "accessibility": {
-        "role": "img",
-        "ariaLabel": "{initials} 팀 로고"
-      }
-    },
-    {
-      "name": "InningCell",
-      "type": "atom",
-      "description": "스코어보드 테이블에서 이닝 한 칸의 점수를 표시하는 셀. 현재 이닝이면 노란색 하이라이트, 아직 플레이되지 않은 이닝이면 대시(-) 표시",
-      "props": {
-        "score": {
-          "type": "number | null",
-          "required": true,
-          "description": "해당 이닝 점수. null이면 미진행 이닝으로 '-' 표시"
-        },
-        "isCurrent": {
+        "isActive": {
           "type": "boolean",
           "required": true,
-          "description": "현재 진행 중인 이닝 여부. true이면 노란색 하이라이트 적용"
+          "description": "공이 현재 날아오는 중인지 여부. false면 숨김 처리"
         },
-        "isHeader": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "이닝 번호 헤더 셀 여부 (숫자만 표시, 점수 스타일 없음)"
-        },
-        "inningNumber": {
-          "type": "number",
-          "required": false,
-          "description": "이닝 번호 (헤더 셀일 때 사용, 1~12)"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center justify-center w-8 h-9 sm:w-10 sm:h-10 text-sm font-bold tabular-nums transition-colors duration-200 shrink-0"
-      },
-      "variants": {
-        "default":      { "tailwind": "bg-transparent text-gray-200" },
-        "current":      { "tailwind": "bg-yellow-400 text-gray-900 rounded font-extrabold ring-2 ring-yellow-300 shadow-yellow-400/50 shadow-md" },
-        "empty":        { "tailwind": "bg-transparent text-gray-600" },
-        "header":       { "tailwind": "bg-transparent text-gray-500 text-xs font-semibold uppercase" }
-      },
-      "states": ["default", "current", "empty", "header"],
-      "accessibility": {
-        "role": "cell",
-        "ariaLabel": "{isHeader ? `${inningNumber}회` : isCurrent ? `현재 ${inningNumber}회 ${score ?? '진행 중'}점` : `${inningNumber}회 ${score ?? '미진행'}점`}"
-      }
-    },
-    {
-      "name": "StatCell",
-      "type": "atom",
-      "description": "H(안타), E(에러), BB(볼넷) 등 경기 통계 수치를 표시하는 셀. 헤더 라벨 버전과 수치 버전 두 가지 변형",
-      "props": {
-        "value": {
-          "type": "number | string",
-          "required": true,
-          "description": "표시할 통계 값 또는 라벨 문자열 (예: 8, 'H', 'E', 'BB')"
-        },
-        "statType": {
+        "hitQuality": {
           "type": "string",
           "required": false,
-          "description": "'H' | 'E' | 'BB' | 'R' — 통계 유형 (색상 강조 분기용)"
-        },
-        "isHeader": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "헤더 라벨 셀 여부"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center justify-center w-10 h-9 sm:w-12 sm:h-10 text-sm font-bold tabular-nums shrink-0"
-      },
-      "variants": {
-        "header":  { "tailwind": "text-gray-400 text-xs font-semibold uppercase tracking-wider" },
-        "H":       { "tailwind": "text-green-400 font-extrabold" },
-        "E":       { "tailwind": "text-red-400 font-extrabold" },
-        "BB":      { "tailwind": "text-blue-400 font-extrabold" },
-        "R":       { "tailwind": "text-yellow-300 font-extrabold" },
-        "default": { "tailwind": "text-gray-200" }
-      },
-      "states": ["default", "header"],
-      "accessibility": {
-        "role": "cell",
-        "ariaLabel": "{isHeader ? statType + ' 통계 항목' : statType + ' ' + value}"
-      }
-    },
-    {
-      "name": "GameStatusBadge",
-      "type": "atom",
-      "description": "경기 상태(경기 전/진행 중/종료)를 표시하는 배지. 경기 종료 시 'FINAL' 배지로 강조 표시",
-      "props": {
-        "status": {
-          "type": "string",
-          "required": true,
-          "description": "'scheduled' | 'live' | 'final'"
-        },
-        "currentInning": {
-          "type": "number",
-          "required": false,
-          "description": "현재 이닝 번호 (status가 'live'일 때 표시)"
-        },
-        "inningHalf": {
-          "type": "string",
-          "required": false,
-          "description": "'top' | 'bottom' — 이닝 초/말 (live 상태에서 사용)"
-        }
-      },
-      "layout": {
-        "display": "inline-flex",
-        "tailwind": "items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-widest uppercase select-none"
-      },
-      "variants": {
-        "scheduled": {
-          "tailwind": "bg-gray-700 text-gray-300 border border-gray-600",
-          "label": "경기 전",
-          "icon": "🕐"
-        },
-        "live": {
-          "tailwind": "bg-red-600 text-white shadow-red-500/50 shadow-md animate-pulse border border-red-400",
-          "label": "{inningHalf === 'top' ? '▲' : '▼'} {currentInning}회",
-          "icon": "🔴"
-        },
-        "final": {
-          "tailwind": "bg-yellow-400 text-gray-900 shadow-yellow-400/40 shadow-md border border-yellow-300",
-          "label": "FINAL",
-          "icon": "✅"
-        }
-      },
-      "states": ["scheduled", "live", "final"],
-      "accessibility": {
-        "role": "status",
-        "ariaLive": "polite",
-        "ariaLabel": "경기 상태: {status === 'final' ? '경기 종료' : status === 'live' ? `${currentInning}회 ${inningHalf === 'top' ? '초' : '말'} 진행 중` : '경기 전'}"
-      }
-    },
-    {
-      "name": "TotalScoreCell",
-      "type": "atom",
-      "description": "팀별 최종 합산 점수를 크게 강조 표시하는 셀. 이닝 셀과 구분되는 왼쪽 경계선과 더 큰 폰트 사용. 점수가 높은 팀은 추가 강조",
-      "props": {
-        "score": {
-          "type": "number | null",
-          "required": true,
-          "description": "합산 총 득점. null이면 '-' 표시"
-        },
-        "isWinning": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "현재 점수 앞선 팀 여부. true이면 노란색 강조"
-        },
-        "isHeader": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "'R' 헤더 라벨 셀 여부"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center justify-center w-12 h-9 sm:w-14 sm:h-10 text-lg font-black tabular-nums border-l border-gray-600 shrink-0"
-      },
-      "variants": {
-        "default":  { "tailwind": "text-white" },
-        "winning":  { "tailwind": "text-yellow-300" },
-        "header":   { "tailwind": "text-gray-400 text-xs font-semibold uppercase tracking-wider text-sm" }
-      },
-      "states": ["default", "winning", "header"],
-      "accessibility": {
-        "role": "cell",
-        "ariaLabel": "{isHeader ? '총 득점' : `합계 ${score ?? 0}점${isWinning ? ' (리드 중)' : ''}`}"
-      }
-    },
-    {
-      "name": "SectionLabel",
-      "type": "atom",
-      "description": "스코어보드 상단 또는 섹션 구분을 위한 텍스트 라벨. 경기 날짜, 구장명 등에 사용",
-      "props": {
-        "text": {
-          "type": "string",
-          "required": true,
-          "description": "표시할 텍스트"
-        },
-        "variant": {
-          "type": "string",
-          "required": false,
-          "default": "default",
-          "description": "'default' | 'muted' | 'highlight'"
-        }
-      },
-      "layout": {
-        "display": "inline-block",
-        "tailwind": "text-xs tracking-wider select-none"
-      },
-      "variants": {
-        "default":   { "tailwind": "text-gray-400" },
-        "muted":     { "tailwind": "text-gray-600" },
-        "highlight": { "tailwind": "text-yellow-400 font-semibold" }
-      },
-      "states": ["default"],
-      "accessibility": {
-        "role": "none"
-      }
-    },
-    {
-      "name": "TeamInfoRow",
-      "type": "molecule",
-      "description": "팀 아바타 + 팀 이름을 수평으로 배치한 행. 스코어보드 테이블의 좌측 고정 영역에 위치",
-      "props": {
-        "teamName": {
-          "type": "string",
-          "required": true,
-          "description": "팀 전체 이름 (예: '키움 히어로즈')"
-        },
-        "teamShortName": {
-          "type": "string",
-          "required": true,
-          "description": "팀 단축 이름 (예: '키움') — 모바일에서 표시"
-        },
-        "initials": {
-          "type": "string",
-          "required": true,
-          "description": "아바타용 이니셜 (예: 'KW')"
-        },
-        "teamColor": {
-          "type": "string",
-          "required": false,
-          "description": "팀 색상 (HEX)"
-        },
-        "logoSrc": {
-          "type": "string",
-          "required": false,
-          "description": "팀 로고 이미지 URL"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[160px] px-2 sm:px-3 h-9 sm:h-10 shrink-0"
-      },
-      "children": [
-        {
-          "name": "TeamAvatar",
-          "type": "atom",
-          "sizeProp": "sm"
-        },
-        {
-          "element": "div",
-          "tailwind": "flex flex-col min-w-0",
-          "children": [
-            {
-              "element": "span",
-              "tailwind": "hidden sm:block text-sm font-bold text-gray-100 truncate",
-              "content": "{teamName}"
-            },
-            {
-              "element": "span",
-              "tailwind": "sm:hidden text-sm font-bold text-gray-100 truncate",
-              "content": "{teamShortName}"
-            }
-          ]
-        }
-      ],
-      "states": ["default"],
-      "accessibility": {
-        "role": "rowheader",
-        "ariaLabel": "{teamName}"
-      }
-    },
-    {
-      "name": "InningHeaderRow",
-      "type": "molecule",
-      "description": "이닝 번호(1~12), R, H, E, BB 헤더를 가로로 나열하는 스코어보드 컬럼 헤더 행",
-      "props": {
-        "totalInnings": {
-          "type": "number",
-          "required": false,
-          "default": 9,
-          "description": "표시할 총 이닝 수 (기본 9, 연장 시 최대 12)"
-        },
-        "currentInning": {
-          "type": "number",
-          "required": true,
-          "description": "현재 진행 이닝 번호 (해당 헤더 셀 하이라이트용)"
-        },
-        "showExtended": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "연장전(10~12회) 헤더 표시 여부"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center sticky top-0 z-10 bg-gray-900 border-b border-gray-700"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "min-w-[120px] sm:min-w-[160px] h-8 px-2 sm:px-3 flex items-center",
-          "children": [
-            {
-              "element": "span",
-              "tailwind": "text-xs text-gray-500 uppercase tracking-wider font-semibold",
-              "content": "팀"
-            }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center",
-          "description": "이닝 헤더 셀 반복 (1 ~ totalInnings)",
-          "children": [
-            {
-              "name": "InningCell",
-              "type": "atom",
-              "isHeaderProp": true,
-              "repeat": "{totalInnings}",
-              "description": "이닝 번호 헤더 셀. 현재 이닝 번호와 동일하면 isCurrent=true"
-            }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center border-l border-gray-600",
-          "children": [
-            { "name": "TotalScoreCell", "type": "atom", "isHeaderProp": true, "valueProp": "R" },
-            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "H" },
-            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "E" },
-            { "name": "StatCell",       "type": "atom", "isHeaderProp": true, "valueProp": "BB" }
-          ]
-        }
-      ],
-      "states": ["default", "extended"],
-      "accessibility": {
-        "role": "row",
-        "ariaLabel": "스코어보드 컬럼 헤더"
-      }
-    },
-    {
-      "name": "InningScoreRow",
-      "type": "molecule",
-      "description": "한 팀의 이닝별 점수 전체 행. TeamInfoRow + InningCell 반복 + TotalScoreCell + StatCell 3개(H/E/BB)로 구성",
-      "props": {
-        "teamName": {
-          "type": "string",
-          "required": true,
-          "description": "팀 이름"
-        },
-        "teamShortName": {
-          "type": "string",
-          "required": true,
-          "description": "팀 단축 이름"
-        },
-        "initials": {
-          "type": "string",
-          "required": true,
-          "description": "팀 이니셜"
-        },
-        "teamColor": {
-          "type": "string",
-          "required": false,
-          "description": "팀 색상"
-        },
-        "logoSrc": {
-          "type": "string",
-          "required": false,
-          "description": "팀 로고 URL"
-        },
-        "scores": {
-          "type": "array",
-          "required": true,
-          "description": "이닝별 점수 배열 (최대 12개, null은 미진행). 예: [0, 1, 0, 2, null, null, null, null, null]"
-        },
-        "totalRuns": {
-          "type": "number",
-          "required": true,
-          "description": "총 득점 합계"
-        },
-        "hits": {
-          "type": "number",
-          "required": true,
-          "description": "안타 수 (H)"
-        },
-        "errors": {
-          "type": "number",
-          "required": true,
-          "description": "에러 수 (E)"
-        },
-        "walks": {
-          "type": "number",
-          "required": true,
-          "description": "볼넷 수 (BB)"
-        },
-        "currentInning": {
-          "type": "number",
-          "required": true,
-          "description": "현재 진행 이닝 (해당 셀 하이라이트)"
-        },
-        "isWinning": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "현재 리드 중 여부"
-        },
-        "totalInnings": {
-          "type": "number",
-          "required": false,
-          "default": 9,
-          "description": "스코어보드 표시 이닝 수"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center border-b border-gray-800 hover:bg-gray-800/30 transition-colors duration-150"
-      },
-      "children": [
-        { "name": "TeamInfoRow", "type": "molecule" },
-        {
-          "element": "div",
-          "tailwind": "flex items-center",
-          "description": "이닝 점수 셀 반복 (scores 배열 순회)",
-          "children": [
-            {
-              "name": "InningCell",
-              "type": "atom",
-              "repeat": "{totalInnings}",
-              "description": "각 이닝의 점수 셀. 현재 이닝이면 isCurrent=true"
-            }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center",
-          "children": [
-            { "name": "TotalScoreCell", "type": "atom", "description": "총 득점 R" },
-            { "name": "StatCell",       "type": "atom", "statTypeProp": "H", "description": "안타 수" },
-            { "name": "StatCell",       "type": "atom", "statTypeProp": "E", "description": "에러 수" },
-            { "name": "StatCell",       "type": "atom", "statTypeProp": "BB", "description": "볼넷 수" }
-          ]
-        }
-      ],
-      "states": ["default", "winning", "losing"],
-      "accessibility": {
-        "role": "row",
-        "ariaLabel": "{teamName} 점수 행"
-      }
-    },
-    {
-      "name": "StatSummaryRow",
-      "type": "molecule",
-      "description": "스코어보드 하단의 통계 범례/설명 행. H(안타), E(에러), BB(볼넷) 항목별 설명을 색상 점과 라벨로 나열",
-      "props": {
-        "compact": {
-          "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "모바일 축약 표시 여부"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center gap-4 sm:gap-6 px-3 py-2"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "flex items-center gap-1.5",
-          "children": [
-            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-green-400 shrink-0" },
-            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "H 안타" }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center gap-1.5",
-          "children": [
-            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-red-400 shrink-0" },
-            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "E 에러" }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center gap-1.5",
-          "children": [
-            { "element": "span", "tailwind": "w-2 h-2 rounded-full bg-blue-400 shrink-0" },
-            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "BB 볼넷" }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center gap-1.5 ml-auto",
-          "children": [
-            { "element": "span", "tailwind": "w-3 h-3 rounded-sm bg-yellow-400 shrink-0" },
-            { "element": "span", "tailwind": "text-xs text-gray-400", "content": "현재 이닝" }
-          ]
-        }
-      ],
-      "states": ["default"],
-      "accessibility": {
-        "role": "note",
-        "ariaLabel": "스코어보드 범례: H 안타, E 에러, BB 볼넷, 노란색 셀은 현재 이닝"
-      }
-    },
-    {
-      "name": "ScoreboardLegend",
-      "type": "molecule",
-      "description": "스코어보드 하단 범례 섹션. StatSummaryRow 포함 및 업데이트 시각 표시",
-      "props": {
-        "lastUpdated": {
-          "type": "string",
-          "required": false,
-          "description": "마지막 데이터 업데이트 시각 (예: '14:35 기준')"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "items-center justify-between flex-wrap gap-2 px-3 py-2 border-t border-gray-800 bg-gray-900/50"
-      },
-      "children": [
-        { "name": "StatSummaryRow", "type": "molecule" },
-        {
-          "element": "span",
-          "tailwind": "text-xs text-gray-600 ml-auto",
-          "content": "{lastUpdated}",
-          "visibleWhen": "!!lastUpdated"
-        }
-      ],
-      "states": ["default"],
-      "accessibility": {
-        "role": "complementary",
-        "ariaLabel": "스코어보드 부가 정보"
-      }
-    },
-    {
-      "name": "ScoreboardHeader",
-      "type": "organism",
-      "description": "스코어보드 상단 헤더 영역. 경기 날짜/구장/상태 배지와 두 팀 간 현재 점수 요약(빅 스코어)를 표시",
-      "props": {
-        "homeTeam": {
-          "type": "object",
-          "required": true,
-          "description": "{ name, shortName, initials, teamColor, logoSrc, totalRuns }"
-        },
-        "awayTeam": {
-          "type": "object",
-          "required": true,
-          "description": "{ name, shortName, initials, teamColor, logoSrc, totalRuns }"
-        },
-        "gameStatus": {
-          "type": "string",
-          "required": true,
-          "description": "'scheduled' | 'live' | 'final'"
-        },
-        "currentInning": {
-          "type": "number",
-          "required": false,
-          "description": "현재 이닝 번호"
-        },
-        "inningHalf": {
-          "type": "string",
-          "required": false,
-          "description": "'top' | 'bottom'"
-        },
-        "venue": {
-          "type": "string",
-          "required": false,
-          "description": "경기장 이름 (예: '잠실야구장')"
-        },
-        "gameDate": {
-          "type": "string",
-          "required": false,
-          "description": "경기 날짜 (예: '2026.03.12')"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex-col gap-3 sm:gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 bg-gray-900 border-b border-gray-800"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "flex items-center justify-between",
-          "children": [
-            {
-              "element": "div",
-              "tailwind": "flex flex-col gap-0.5",
-              "children": [
-                {
-                  "element": "span",
-                  "tailwind": "text-xs text-gray-500",
-                  "content": "{gameDate}"
-                },
-                {
-                  "element": "span",
-                  "tailwind": "text-xs text-gray-600",
-                  "content": "{venue}"
-                }
-              ]
-            },
-            { "name": "GameStatusBadge", "type": "atom" }
-          ]
-        },
-        {
-          "element": "div",
-          "tailwind": "flex items-center justify-between gap-4 py-2",
-          "description": "빅 스코어 — 어웨이 팀 vs 홈 팀 중앙 점수 표시",
-          "children": [
-            {
-              "element": "div",
-              "tailwind": "flex flex-col items-center gap-1.5 flex-1",
-              "description": "어웨이 팀 정보",
-              "children": [
-                { "name": "TeamAvatar", "type": "atom", "sizeProp": "lg" },
-                { "element": "span", "tailwind": "text-sm font-bold text-gray-200 text-center", "content": "{awayTeam.shortName}" },
-                { "element": "span", "tailwind": "text-4xl sm:text-5xl font-black tabular-nums text-white", "content": "{awayTeam.totalRuns ?? '-'}" }
-              ]
-            },
-            {
-              "element": "div",
-              "tailwind": "flex flex-col items-center gap-1 px-2",
-              "children": [
-                { "element": "span", "tailwind": "text-2xl font-black text-gray-600", "content": ":" },
-                { "element": "span", "tailwind": "text-xs text-gray-600 uppercase tracking-widest", "content": "VS" }
-              ]
-            },
-            {
-              "element": "div",
-              "tailwind": "flex flex-col items-center gap-1.5 flex-1",
-              "description": "홈 팀 정보",
-              "children": [
-                { "name": "TeamAvatar", "type": "atom", "sizeProp": "lg" },
-                { "element": "span", "tailwind": "text-sm font-bold text-gray-200 text-center", "content": "{homeTeam.shortName}" },
-                { "element": "span", "tailwind": "text-4xl sm:text-5xl font-black tabular-nums text-white", "content": "{homeTeam.totalRuns ?? '-'}" }
-              ]
-            }
-          ]
-        }
-      ],
-      "states": ["scheduled", "live", "final"],
-      "accessibility": {
-        "role": "banner",
-        "ariaLabel": "경기 헤더 — {awayTeam.name} vs {homeTeam.name} 현재 점수"
-      }
-    },
-    {
-      "name": "ScoreboardTable",
-      "type": "organism",
-      "description": "이닝별 점수 테이블 전체 영역. InningHeaderRow + InningScoreRow × 2팀으로 구성. 이닝 수가 많아지면 가로 스크롤 지원",
-      "props": {
-        "homeTeam": {
-          "type": "object",
-          "required": true,
-          "description": "홈 팀 데이터 { name, shortName, initials, teamColor, logoSrc, scores, totalRuns, hits, errors, walks }"
-        },
-        "awayTeam": {
-          "type": "object",
-          "required": true,
-          "description": "어웨이 팀 데이터 (동일 구조)"
-        },
-        "currentInning": {
-          "type": "number",
-          "required": true,
-          "description": "현재 진행 이닝 번호 (1~12)"
-        },
-        "gameStatus": {
-          "type": "string",
-          "required": true,
-          "description": "'scheduled' | 'live' | 'final'"
-        },
-        "totalInnings": {
-          "type": "number",
-          "required": false,
-          "default": 9,
-          "description": "표시할 총 이닝 수 (9 또는 12)"
+          "description": "'perfect' | 'good' | 'miss' | null — 판정 후 공 색상/효과 변경용"
         }
       },
       "layout": {
         "display": "block",
-        "tailwind": "w-full overflow-x-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700"
+        "tailwind": "absolute w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-xl pointer-events-none select-none flex items-center justify-center"
       },
-      "children": [
-        {
-          "element": "table",
-          "tailwind": "min-w-max w-full border-collapse",
-          "accessibility": { "role": "table", "ariaLabel": "이닝별 점수 테이블" },
-          "children": [
-            {
-              "element": "thead",
-              "children": [
-                { "name": "InningHeaderRow", "type": "molecule" }
-              ]
-            },
-            {
-              "element": "tbody",
-              "children": [
-                { "name": "InningScoreRow", "type": "molecule", "description": "어웨이 팀 행" },
-                { "name": "InningScoreRow", "type": "molecule", "description": "홈 팀 행" }
-              ]
-            }
-          ]
-        }
-      ],
-      "states": ["default", "loading", "empty"],
+      "variants": {
+        "default":  { "tailwind": "bg-white border-4 border-gray-200 shadow-white/30" },
+        "perfect":  { "tailwind": "bg-yellow-300 border-4 border-yellow-400 shadow-yellow-300/60 scale-125" },
+        "good":     { "tailwind": "bg-green-300 border-4 border-green-400 shadow-green-300/40" },
+        "miss":     { "tailwind": "bg-gray-400 border-4 border-gray-500 opacity-40" }
+      },
+      "animation": {
+        "keyframe": "translateX from right edge → bat contact point",
+        "duration": "{speedMs}ms",
+        "easing": "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        "onHit":   "scale-150 + opacity-0, 200ms ease-out",
+        "onMiss":  "continue translate past screen, opacity fade 300ms"
+      },
+      "states": ["idle", "flying", "hit-perfect", "hit-good", "missed"],
       "accessibility": {
-        "role": "region",
-        "ariaLabel": "이닝별 스코어보드 테이블"
+        "role": "img",
+        "ariaLabel": "날아오는 야구공",
+        "ariaHidden": "true"
       }
     },
     {
-      "name": "ScoreboardFooter",
-      "type": "organism",
-      "description": "스코어보드 하단 영역. 범례(ScoreboardLegend)와 경기 관련 부가 정보(중계 채널, 날씨 등)를 포함",
+      "name": "SwingResultLabel",
+      "type": "atom",
+      "description": "스윙 판정 결과를 화면 중앙에 크게 팝업으로 표시하는 텍스트 라벨. 홈런/안타/스트라이크 등 결과에 따라 색상·크기 변형. 표시 후 자동 페이드아웃",
       "props": {
-        "lastUpdated": {
+        "result": {
           "type": "string",
-          "required": false,
-          "description": "마지막 업데이트 시각"
+          "required": true,
+          "description": "'homerun' | 'triple' | 'double' | 'single' | 'strike'"
         },
-        "broadcastChannel": {
-          "type": "string",
-          "required": false,
-          "description": "중계 채널 이름 (예: 'MBC Sports')"
+        "visible": {
+          "type": "boolean",
+          "required": true,
+          "description": "라벨 표시 여부. false면 opacity-0 처리"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex-col gap-1 bg-gray-900 rounded-b-2xl overflow-hidden"
+        "tailwind": "absolute inset-0 items-center justify-center pointer-events-none z-30 select-none"
       },
-      "children": [
-        { "name": "ScoreboardLegend", "type": "molecule" },
-        {
-          "element": "div",
-          "tailwind": "flex items-center justify-between px-3 pb-3 gap-2",
-          "visibleWhen": "!!broadcastChannel",
-          "children": [
-            {
-              "element": "span",
-              "tailwind": "text-xs text-gray-600",
-              "content": "📺 {broadcastChannel} 중계"
-            }
-          ]
+      "variants": {
+        "homerun": {
+          "tailwind": "text-yellow-300 text-5xl sm:text-7xl font-black tracking-tight drop-shadow-[0_0_20px_rgba(253,224,71,0.9)]",
+          "label": "🏆 홈런!",
+          "animation": "scale-0 → scale-110 → scale-100, 250ms spring; fade-out 800ms"
+        },
+        "triple": {
+          "tailwind": "text-orange-400 text-4xl sm:text-6xl font-black tracking-tight drop-shadow-lg",
+          "label": "🔥 3루타!",
+          "animation": "scale-0 → scale-100, 200ms; fade-out 700ms"
+        },
+        "double": {
+          "tailwind": "text-green-400 text-4xl sm:text-5xl font-black tracking-tight drop-shadow-lg",
+          "label": "⚡ 2루타!",
+          "animation": "scale-0 → scale-100, 200ms; fade-out 700ms"
+        },
+        "single": {
+          "tailwind": "text-blue-300 text-3xl sm:text-4xl font-black tracking-tight drop-shadow",
+          "label": "✅ 1루타!",
+          "animation": "scale-0 → scale-100, 180ms; fade-out 600ms"
+        },
+        "strike": {
+          "tailwind": "text-red-400 text-3xl sm:text-4xl font-black tracking-tight drop-shadow",
+          "label": "✕ 스트라이크",
+          "animation": "shake-x 300ms; fade-out 500ms"
         }
-      ],
-      "states": ["default"],
+      },
+      "states": ["hidden", "homerun", "triple", "double", "single", "strike"],
       "accessibility": {
-        "role": "contentinfo",
-        "ariaLabel": "스코어보드 하단 정보"
+        "role": "alert",
+        "ariaLive": "assertive",
+        "ariaLabel": "스윙 판정: {result}"
       }
     },
     {
-      "name": "ScoreboardTemplate",
-      "type": "template",
-      "description": "스코어보드 전체 레이아웃 뼈대. ScoreboardHeader(상단) + ScoreboardTable(중앙) + ScoreboardFooter(하단)를 수직 배치. 카드 스타일 컨테이너로 감쌈",
+      "name": "StrikeIndicator",
+      "type": "atom",
+      "description": "개별 스트라이크(기회) 1개를 원형 아이콘으로 표시. 사용된 기회는 채워진 빨간 원, 남은 기회는 빈 회색 원으로 표시",
       "props": {
-        "header": {
-          "type": "ReactNode",
+        "used": {
+          "type": "boolean",
           "required": true,
-          "description": "ScoreboardHeader 슬롯"
+          "description": "해당 기회를 이미 사용했는지 여부"
         },
-        "table": {
-          "type": "ReactNode",
+        "index": {
+          "type": "number",
           "required": true,
-          "description": "ScoreboardTable 슬롯"
-        },
-        "footer": {
-          "type": "ReactNode",
+          "description": "기회 순번 (0, 1, 2)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 items-center justify-center transition-all duration-300"
+      },
+      "variants": {
+        "remaining": { "tailwind": "border-gray-600 bg-transparent" },
+        "used":      { "tailwind": "border-red-500 bg-red-500 shadow-red-500/50 shadow-md scale-110" }
+      },
+      "states": ["remaining", "used"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "{used ? '사용된 기회' : '남은 기회'} {index + 1}번째"
+      }
+    },
+    {
+      "name": "ScoreBadge",
+      "type": "atom",
+      "description": "현재 누적 점수를 크게 표시하는 배지. 점수 변경 시 scale 애니메이션으로 강조",
+      "props": {
+        "score": {
+          "type": "number",
           "required": true,
-          "description": "ScoreboardFooter 슬롯"
+          "description": "현재 누적 점수"
         },
-        "isLoading": {
+        "animated": {
           "type": "boolean",
           "required": false,
           "default": false,
-          "description": "데이터 로딩 중 여부. true이면 스켈레톤 오버레이 표시"
+          "description": "점수 변경 직후 팝 애니메이션 트리거"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex-col w-full max-w-3xl mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-800"
+        "tailwind": "flex-col items-center gap-0.5"
       },
       "children": [
-        { "slot": "header", "tailwind": "w-full flex-shrink-0" },
+        {
+          "element": "span",
+          "tailwind": "text-xs font-semibold uppercase tracking-widest text-gray-400",
+          "content": "SCORE"
+        },
+        {
+          "element": "span",
+          "tailwind": "text-4xl sm:text-5xl font-black tabular-nums text-white transition-transform duration-200",
+          "animatedClass": "scale-125 text-yellow-300",
+          "content": "{score}"
+        }
+      ],
+      "states": ["default", "updated"],
+      "accessibility": {
+        "role": "status",
+        "ariaLive": "polite",
+        "ariaLabel": "현재 점수 {score}점"
+      }
+    },
+    {
+      "name": "CountdownTimer",
+      "type": "atom",
+      "description": "게임 시작 전 3·2·1·GO! 카운트다운 숫자를 중앙에 크게 표시하는 타이머 원소. 각 숫자는 scale-in → scale-out 애니메이션으로 순차 표시",
+      "props": {
+        "count": {
+          "type": "number | string",
+          "required": true,
+          "description": "표시할 카운트 값. 예: 3, 2, 1, 'GO!'"
+        },
+        "visible": {
+          "type": "boolean",
+          "required": true,
+          "description": "현재 표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute inset-0 items-center justify-center z-40 pointer-events-none"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "text-8xl sm:text-9xl font-black text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.6)] select-none",
+          "animation": "scale-0 → scale-100 → scale-150 + opacity-0, 900ms ease-in-out",
+          "content": "{count}"
+        }
+      ],
+      "states": ["hidden", "counting", "go"],
+      "accessibility": {
+        "role": "timer",
+        "ariaLive": "assertive",
+        "ariaLabel": "게임 시작까지 {count}"
+      }
+    },
+    {
+      "name": "TapButton",
+      "type": "atom",
+      "description": "플레이어가 배트를 휘두르기 위해 탭/클릭하는 메인 인터랙션 버튼. 화면 하단 중앙에 위치하는 대형 원형 버튼. 누르는 순간 시각적 피드백 제공",
+      "props": {
+        "disabled": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "비활성화 여부 (게임 중이 아닐 때, 결과 표시 중 등)"
+        },
+        "onTap": {
+          "type": "function",
+          "required": true,
+          "description": "탭/클릭 이벤트 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative w-36 h-36 sm:w-44 sm:h-44 rounded-full items-center justify-center cursor-pointer select-none touch-none"
+      },
+      "variants": {
+        "default":  {
+          "tailwind": "bg-gradient-to-br from-amber-400 to-orange-500 shadow-2xl shadow-orange-500/50 border-4 border-amber-300 active:scale-95 transition-transform duration-75",
+          "innerLabel": { "tailwind": "text-white text-2xl sm:text-3xl font-black tracking-tight drop-shadow", "content": "⚾ HIT!" }
+        },
+        "pressed":  {
+          "tailwind": "scale-90 bg-gradient-to-br from-amber-300 to-orange-400 shadow-md shadow-orange-400/30",
+          "ripple": "absolute inset-0 rounded-full bg-white/30 animate-ping"
+        },
+        "disabled": {
+          "tailwind": "bg-gray-700 border-gray-600 opacity-50 cursor-not-allowed shadow-none"
+        }
+      },
+      "states": ["default", "pressed", "disabled"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "배트 휘두르기 — 탭하여 공을 치세요",
+        "ariaDisabled": "{disabled}"
+      }
+    },
+    {
+      "name": "HitZoneBar",
+      "type": "atom",
+      "description": "타이밍 판정 기준을 시각화하는 진행 바. 공의 위치에 따라 현재 판정 가능 구간을 색상 레이어로 표시. Perfect(노란색) / Good(초록색) / 판정 불가(회색) 구간을 겹쳐서 표시",
+      "props": {
+        "ballProgress": {
+          "type": "number",
+          "required": true,
+          "description": "공의 현재 이동 진행도 (0.0 ~ 1.0)"
+        },
+        "perfectWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start: number, end: number } — Perfect 판정 진행도 범위 (0~1)"
+        },
+        "goodWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start: number, end: number } — Good 판정 진행도 범위 (0~1)"
+        },
+        "visible": {
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "바 표시 여부 (연습 모드에서만 표시 등 설정 가능)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative w-full h-3 sm:h-4 rounded-full overflow-hidden bg-gray-800"
+      },
+      "children": [
         {
           "element": "div",
-          "tailwind": "relative",
+          "tailwind": "absolute h-full bg-green-500/40 rounded-full transition-all duration-75",
+          "description": "Good 구간 레이어 (너비/left는 goodWindow 기반 계산)"
+        },
+        {
+          "element": "div",
+          "tailwind": "absolute h-full bg-yellow-400/70 rounded-full transition-all duration-75",
+          "description": "Perfect 구간 레이어 (너비/left는 perfectWindow 기반 계산)"
+        },
+        {
+          "element": "div",
+          "tailwind": "absolute top-0 bottom-0 w-1 bg-white rounded-full shadow-white/80 shadow-md transition-all duration-75",
+          "description": "공 현재 위치 마커 (left는 ballProgress 기반 계산)"
+        }
+      ],
+      "states": ["idle", "flying", "hit", "missed"],
+      "accessibility": {
+        "role": "progressbar",
+        "ariaLabel": "공 타이밍 게이지",
+        "ariaValuenow": "{Math.round(ballProgress * 100)}",
+        "ariaValuemin": "0",
+        "ariaValuemax": "100"
+      }
+    },
+    {
+      "name": "StrikeCounter",
+      "type": "molecule",
+      "description": "현재 아웃/스트라이크 횟수를 StrikeIndicator 3개로 표시하는 기회 카운터. 제목 라벨 포함",
+      "props": {
+        "usedCount": {
+          "type": "number",
+          "required": true,
+          "description": "현재까지 사용한 스트라이크/아웃 횟수 (0~3)"
+        },
+        "maxCount": {
+          "type": "number",
+          "required": false,
+          "default": 3,
+          "description": "최대 기회 수 (기본 3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col items-center gap-1.5"
+      },
+      "children": [
+        {
+          "element": "span",
+          "tailwind": "text-xs font-semibold uppercase tracking-widest text-gray-400",
+          "content": "STRIKES"
+        },
+        {
+          "element": "div",
+          "tailwind": "flex items-center gap-2",
+          "description": "StrikeIndicator × 3",
           "children": [
-            { "slot": "table", "tailwind": "w-full" },
+            { "name": "StrikeIndicator", "type": "atom", "repeat": 3 }
+          ]
+        }
+      ],
+      "states": ["default", "last-chance", "game-over"],
+      "variants": {
+        "last-chance": {
+          "description": "usedCount === 2일 때 마지막 기회 경고",
+          "titleTailwind": "text-red-400 animate-pulse"
+        }
+      },
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "남은 기회 {maxCount - usedCount}번"
+      }
+    },
+    {
+      "name": "ScoreDisplay",
+      "type": "molecule",
+      "description": "점수(ScoreBadge) + 최고 기록 라벨을 묶은 점수 표시 영역",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "현재 누적 점수"
+        },
+        "bestScore": {
+          "type": "number",
+          "required": false,
+          "description": "이번 세션 최고 점수. 없으면 미표시"
+        },
+        "scoreUpdated": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "점수 갱신 직후 애니메이션 트리거"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col items-center gap-1"
+      },
+      "children": [
+        { "name": "ScoreBadge", "type": "atom" },
+        {
+          "element": "span",
+          "tailwind": "text-xs text-gray-600 tabular-nums",
+          "content": "BEST {bestScore}",
+          "visibleWhen": "bestScore !== undefined"
+        }
+      ],
+      "states": ["default", "updated", "new-record"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "점수 현황"
+      }
+    },
+    {
+      "name": "ResultOverlay",
+      "type": "molecule",
+      "description": "타이밍 판정 직후 화면 중앙에 잠깐 표시되는 결과 팝업. SwingResultLabel + 타이밍 품질 서브텍스트(Perfect! / Good / Too Early / Too Late) 조합",
+      "props": {
+        "result": {
+          "type": "string",
+          "required": true,
+          "description": "'homerun' | 'triple' | 'double' | 'single' | 'strike'"
+        },
+        "timing": {
+          "type": "string",
+          "required": false,
+          "description": "'perfect' | 'good' | 'early' | 'late' | null — 세부 타이밍 피드백"
+        },
+        "visible": {
+          "type": "boolean",
+          "required": true,
+          "description": "표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute inset-0 flex-col items-center justify-center gap-3 z-30 pointer-events-none"
+      },
+      "children": [
+        { "name": "SwingResultLabel", "type": "atom" },
+        {
+          "element": "span",
+          "tailwind": "text-base sm:text-lg font-bold text-white/80 tracking-wide drop-shadow",
+          "content": "{timing === 'perfect' ? '🎯 Perfect Timing!' : timing === 'good' ? '👍 Good!' : timing === 'early' ? '⬅ Too Early' : timing === 'late' ? '➡ Too Late' : ''}",
+          "visibleWhen": "!!timing && result === 'strike'"
+        }
+      ],
+      "states": ["hidden", "show-hit", "show-strike"],
+      "accessibility": {
+        "role": "alert",
+        "ariaLive": "assertive",
+        "ariaLabel": "판정 결과: {result}"
+      }
+    },
+    {
+      "name": "PitchLane",
+      "type": "molecule",
+      "description": "공이 날아오는 경로 레인. 배경에 궤적 가이드라인을 반투명으로 표시하고, PitchBall이 그 위를 가로질러 이동. HitZoneBar가 하단에 위치",
+      "props": {
+        "ballSpeedMs": {
+          "type": "number",
+          "required": true,
+          "description": "현재 공 속도(ms)"
+        },
+        "isActive": {
+          "type": "boolean",
+          "required": true,
+          "description": "투구 진행 중 여부"
+        },
+        "ballProgress": {
+          "type": "number",
+          "required": true,
+          "description": "공 이동 진행도 (0.0 ~ 1.0)"
+        },
+        "hitQuality": {
+          "type": "string",
+          "required": false,
+          "description": "판정 결과: 'perfect' | 'good' | 'miss' | null"
+        },
+        "perfectWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start, end } Perfect 판정 구간"
+        },
+        "goodWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start, end } Good 판정 구간"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative w-full flex-1 flex flex-col overflow-hidden"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "absolute inset-0 flex items-center",
+          "description": "투구 경로 배경 가이드라인",
+          "children": [
             {
               "element": "div",
-              "description": "로딩 스켈레톤 오버레이",
-              "tailwind": "absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-20 animate-pulse",
-              "visibleWhen": "isLoading",
+              "tailwind": "w-full h-px bg-gradient-to-r from-transparent via-gray-600/40 to-transparent"
+            }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "absolute top-1/2 -translate-y-1/2 right-8 sm:right-12",
+          "description": "타자(배트) 실루엣 아이콘 — 고정 위치",
+          "children": [
+            {
+              "element": "span",
+              "tailwind": "text-4xl sm:text-5xl select-none",
+              "content": "🏏",
+              "accessibility": { "ariaHidden": "true" }
+            }
+          ]
+        },
+        { "name": "PitchBall", "type": "atom" },
+        {
+          "element": "div",
+          "tailwind": "absolute bottom-2 left-4 right-4",
+          "children": [{ "name": "HitZoneBar", "type": "atom" }]
+        }
+      ],
+      "states": ["idle", "pitching", "hit", "missed"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "투구 레인"
+      }
+    },
+    {
+      "name": "GameControlBar",
+      "type": "molecule",
+      "description": "게임 상태 제어 버튼(일시정지·재시작·음소거)을 상단에 배치하는 컨트롤 바",
+      "props": {
+        "isPaused": {
+          "type": "boolean",
+          "required": true,
+          "description": "현재 일시정지 상태"
+        },
+        "isMuted": {
+          "type": "boolean",
+          "required": true,
+          "description": "음소거 상태"
+        },
+        "onPause": {
+          "type": "function",
+          "required": true,
+          "description": "일시정지/재개 핸들러"
+        },
+        "onRestart": {
+          "type": "function",
+          "required": true,
+          "description": "게임 재시작 핸들러"
+        },
+        "onMute": {
+          "type": "function",
+          "required": true,
+          "description": "음소거 토글 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "items-center justify-between w-full px-4 py-2"
+      },
+      "children": [
+        {
+          "element": "button",
+          "tailwind": "w-9 h-9 flex items-center justify-center rounded-full bg-gray-800/60 hover:bg-gray-700/80 text-gray-300 hover:text-white transition-colors text-lg",
+          "content": "{isPaused ? '▶' : '⏸'}",
+          "accessibility": { "role": "button", "ariaLabel": "{isPaused ? '게임 재개' : '게임 일시정지'}" }
+        },
+        {
+          "element": "span",
+          "tailwind": "text-sm font-bold text-gray-300 tracking-widest uppercase",
+          "content": "BASEBALL-011"
+        },
+        {
+          "element": "button",
+          "tailwind": "w-9 h-9 flex items-center justify-center rounded-full bg-gray-800/60 hover:bg-gray-700/80 text-gray-300 hover:text-white transition-colors text-lg",
+          "content": "{isMuted ? '🔇' : '🔊'}",
+          "accessibility": { "role": "button", "ariaLabel": "{isMuted ? '소리 켜기' : '음소거'}" }
+        }
+      ],
+      "states": ["playing", "paused"],
+      "accessibility": {
+        "role": "toolbar",
+        "ariaLabel": "게임 컨트롤"
+      }
+    },
+    {
+      "name": "BattingField",
+      "type": "organism",
+      "description": "게임 플레이의 핵심 영역. PitchLane(공 궤적) + TapButton(배트 스윙 버튼) + ResultOverlay(판정 결과)로 구성. 화면 가운데 대부분을 차지하는 인터랙션 영역",
+      "props": {
+        "gamePhase": {
+          "type": "string",
+          "required": true,
+          "description": "'idle' | 'countdown' | 'playing' | 'result' | 'paused'"
+        },
+        "ballSpeedMs": {
+          "type": "number",
+          "required": true,
+          "description": "현재 공 속도(ms)"
+        },
+        "ballProgress": {
+          "type": "number",
+          "required": true,
+          "description": "공 이동 진행도 (0~1)"
+        },
+        "lastResult": {
+          "type": "string",
+          "required": false,
+          "description": "직전 스윙 결과 'homerun' | 'triple' | 'double' | 'single' | 'strike' | null"
+        },
+        "lastTiming": {
+          "type": "string",
+          "required": false,
+          "description": "직전 타이밍 품질 'perfect' | 'good' | 'early' | 'late' | null"
+        },
+        "perfectWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start, end }"
+        },
+        "goodWindow": {
+          "type": "object",
+          "required": true,
+          "description": "{ start, end }"
+        },
+        "onSwing": {
+          "type": "function",
+          "required": true,
+          "description": "TapButton 탭 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative flex-1 flex flex-col items-center justify-end gap-6 pb-8 sm:pb-10 overflow-hidden"
+      },
+      "children": [
+        { "name": "PitchLane", "type": "molecule" },
+        { "name": "TapButton", "type": "atom" },
+        { "name": "ResultOverlay", "type": "molecule" },
+        { "name": "CountdownTimer", "type": "atom" }
+      ],
+      "states": ["idle", "countdown", "playing", "result", "paused"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "배팅 필드 — 공이 날아오면 탭하여 배트를 휘두르세요"
+      }
+    },
+    {
+      "name": "GameHUD",
+      "type": "organism",
+      "description": "게임 상단 HUD(헤드업 디스플레이). ScoreDisplay + StrikeCounter를 좌우에 배치하고, GameControlBar가 최상단에 위치. 게임 중 항상 표시",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "현재 점수"
+        },
+        "bestScore": {
+          "type": "number",
+          "required": false,
+          "description": "최고 점수"
+        },
+        "strikeCount": {
+          "type": "number",
+          "required": true,
+          "description": "현재 스트라이크(아웃) 횟수 (0~3)"
+        },
+        "scoreUpdated": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "점수 갱신 애니메이션 트리거"
+        },
+        "isPaused": {
+          "type": "boolean",
+          "required": true,
+          "description": "일시정지 여부"
+        },
+        "isMuted": {
+          "type": "boolean",
+          "required": true,
+          "description": "음소거 여부"
+        },
+        "onPause": { "type": "function", "required": true, "description": "일시정지 핸들러" },
+        "onRestart": { "type": "function", "required": true, "description": "재시작 핸들러" },
+        "onMute": { "type": "function", "required": true, "description": "음소거 핸들러" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex-col w-full"
+      },
+      "children": [
+        { "name": "GameControlBar", "type": "molecule" },
+        {
+          "element": "div",
+          "tailwind": "flex items-start justify-between px-6 py-3",
+          "children": [
+            { "name": "ScoreDisplay", "type": "molecule" },
+            { "name": "StrikeCounter", "type": "molecule" }
+          ]
+        }
+      ],
+      "states": ["playing", "paused", "last-chance"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "게임 현황 HUD"
+      }
+    },
+    {
+      "name": "GameOverPanel",
+      "type": "organism",
+      "description": "게임 종료 시 화면 전체를 덮는 결과 패널. 최종 점수·등급·히트 분포 요약·재시작 버튼으로 구성. 슬라이드업 애니메이션으로 등장",
+      "props": {
+        "finalScore": {
+          "type": "number",
+          "required": true,
+          "description": "최종 점수"
+        },
+        "isNewRecord": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "최고 점수 경신 여부"
+        },
+        "hitSummary": {
+          "type": "object",
+          "required": true,
+          "description": "{ homerun: number, triple: number, double: number, single: number, strike: number } — 결과별 카운트"
+        },
+        "onRestart": {
+          "type": "function",
+          "required": true,
+          "description": "재시작 버튼 핸들러"
+        },
+        "onHome": {
+          "type": "function",
+          "required": false,
+          "description": "홈 화면으로 이동 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute inset-0 flex-col items-center justify-center gap-6 sm:gap-8 bg-gray-950/95 backdrop-blur-sm z-50 px-6 animate-[slideUp_400ms_ease-out]"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "text-center",
+          "children": [
+            { "element": "p", "tailwind": "text-sm font-bold uppercase tracking-widest text-gray-400 mb-1", "content": "GAME OVER" },
+            {
+              "element": "p",
+              "tailwind": "text-yellow-400 font-black text-lg tracking-wide animate-bounce",
+              "content": "🎉 NEW RECORD!",
+              "visibleWhen": "isNewRecord"
+            },
+            { "element": "p", "tailwind": "text-6xl sm:text-7xl font-black text-white tabular-nums mt-2", "content": "{finalScore}" },
+            { "element": "p", "tailwind": "text-sm text-gray-500 mt-1", "content": "FINAL SCORE" }
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "w-full max-w-xs grid grid-cols-5 gap-2 bg-gray-900 rounded-2xl p-4",
+          "description": "히트 분포 요약 그리드",
+          "children": [
+            { "element": "div", "tailwind": "flex flex-col items-center gap-1", "children": [
+              { "element": "span", "tailwind": "text-xl", "content": "🏆" },
+              { "element": "span", "tailwind": "text-lg font-black text-yellow-300", "content": "{hitSummary.homerun}" },
+              { "element": "span", "tailwind": "text-xs text-gray-500", "content": "홈런" }
+            ]},
+            { "element": "div", "tailwind": "flex flex-col items-center gap-1", "children": [
+              { "element": "span", "tailwind": "text-xl", "content": "🔥" },
+              { "element": "span", "tailwind": "text-lg font-black text-orange-400", "content": "{hitSummary.triple}" },
+              { "element": "span", "tailwind": "text-xs text-gray-500", "content": "3루타" }
+            ]},
+            { "element": "div", "tailwind": "flex flex-col items-center gap-1", "children": [
+              { "element": "span", "tailwind": "text-xl", "content": "⚡" },
+              { "element": "span", "tailwind": "text-lg font-black text-green-400", "content": "{hitSummary.double}" },
+              { "element": "span", "tailwind": "text-xs text-gray-500", "content": "2루타" }
+            ]},
+            { "element": "div", "tailwind": "flex flex-col items-center gap-1", "children": [
+              { "element": "span", "tailwind": "text-xl", "content": "✅" },
+              { "element": "span", "tailwind": "text-lg font-black text-blue-300", "content": "{hitSummary.single}" },
+              { "element": "span", "tailwind": "text-xs text-gray-500", "content": "1루타" }
+            ]},
+            { "element": "div", "tailwind": "flex flex-col items-center gap-1", "children": [
+              { "element": "span", "tailwind": "text-xl", "content": "✕" },
+              { "element": "span", "tailwind": "text-lg font-black text-red-400", "content": "{hitSummary.strike}" },
+              { "element": "span", "tailwind": "text-xs text-gray-500", "content": "스트라이크" }
+            ]}
+          ]
+        },
+        {
+          "element": "div",
+          "tailwind": "flex flex-col gap-3 w-full max-w-xs",
+          "children": [
+            {
+              "element": "button",
+              "tailwind": "w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-xl tracking-wide shadow-xl shadow-orange-500/40 hover:from-amber-300 hover:to-orange-400 active:scale-95 transition-all duration-150",
+              "content": "⚾ 다시 하기",
+              "accessibility": { "role": "button", "ariaLabel": "게임 다시 시작" }
+            },
+            {
+              "element": "button",
+              "tailwind": "w-full py-3 rounded-2xl bg-gray-800 text-gray-300 font-bold text-base hover:bg-gray-700 hover:text-white transition-colors",
+              "content": "🏠 홈으로",
+              "visibleWhen": "!!onHome",
+              "accessibility": { "role": "button", "ariaLabel": "홈 화면으로 이동" }
+            }
+          ]
+        }
+      ],
+      "states": ["visible", "hidden"],
+      "accessibility": {
+        "role": "dialog",
+        "ariaModal": "true",
+        "ariaLabel": "게임 종료 — 최종 점수 {finalScore}점"
+      }
+    },
+    {
+      "name": "ReadyCountdown",
+      "type": "organism",
+      "description": "게임 시작 직전 '준비' 화면. 조작 방법 안내 + CountdownTimer(3·2·1·GO!)로 구성. 카운트다운 완료 시 게임 페이즈로 전환",
+      "props": {
+        "onCountdownEnd": {
+          "type": "function",
+          "required": true,
+          "description": "카운트다운 종료 후 게임 시작 콜백"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute inset-0 flex-col items-center justify-center gap-6 bg-gray-950/80 backdrop-blur-sm z-40"
+      },
+      "children": [
+        {
+          "element": "div",
+          "tailwind": "flex flex-col items-center gap-2 text-center px-6",
+          "description": "조작 방법 안내 카드",
+          "children": [
+            { "element": "span", "tailwind": "text-5xl mb-2", "content": "⚾" },
+            { "element": "p", "tailwind": "text-xl sm:text-2xl font-black text-white", "content": "공이 오면 탭하세요!" },
+            { "element": "p", "tailwind": "text-sm text-gray-400 mt-1", "content": "타이밍에 따라 홈런 · 안타 · 스트라이크가 결정됩니다" },
+            {
+              "element": "div",
+              "tailwind": "flex gap-4 mt-4 flex-wrap justify-center",
+              "description": "판정 기준 미니 범례",
               "children": [
-                { "element": "span", "tailwind": "text-gray-400 text-sm", "content": "데이터 불러오는 중..." }
+                { "element": "div", "tailwind": "flex items-center gap-1.5", "children": [
+                  { "element": "span", "tailwind": "w-3 h-3 rounded-full bg-yellow-400 shrink-0" },
+                  { "element": "span", "tailwind": "text-xs text-gray-300", "content": "Perfect → 홈런" }
+                ]},
+                { "element": "div", "tailwind": "flex items-center gap-1.5", "children": [
+                  { "element": "span", "tailwind": "w-3 h-3 rounded-full bg-green-400 shrink-0" },
+                  { "element": "span", "tailwind": "text-xs text-gray-300", "content": "Good → 안타" }
+                ]},
+                { "element": "div", "tailwind": "flex items-center gap-1.5", "children": [
+                  { "element": "span", "tailwind": "w-3 h-3 rounded-full bg-red-400 shrink-0" },
+                  { "element": "span", "tailwind": "text-xs text-gray-300", "content": "Miss → 스트라이크" }
+                ]}
               ]
             }
           ]
         },
-        { "slot": "footer", "tailwind": "w-full flex-shrink-0" }
+        { "name": "CountdownTimer", "type": "atom" }
       ],
-      "states": ["default", "loading"],
+      "states": ["showing-guide", "counting-down"],
       "accessibility": {
-        "role": "region",
-        "ariaLabel": "야구 경기 스코어보드"
+        "role": "dialog",
+        "ariaLabel": "게임 시작 준비 — 카운트다운 중",
+        "ariaLive": "polite"
       }
     },
     {
-      "name": "ScoreboardPage",
-      "type": "page",
-      "description": "스코어보드 최상위 페이지. 경기 데이터(gameStatus, 이닝 점수, 팀 정보)를 관리하고 ScoreboardTemplate에 전달. 실시간 업데이트 폴링 로직 포함",
+      "name": "GameTemplate",
+      "type": "template",
+      "description": "게임 전체 레이아웃 뼈대. 상단 HUD + 중앙 배팅 필드 + 게임 오버 패널 레이어를 수직으로 배치. 화면 전체를 채우는 풀스크린 레이아웃",
       "props": {
-        "gameId": {
-          "type": "string",
+        "hud": {
+          "type": "ReactNode",
           "required": true,
-          "description": "경기 고유 ID (URL 파라미터)"
+          "description": "GameHUD 슬롯"
+        },
+        "field": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "BattingField 슬롯"
+        },
+        "overlay": {
+          "type": "ReactNode",
+          "required": false,
+          "description": "GameOverPanel 또는 ReadyCountdown 오버레이 슬롯"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex-col items-center min-h-screen bg-gray-950 px-4 sm:px-6 py-6 sm:py-10"
+        "tailwind": "relative flex-col w-full h-full min-h-screen max-w-sm mx-auto bg-gray-950 overflow-hidden"
       },
-      "pageStateMachine": {
+      "backgroundDecoration": {
+        "description": "경기장 분위기를 위한 배경 그라디언트 + 잔디 패턴",
+        "tailwind": "absolute inset-0 bg-gradient-to-b from-gray-950 via-green-950/10 to-gray-950 pointer-events-none"
+      },
+      "children": [
+        { "slot": "hud", "tailwind": "relative z-10 flex-shrink-0" },
+        { "slot": "field", "tailwind": "relative z-10 flex-1 w-full" },
+        { "slot": "overlay", "tailwind": "absolute inset-0 z-50" }
+      ],
+      "states": ["playing", "paused", "game-over", "ready"],
+      "accessibility": {
+        "role": "application",
+        "ariaLabel": "야구 타이밍 배팅 게임"
+      }
+    },
+    {
+      "name": "BaseballGamePage",
+      "type": "page",
+      "description": "게임 최상위 페이지 컴포넌트. 게임 상태 머신(준비·카운트다운·플레이·결과·게임오버·일시정지)을 관리하고 모든 하위 컴포넌트에 props를 내려줌. 타이밍 판정 로직, 점수 계산, 기회 소모 처리를 담당",
+      "props": {
+        "difficulty": {
+          "type": "string",
+          "required": false,
+          "default": "normal",
+          "description": "'easy' | 'normal' | 'hard' — 공 속도 및 판정 윈도우 크기 조절"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full h-screen max-h-screen overflow-hidden bg-gray-950"
+      },
+      "gameStateMachine": {
         "states": {
-          "loading":   { "displays": "ScoreboardTemplate (isLoading=true)",  "description": "경기 데이터 초기 로드 중" },
-          "scheduled": { "displays": "ScoreboardTemplate",                   "description": "경기 전 — 이닝 점수 모두 null" },
-          "live":      { "displays": "ScoreboardTemplate",                   "description": "경기 진행 중 — 실시간 점수 갱신, currentInning 하이라이트" },
-          "final":     { "displays": "ScoreboardTemplate",                   "description": "경기 종료 — FINAL 배지, 전체 이닝 점수 표시" },
-          "error":     { "displays": "에러 메시지 컨테이너",                 "description": "데이터 로드 실패 시 재시도 안내" }
+          "idle":        { "description": "게임 미시작 — 시작 버튼 대기" },
+          "countdown":   { "description": "3·2·1·GO! 카운트다운 진행 중" },
+          "pitching":    { "description": "공 날아오는 중 — TapButton 활성화" },
+          "swinging":    { "description": "스윙 입력 받음 — 타이밍 판정 계산" },
+          "showing-result": { "description": "판정 결과 오버레이 표시 중 (1~1.5초)" },
+          "paused":      { "description": "일시정지 상태" },
+          "game-over":   { "description": "기회 3회 모두 소진 — GameOverPanel 표시" }
         },
         "transitions": [
-          { "from": "loading",   "to": "scheduled", "trigger": "gameStatus === 'scheduled' 데이터 수신" },
-          { "from": "loading",   "to": "live",       "trigger": "gameStatus === 'live' 데이터 수신" },
-          { "from": "loading",   "to": "final",      "trigger": "gameStatus === 'final' 데이터 수신" },
-          { "from": "loading",   "to": "error",      "trigger": "API 요청 실패" },
-          { "from": "scheduled", "to": "live",       "trigger": "경기 시작 (폴링으로 상태 전환 감지)" },
-          { "from": "live",      "to": "final",      "trigger": "경기 종료 (gameStatus → 'final')" }
+          { "from": "idle",           "to": "countdown",       "trigger": "시작 버튼 클릭" },
+          { "from": "countdown",      "to": "pitching",        "trigger": "GO! 카운트다운 완료" },
+          { "from": "pitching",       "to": "swinging",        "trigger": "TapButton 탭 (스윙 입력)" },
+          { "from": "pitching",       "to": "showing-result",  "trigger": "공이 타자 지점 통과 (스윙 없음 → 스트라이크)" },
+          { "from": "swinging",       "to": "showing-result",  "trigger": "타이밍 판정 완료" },
+          { "from": "showing-result", "to": "pitching",        "trigger": "결과 오버레이 1초 후 자동 전환, 기회 남음" },
+          { "from": "showing-result", "to": "game-over",       "trigger": "결과 오버레이 후 스트라이크 3회 달성" },
+          { "from": "pitching",       "to": "paused",          "trigger": "일시정지 버튼" },
+          { "from": "paused",         "to": "pitching",        "trigger": "재개 버튼" },
+          { "from": "game-over",      "to": "countdown",       "trigger": "다시 하기 버튼" }
         ]
+      },
+      "timingJudgement": {
+        "description": "ballProgress (0~1) 기준 판정 구간 — difficulty에 따라 윈도우 크기 변동",
+        "easy":   { "perfect": [0.42, 0.58], "good": [0.34, 0.66], "note": "넓은 판정 구간" },
+        "normal": { "perfect": [0.46, 0.54], "good": [0.38, 0.62], "note": "기본 구간" },
+        "hard":   { "perfect": [0.48, 0.52], "good": [0.43, 0.57], "note": "좁은 판정 구간" }
+      },
+      "scoringSystem": {
+        "description": "타이밍 구간에 따른 결과 및 점수",
+        "rules": [
+          { "timing": "perfect", "result": "homerun", "points": 400, "label": "홈런 🏆" },
+          { "timing": "good-early-or-late", "earlyBias": true, "result": "triple", "points": 200, "label": "3루타 🔥" },
+          { "timing": "good-early-or-late", "earlyBias": false, "result": "double", "points": 100, "label": "2루타 ⚡" },
+          { "timing": "barely-good", "result": "single", "points": 50, "label": "1루타 ✅" },
+          { "timing": "miss", "result": "strike", "points": 0, "label": "스트라이크 ✕", "penalty": "기회 1회 소모" }
+        ],
+        "note": "Good 구간 내 에서도 Perfect 중심에서의 편차 거리로 3루타/2루타/1루타를 세분화"
+      },
+      "pitchProgression": {
+        "description": "회차별 공 속도 상승 — 게임이 진행될수록 난이도 증가",
+        "pitch1": { "speedMs": 1400, "label": "느린 공" },
+        "pitch2": { "speedMs": 1200, "label": "보통 공" },
+        "pitch3": { "speedMs": 1000, "label": "빠른 공" },
+        "pitch4+": { "speedMs": 850, "label": "강속구 (3회차 이후 반복)" }
       },
       "children": [
         {
-          "element": "div",
-          "tailwind": "w-full max-w-3xl mb-4 flex items-center justify-between",
-          "description": "페이지 상단 네비게이션 바",
-          "children": [
-            {
-              "element": "button",
-              "tailwind": "flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors",
-              "content": "← 경기 목록",
-              "accessibility": { "role": "button", "ariaLabel": "경기 목록으로 돌아가기" }
-            },
-            {
-              "element": "span",
-              "tailwind": "text-xs text-gray-600",
-              "content": "KBO 리그"
-            }
-          ]
-        },
-        {
-          "name": "ScoreboardTemplate",
+          "name": "GameTemplate",
           "type": "template",
           "children": [
-            { "name": "ScoreboardHeader", "type": "organism" },
-            { "name": "ScoreboardTable",  "type": "organism" },
-            { "name": "ScoreboardFooter", "type": "organism" }
-          ]
-        },
-        {
-          "element": "div",
-          "description": "에러 상태 컨테이너",
-          "tailwind": "w-full max-w-3xl flex flex-col items-center justify-center gap-4 py-20",
-          "visibleWhen": "pageState === 'error'",
-          "children": [
-            { "element": "span", "tailwind": "text-5xl", "content": "⚾" },
-            { "element": "p",    "tailwind": "text-gray-400 text-center", "content": "경기 정보를 불러올 수 없습니다." },
-            {
-              "element": "button",
-              "tailwind": "px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-semibold transition-colors",
-              "content": "다시 시도",
-              "accessibility": { "role": "button", "ariaLabel": "경기 데이터 다시 불러오기" }
-            }
+            { "name": "GameHUD", "type": "organism" },
+            { "name": "BattingField", "type": "organism" },
+            { "name": "ReadyCountdown", "type": "organism", "visibleWhen": "gamePhase === 'countdown'" },
+            { "name": "GameOverPanel", "type": "organism", "visibleWhen": "gamePhase === 'game-over'" }
           ]
         }
       ],
-      "states": ["loading", "scheduled", "live", "final", "error"],
+      "states": ["idle", "countdown", "pitching", "swinging", "showing-result", "paused", "game-over"],
       "accessibility": {
-        "role": "main",
-        "ariaLabel": "야구 경기 스코어보드 페이지",
+        "role": "application",
+        "ariaLabel": "BASEBALL-011 야구 타이밍 배팅 게임 페이지",
         "lang": "ko"
       }
     }
@@ -966,136 +1019,132 @@
     "background":           "#030712",
     "surface":              "#111827",
     "surfaceAlt":           "#1f2937",
-    "surfaceBorder":        "#374151",
     "cardBg":               "#111827",
-    "cardBorder":           "#1f2937",
-    "currentInningBg":      "#facc15",
-    "currentInningText":    "#1a1100",
-    "currentInningRing":    "#fde047",
-    "statH":                "#4ade80",
-    "statE":                "#f87171",
-    "statBB":               "#60a5fa",
-    "statR":                "#fde68a",
-    "badgeFinal":           "#facc15",
-    "badgeFinalText":       "#1a1100",
-    "badgeLive":            "#dc2626",
-    "badgeLiveText":        "#ffffff",
-    "badgeScheduled":       "#374151",
-    "badgeScheduledText":   "#d1d5db",
-    "teamAvatarDefault":    "#374151",
-    "headerBg":             "#111827",
-    "tableRowHover":        "#1f2937",
+    "cardBorder":           "#374151",
+    "tapButtonFrom":        "#fbbf24",
+    "tapButtonTo":          "#f97316",
+    "tapButtonBorder":      "#fcd34d",
+    "tapButtonShadow":      "rgba(249,115,22,0.5)",
+    "ballDefault":          "#ffffff",
+    "ballPerfect":          "#fde047",
+    "ballGood":             "#86efac",
+    "ballMiss":             "#9ca3af",
+    "hitZonePerfect":       "rgba(250,204,21,0.7)",
+    "hitZoneGood":          "rgba(74,222,128,0.4)",
+    "hitZoneBar":           "#1f2937",
+    "resultHomerun":        "#fde047",
+    "resultTriple":         "#fb923c",
+    "resultDouble":         "#4ade80",
+    "resultSingle":         "#93c5fd",
+    "resultStrike":         "#f87171",
+    "strikeUsed":           "#ef4444",
+    "strikeRemaining":      "#4b5563",
+    "countdownText":        "#ffffff",
+    "gameOverBg":           "rgba(3,7,18,0.95)",
     "textPrimary":          "#f9fafb",
     "textSecondary":        "#9ca3af",
-    "textMuted":            "#6b7280",
-    "textWinning":          "#fde68a",
-    "scrollbarTrack":       "#111827",
-    "scrollbarThumb":       "#374151"
+    "textMuted":            "#6b7280"
   },
   "typography": {
-    "bigScore":        "text-4xl sm:text-5xl font-black tabular-nums text-white",
-    "inningScore":     "text-sm font-bold tabular-nums",
-    "totalScore":      "text-lg font-black tabular-nums",
-    "teamName":        "text-sm font-bold text-gray-100 truncate",
-    "headerLabel":     "text-xs font-semibold uppercase tracking-wider text-gray-500",
-    "statusBadge":     "text-xs font-extrabold tracking-widest uppercase",
-    "statValue":       "text-sm font-bold tabular-nums",
-    "legendText":      "text-xs text-gray-400",
-    "pageTitle":       "text-lg sm:text-xl font-extrabold text-white",
-    "meta":            "text-xs text-gray-600"
+    "score":         "text-4xl sm:text-5xl font-black tabular-nums text-white",
+    "resultLabel":   "text-5xl sm:text-7xl font-black tracking-tight",
+    "countdown":     "text-8xl sm:text-9xl font-black text-white",
+    "tapButtonLabel":"text-2xl sm:text-3xl font-black text-white",
+    "hudLabel":      "text-xs font-semibold uppercase tracking-widest text-gray-400",
+    "guideTitle":    "text-xl sm:text-2xl font-black text-white",
+    "guideBody":     "text-sm text-gray-400",
+    "hitSummaryVal": "text-lg font-black tabular-nums",
+    "hitSummaryKey": "text-xs text-gray-500"
   },
   "breakpoints": {
     "strategy": "mobile-first",
-    "base":  "< 640px  — 팀 단축명, 셀 축소(w-8 h-9), 아바타 sm, 빅스코어 text-4xl",
-    "sm":    "≥ 640px  — 팀 전체명, 셀 확대(w-10 h-10), 아바타 md/lg, 빅스코어 text-5xl, 여백 확대",
-    "md":    "≥ 768px  — 최대 너비(max-w-3xl) 중앙 고정, 전체 이닝 행 여유 있게 표시",
-    "lg":    "≥ 1024px — 이닝 헤더/셀 폰트 크기 유지, 카드 패딩 확대"
+    "base":  "< 640px  — 풀스크린 세로형. TapButton w-36 h-36, 공 w-10 h-10, 결과 text-5xl",
+    "sm":    "≥ 640px  — TapButton w-44 h-44, 공 w-12 h-12, 결과 text-7xl, HUD 여백 확대",
+    "md":    "≥ 768px  — max-w-sm 중앙 고정, 게임 영역 세로 중앙 정렬",
+    "note":  "터치 스크린(모바일) 우선 설계 — pointer-events: touch-action: none 적용"
   },
   "interactions": [
     {
-      "trigger": "mount",
-      "element": "ScoreboardPage",
-      "action": "gameId 기반 경기 데이터 API 호출 → pageState를 'loading'으로 설정. 응답 수신 시 gameStatus에 따라 페이지 상태 전환"
+      "trigger": "tap / click",
+      "element": "TapButton",
+      "action": "현재 ballProgress를 캡처하여 타이밍 판정 로직 실행 → 결과(홈런·안타·스트라이크) 계산 후 ResultOverlay 표시. TapButton에 scale-90 + ripple 효과 50ms"
     },
     {
-      "trigger": "poll (interval)",
-      "element": "ScoreboardPage — 실시간 업데이트",
-      "action": "gameStatus가 'live'인 경우 30초 간격으로 데이터 재조회. 새 이닝 점수 또는 통계 변경 시 관련 셀 값 갱신"
+      "trigger": "animation-complete (공 이동)",
+      "element": "PitchBall",
+      "action": "공이 타자 지점을 지나쳤는데 스윙 입력 없으면 자동으로 스트라이크 판정 처리"
     },
     {
-      "trigger": "data-change",
-      "element": "InningCell (currentInning 변경)",
-      "action": "이전 이닝 셀의 노란 하이라이트 제거, 새 currentInning 셀에 bg-yellow-400 + ring-2 + shadow 적용 (transition-colors 200ms)"
+      "trigger": "timer (1000ms)",
+      "element": "ResultOverlay",
+      "action": "판정 결과 표시 후 1초 뒤 자동 소멸. 기회가 남아 있으면 다음 투구 시작"
     },
     {
-      "trigger": "data-change",
-      "element": "GameStatusBadge",
-      "action": "gameStatus가 'live' → 'final'로 바뀌면 배지가 빨간 LIVE → 노란 FINAL로 전환. ariaLive='polite'로 스크린리더 알림"
+      "trigger": "timer (900ms × 3)",
+      "element": "ReadyCountdown → CountdownTimer",
+      "action": "3 → 2 → 1 → GO! 순서로 카운트다운 숫자를 순차 표시. GO! 완료 후 첫 투구 시작"
     },
     {
-      "trigger": "data-change",
-      "element": "TotalScoreCell / StatCell",
-      "action": "점수나 통계 수치 변경 시 짧은 scale-up + 색상 flash 트랜지션으로 변경 강조 (300ms)"
-    },
-    {
-      "trigger": "hover",
-      "element": "InningScoreRow",
-      "action": "행 전체에 bg-gray-800/30 hover 배경 적용 (transition-colors 150ms)"
-    },
-    {
-      "trigger": "scroll (horizontal)",
-      "element": "ScoreboardTable — overflow-x-auto 컨테이너",
-      "action": "이닝 수가 많아 테이블이 넘칠 경우 가로 스크롤. TeamInfoRow는 sticky left-0로 고정하여 팀명 항상 표시"
+      "trigger": "state-change (strikeCount → 3)",
+      "element": "BaseballGamePage",
+      "action": "세 번째 스트라이크 확정 시 gamePhase를 'game-over'로 전환 → GameOverPanel 슬라이드업 애니메이션으로 등장"
     },
     {
       "trigger": "click",
-      "element": "ScoreboardPage — 뒤로가기 버튼",
-      "action": "경기 목록 페이지 또는 직전 라우트로 네비게이션"
+      "element": "GameOverPanel — 다시 하기 버튼",
+      "action": "점수·스트라이크 수·hitSummary 초기화 후 gamePhase를 'countdown'으로 전환"
     },
     {
       "trigger": "click",
-      "element": "ScoreboardPage — 에러 상태 재시도 버튼",
-      "action": "pageState를 'loading'으로 리셋 후 데이터 API 재호출"
+      "element": "GameControlBar — 일시정지 버튼",
+      "action": "공 이동 애니메이션 paused 처리. gamePhase = 'paused'. TapButton disabled"
     },
     {
-      "trigger": "resize",
-      "element": "ScoreboardTemplate 전체",
-      "action": "뷰포트 변경에 따라 Tailwind 반응형 클래스 적용: 모바일↔태블릿↔데스크톱 레이아웃 자동 전환"
+      "trigger": "click",
+      "element": "GameControlBar — 재개 버튼",
+      "action": "공 이동 애니메이션 재개. gamePhase = 'pitching'"
+    },
+    {
+      "trigger": "keydown (Space / Enter)",
+      "element": "BattingField",
+      "action": "데스크탑 키보드 지원 — 스페이스바 또는 엔터 키로 TapButton과 동일한 스윙 동작 트리거"
+    },
+    {
+      "trigger": "score-update",
+      "element": "ScoreBadge",
+      "action": "점수 값 변경 시 scale 1 → 1.25 → 1 + 텍스트 색상 white → yellow-300 → white, 300ms ease-out"
+    },
+    {
+      "trigger": "state-change (strikeCount → 2)",
+      "element": "StrikeCounter",
+      "action": "마지막 기회 경고 — STRIKES 라벨에 text-red-400 + animate-pulse 적용"
     }
   ],
   "animationGuidelines": {
-    "currentInningHighlight":  "transition-colors duration-200 ease-in-out — isCurrent 변경 시 셀 배경/텍스트 색상 전환",
-    "scoreUpdate":             "scale 1 → 1.15 → 1 + color flash, 300ms ease-out — 점수/통계 수치 변경 시",
-    "statusBadgeChange":       "opacity 0 → 1, 200ms ease-in — 배지 상태 전환 시",
-    "liveBadgePulse":          "animate-pulse (Tailwind 기본) — live 상태 배지 지속 점멸",
-    "rowHover":                "transition-colors duration-150 ease-in-out — 행 hover 배경",
-    "pageLoadSkeleton":        "animate-pulse on 스켈레톤 오버레이 — 데이터 로딩 중 시각 피드백"
+    "ballFlight":        "CSS transform translateX, duration={speedMs}ms, cubic-bezier(0.25,0.46,0.45,0.94) — 공 이동",
+    "ballHitBurst":      "scale 1 → 1.5 + opacity 1 → 0, 200ms ease-out — 타격 성공 시 공 소멸",
+    "resultLabelPop":    "scale 0 → 1.1 → 1.0, 250ms spring — 결과 라벨 등장",
+    "resultLabelFade":   "opacity 1 → 0, 300ms ease-in, delay 600ms — 결과 라벨 소멸",
+    "resultStrikeShake": "translateX ±8px × 3, 300ms ease-in-out — 스트라이크 진동",
+    "tapButtonRipple":   "scale 1 → 2 + opacity 0.3 → 0, 400ms ease-out — 탭 리플 효과",
+    "countdownScale":    "scale 0 → 1 → 1.5 + opacity 0, 900ms ease-in-out — 카운트다운 숫자",
+    "gameOverSlideUp":   "translateY 100% → 0%, 400ms ease-out — 게임 오버 패널 등장",
+    "scorePopup":        "scale 1 → 1.25 → 1, 300ms ease-out — 점수 갱신 강조",
+    "strikeIndicator":   "scale 1 → 1.3 → 1.1, 300ms spring — 스트라이크 아이콘 활성화",
+    "hitZoneBar":        "bar 너비/위치 CSS transition duration-75 — 실시간 판정 구간 업데이트"
   },
-  "dataModel": {
-    "note": "UI 명세 참고용 — 백엔드 API 스펙 아님",
-    "GameData": {
-      "gameId":        "string",
-      "gameStatus":    "'scheduled' | 'live' | 'final'",
-      "currentInning": "number (1~12)",
-      "inningHalf":    "'top' | 'bottom'",
-      "gameDate":      "string (YYYY.MM.DD)",
-      "venue":         "string",
-      "broadcastChannel": "string | null",
-      "lastUpdated":   "string (HH:mm 기준)",
-      "homeTeam":      "TeamData",
-      "awayTeam":      "TeamData"
+  "gameDesignNotes": {
+    "timingWindowLogic": "ballProgress는 공이 발사점(0.0) → 타자 접촉 지점(0.5) → 화면 이탈(1.0)까지의 정규화 값. 판정은 ballProgress가 goodWindow 범위 내에서 탭이 발생했는지로 결정",
+    "resultMapping": {
+      "description": "결과 세분화 기준",
+      "homerun":  "ballProgress ∈ perfectWindow",
+      "triple":   "ballProgress ∈ goodWindow 상단 절반, perfectWindow 외곽 (너무 빠른 쪽)",
+      "double":   "ballProgress ∈ goodWindow 하단 절반, perfectWindow 외곽 (너무 늦은 쪽)",
+      "single":   "ballProgress ∈ goodWindow 최외곽 경계 (barely good)",
+      "strike":   "ballProgress ∉ goodWindow (Miss) 또는 스윙 없이 공 통과"
     },
-    "TeamData": {
-      "name":       "string",
-      "shortName":  "string",
-      "initials":   "string (2자)",
-      "teamColor":  "string (HEX)",
-      "logoSrc":    "string | null",
-      "scores":     "Array<number | null> (length 9~12, null = 미진행)",
-      "totalRuns":  "number",
-      "hits":       "number",
-      "errors":     "number",
-      "walks":      "number"
-    }
+    "opportunities": "스트라이크가 발생할 때마다 기회 1회 소모. 3회 소모 시 게임 종료 (홈런·안타는 기회 소모 없음)",
+    "scoreWeighting": "홈런 400 > 3루타 200 > 2루타 100 > 1루타 50 > 스트라이크 0점",
+    "difficultyScaling": "easy: 판정 구간 넓음 + 공 속도 느림 / hard: 판정 구간 좁음 + 공 속도 빠름"
   }
 }
