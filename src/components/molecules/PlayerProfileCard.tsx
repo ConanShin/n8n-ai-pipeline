@@ -1,20 +1,18 @@
 import React from 'react';
-import { Avatar } from '../atoms/Avatar';
-import { PositionTag } from '../atoms/PositionTag';
-import { StatBadge } from '../atoms/StatBadge';
+import { AvatarImage, PositionTag, StatBadge } from '../atoms';
 
 export interface PlayerProfileCardProps {
   playerName: string;
   team: string;
   position: string;
   jerseyNumber: number;
-  photoUrl?: string;
+  avatarSrc?: string;
   stats: {
     avg: string;
     hr: number;
     rbi: number;
+    ops: string;
   };
-  isLoading?: boolean;
 }
 
 export const PlayerProfileCard: React.FC<PlayerProfileCardProps> = ({
@@ -22,52 +20,36 @@ export const PlayerProfileCard: React.FC<PlayerProfileCardProps> = ({
   team,
   position,
   jerseyNumber,
-  photoUrl,
-  stats,
-  isLoading
+  avatarSrc,
+  stats
 }) => {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl w-full animate-pulse" role="region" aria-label="Loading player profile">
-        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-slate-700"></div>
-        <div className="h-6 w-32 bg-slate-700 rounded mt-2"></div>
-        <div className="h-4 w-24 bg-slate-700 rounded"></div>
-        <div className="flex gap-4 mt-4">
-          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
-          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
-          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
-        </div>
-      </div>
-    );
-  }
-
-  const initials = playerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
   return (
-    <div 
-      className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl text-white w-full"
+    <section
       role="region"
       aria-label={`Player profile card for ${playerName}`}
+      className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-gray-800 rounded-2xl shadow-lg w-full"
     >
-      <Avatar src={photoUrl} alt={playerName} initials={initials} />
+      <AvatarImage src={avatarSrc} alt={playerName} size="lg" />
       
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-1 flex items-center justify-center gap-2">
-          {playerName}
-          <span className="text-slate-400 font-medium text-lg">#{jerseyNumber}</span>
-        </h1>
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-slate-300">{team}</span>
-          <span className="text-slate-500">•</span>
+      <div className="flex-1 flex flex-col items-center sm:items-start w-full">
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">{playerName}</h1>
+          <span className="text-2xl font-bold text-gray-500">#{jerseyNumber}</span>
+        </div>
+        
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-gray-400 font-medium">{team}</span>
+          <span className="text-gray-600">•</span>
           <PositionTag position={position} />
         </div>
+        
+        <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+          <StatBadge label="AVG" value={stats.avg} />
+          <StatBadge label="HR" value={stats.hr} />
+          <StatBadge label="RBI" value={stats.rbi} />
+          <StatBadge label="OPS" value={stats.ops} />
+        </div>
       </div>
-
-      <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
-        <StatBadge label="AVG" value={stats.avg} highlight />
-        <StatBadge label="HR" value={stats.hr} />
-        <StatBadge label="RBI" value={stats.rbi} />
-      </div>
-    </div>
+    </section>
   );
 };

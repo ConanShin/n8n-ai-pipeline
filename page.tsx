@@ -1,17 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+'use client';
 
-const mkdir = (dir) => fs.mkdirSync(dir, { recursive: true });
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 
-mkdir('src/components/atoms');
-mkdir('src/components/molecules');
-mkdir('src/components/organisms');
-mkdir('src/components/pages');
-mkdir('docs');
-
-const files = {};
-
-files['src/components/atoms/StatBadge.tsx'] = `import React from 'react';
+// ============================================================================
+// Types
+// ============================================================================
 
 export interface StatBadgeProps {
   label: string;
@@ -19,7 +12,98 @@ export interface StatBadgeProps {
   highlight?: boolean;
 }
 
-export const StatBadge: React.FC<StatBadgeProps> = ({ label, value, highlight }) => {
+export interface AvatarImageProps {
+  src?: string;
+  alt: string;
+  initials?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export interface PositionTagProps {
+  position: string;
+}
+
+export interface TableHeaderCellProps {
+  label: string;
+  sortable?: boolean;
+  sortDirection?: 'asc' | 'desc' | 'none';
+  onClick?: () => void;
+}
+
+export interface TableDataCellProps {
+  value: string | number;
+  emphasis?: boolean;
+}
+
+export interface SectionHeadingProps {
+  title: string;
+}
+
+export interface PlayerProfileCardProps {
+  playerName: string;
+  team: string;
+  position: string;
+  jerseyNumber: number;
+  avatarSrc?: string;
+  stats: {
+    avg: string;
+    hr: number;
+    rbi: number;
+    ops: string;
+  };
+}
+
+export interface GameStat {
+  date: string;
+  opponent: string;
+  result: 'W' | 'L';
+  atBats: number;
+  hits: number;
+  hr: number;
+  rbi: number;
+  avg: string;
+}
+
+export interface StatsTableRowProps {
+  game: GameStat;
+}
+
+export interface ChartTooltipProps {
+  date: string;
+  avg: string;
+  hits: number;
+  hr: number;
+  rbi: number;
+}
+
+export interface PerformanceChartBarProps {
+  label: string;
+  value: number; // 0 to 1
+  rawValue: string | number;
+  color?: string;
+  tooltipData: ChartTooltipProps;
+}
+
+export interface PlayerStatsTableProps {
+  rows: GameStat[];
+}
+
+export interface PerformanceChartProps {
+  games: GameStat[];
+}
+
+export interface DashboardHeaderProps {
+  title?: string;
+  onSearch?: (query: string) => void;
+  onThemeToggle?: () => void;
+  isDark?: boolean;
+}
+
+// ============================================================================
+// Atoms
+// ============================================================================
+
+const StatBadge = ({ label, value, highlight }: StatBadgeProps) => {
   return (
     <div
       role="listitem"
@@ -31,18 +115,8 @@ export const StatBadge: React.FC<StatBadgeProps> = ({ label, value, highlight })
     </div>
   );
 };
-`;
 
-files['src/components/atoms/AvatarImage.tsx'] = `import React from 'react';
-
-export interface AvatarImageProps {
-  src?: string;
-  alt: string;
-  initials?: string;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-export const AvatarImage: React.FC<AvatarImageProps> = ({ src, alt, initials, size = 'md' }) => {
+const AvatarImage = ({ src, alt, initials, size = 'md' }: AvatarImageProps) => {
   const sizeClasses = {
     sm: 'w-10 h-10 text-sm',
     md: 'w-16 h-16 text-xl',
@@ -63,15 +137,8 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({ src, alt, initials, si
     </div>
   );
 };
-`;
 
-files['src/components/atoms/PositionTag.tsx'] = `import React from 'react';
-
-export interface PositionTagProps {
-  position: string;
-}
-
-export const PositionTag: React.FC<PositionTagProps> = ({ position }) => {
+const PositionTag = ({ position }: PositionTagProps) => {
   return (
     <span
       role="note"
@@ -82,18 +149,8 @@ export const PositionTag: React.FC<PositionTagProps> = ({ position }) => {
     </span>
   );
 };
-`;
 
-files['src/components/atoms/TableHeaderCell.tsx'] = `import React from 'react';
-
-export interface TableHeaderCellProps {
-  label: string;
-  sortable?: boolean;
-  sortDirection?: 'asc' | 'desc' | 'none';
-  onClick?: () => void;
-}
-
-export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({ label, sortable, sortDirection = 'none', onClick }) => {
+const TableHeaderCell = ({ label, sortable, sortDirection = 'none', onClick }: TableHeaderCellProps) => {
   return (
     <th
       role="columnheader"
@@ -113,16 +170,8 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({ label, sortabl
     </th>
   );
 };
-`;
 
-files['src/components/atoms/TableDataCell.tsx'] = `import React from 'react';
-
-export interface TableDataCellProps {
-  value: string | number;
-  emphasis?: boolean;
-}
-
-export const TableDataCell: React.FC<TableDataCellProps> = ({ value, emphasis }) => {
+const TableDataCell = ({ value, emphasis }: TableDataCellProps) => {
   return (
     <td
       role="cell"
@@ -132,15 +181,8 @@ export const TableDataCell: React.FC<TableDataCellProps> = ({ value, emphasis })
     </td>
   );
 };
-`;
 
-files['src/components/atoms/SectionHeading.tsx'] = `import React from 'react';
-
-export interface SectionHeadingProps {
-  title: string;
-}
-
-export const SectionHeading: React.FC<SectionHeadingProps> = ({ title }) => {
+const SectionHeading = ({ title }: SectionHeadingProps) => {
   return (
     <h2
       role="heading"
@@ -151,41 +193,19 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({ title }) => {
     </h2>
   );
 };
-`;
 
-files['src/components/atoms/index.ts'] = `export * from './StatBadge';
-export * from './AvatarImage';
-export * from './PositionTag';
-export * from './TableHeaderCell';
-export * from './TableDataCell';
-export * from './SectionHeading';
-`;
+// ============================================================================
+// Molecules
+// ============================================================================
 
-files['src/components/molecules/PlayerProfileCard.tsx'] = `import React from 'react';
-import { AvatarImage, PositionTag, StatBadge } from '../atoms';
-
-export interface PlayerProfileCardProps {
-  playerName: string;
-  team: string;
-  position: string;
-  jerseyNumber: number;
-  avatarSrc?: string;
-  stats: {
-    avg: string;
-    hr: number;
-    rbi: number;
-    ops: string;
-  };
-}
-
-export const PlayerProfileCard: React.FC<PlayerProfileCardProps> = ({
+const PlayerProfileCard = ({
   playerName,
   team,
   position,
   jerseyNumber,
   avatarSrc,
   stats
-}) => {
+}: PlayerProfileCardProps) => {
   return (
     <section
       role="region"
@@ -216,27 +236,8 @@ export const PlayerProfileCard: React.FC<PlayerProfileCardProps> = ({
     </section>
   );
 };
-`;
 
-files['src/components/molecules/StatsTableRow.tsx'] = `import React from 'react';
-import { TableDataCell } from '../atoms';
-
-export interface GameStat {
-  date: string;
-  opponent: string;
-  result: 'W' | 'L';
-  atBats: number;
-  hits: number;
-  hr: number;
-  rbi: number;
-  avg: string;
-}
-
-export interface StatsTableRowProps {
-  game: GameStat;
-}
-
-export const StatsTableRow: React.FC<StatsTableRowProps> = ({ game }) => {
+const StatsTableRow = ({ game }: StatsTableRowProps) => {
   return (
     <tr
       role="row"
@@ -254,19 +255,8 @@ export const StatsTableRow: React.FC<StatsTableRowProps> = ({ game }) => {
     </tr>
   );
 };
-`;
 
-files['src/components/molecules/ChartTooltip.tsx'] = `import React from 'react';
-
-export interface ChartTooltipProps {
-  date: string;
-  avg: string;
-  hits: number;
-  hr: number;
-  rbi: number;
-}
-
-export const ChartTooltip: React.FC<ChartTooltipProps> = ({ date, avg, hits, hr, rbi }) => {
+const ChartTooltip = ({ date, avg, hits, hr, rbi }: ChartTooltipProps) => {
   return (
     <div
       role="tooltip"
@@ -281,20 +271,8 @@ export const ChartTooltip: React.FC<ChartTooltipProps> = ({ date, avg, hits, hr,
     </div>
   );
 };
-`;
 
-files['src/components/molecules/PerformanceChartBar.tsx'] = `import React from 'react';
-import { ChartTooltip, ChartTooltipProps } from './ChartTooltip';
-
-export interface PerformanceChartBarProps {
-  label: string;
-  value: number; // 0 to 1
-  rawValue: string | number;
-  color?: string;
-  tooltipData: ChartTooltipProps;
-}
-
-export const PerformanceChartBar: React.FC<PerformanceChartBarProps> = ({ label, value, rawValue, color = 'bg-indigo-500', tooltipData }) => {
+const PerformanceChartBar = ({ label, value, rawValue, color = 'bg-indigo-500', tooltipData }: PerformanceChartBarProps) => {
   const heightPercent = Math.max(5, value * 100);
   
   return (
@@ -314,23 +292,12 @@ export const PerformanceChartBar: React.FC<PerformanceChartBarProps> = ({ label,
     </div>
   );
 };
-`;
 
-files['src/components/molecules/index.ts'] = `export * from './PlayerProfileCard';
-export * from './StatsTableRow';
-export * from './ChartTooltip';
-export * from './PerformanceChartBar';
-`;
+// ============================================================================
+// Organisms
+// ============================================================================
 
-files['src/components/organisms/PlayerStatsTable.tsx'] = `import React, { useState, useMemo } from 'react';
-import { SectionHeading, TableHeaderCell } from '../atoms';
-import { StatsTableRow, GameStat } from '../molecules';
-
-export interface PlayerStatsTableProps {
-  rows: GameStat[];
-}
-
-export const PlayerStatsTable: React.FC<PlayerStatsTableProps> = ({ rows }) => {
+const PlayerStatsTable = ({ rows }: PlayerStatsTableProps) => {
   const [sortColumn, setSortColumn] = useState<keyof GameStat>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(0);
@@ -441,19 +408,10 @@ export const PlayerStatsTable: React.FC<PlayerStatsTableProps> = ({ rows }) => {
     </section>
   );
 };
-`;
-
-files['src/components/organisms/PerformanceChart.tsx'] = `import React, { useState } from 'react';
-import { SectionHeading } from '../atoms';
-import { PerformanceChartBar, GameStat } from '../molecules';
-
-export interface PerformanceChartProps {
-  games: GameStat[];
-}
 
 type MetricType = 'avg' | 'hits' | 'hr' | 'rbi';
 
-export const PerformanceChart: React.FC<PerformanceChartProps> = ({ games }) => {
+const PerformanceChart = ({ games }: PerformanceChartProps) => {
   const [activeMetric, setActiveMetric] = useState<MetricType>('avg');
   
   const chartGames = [...games].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
@@ -532,21 +490,11 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ games }) => 
     </section>
   );
 };
-`;
 
-files['src/components/organisms/DashboardHeader.tsx'] = `import React, { useState } from 'react';
-
-export interface DashboardHeaderProps {
-  title?: string;
-  onSearch?: (query: string) => void;
-  onThemeToggle?: () => void;
-  isDark?: boolean;
-}
-
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title = 'Baseball Stats', onSearch, onThemeToggle, isDark = true }) => {
+const DashboardHeader = ({ title = 'Baseball Stats', onSearch, onThemeToggle, isDark = true }: DashboardHeaderProps) => {
   const [query, setQuery] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (onSearch && query.trim()) {
       onSearch(query.trim());
@@ -604,21 +552,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title = 'Baseb
     </header>
   );
 };
-`;
 
-files['src/components/organisms/index.ts'] = `export * from './PlayerStatsTable';
-export * from './PerformanceChart';
-export * from './DashboardHeader';
-`;
-
-files['src/components/pages/DashboardPage.tsx'] = `import React, { useState, useEffect } from 'react';
-import { DashboardHeader, PlayerStatsTable, PerformanceChart } from '../organisms';
-import { PlayerProfileCard } from '../molecules';
-import { GameStat } from '../molecules/StatsTableRow';
-
-export interface DashboardPageProps {
-  playerId?: string;
-}
+// ============================================================================
+// Page
+// ============================================================================
 
 const MOCK_PLAYER_DATA = {
   playerName: "Shohei Ohtani",
@@ -653,7 +590,7 @@ const MOCK_GAMES: GameStat[] = Array.from({ length: 30 }).map((_, i) => {
   };
 });
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ playerId }) => {
+export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(true);
 
@@ -662,7 +599,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ playerId }) => {
       setIsLoading(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, [playerId]);
+  }, []);
 
   const handleSearch = (query: string) => {
     setIsLoading(true);
@@ -677,7 +614,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ playerId }) => {
     <div 
       role="main" 
       aria-label="Baseball player statistics dashboard"
-      className={\`\${isDark ? 'dark bg-gray-950 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4 sm:p-6 lg:p-10\`}
+      className={\`\${isDark ? 'dark text-white' : 'text-gray-900'} p-4 sm:p-6 lg:p-10\`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
         <DashboardHeader 
@@ -689,11 +626,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ playerId }) => {
         <div className="col-span-1 lg:col-span-12">
           {isLoading ? (
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-gray-800 rounded-2xl shadow-lg w-full animate-pulse">
-              <div className="w-24 h-24 bg-gray-700 rounded-full" />
+              <div className="w-24 h-24 bg-gray-700 rounded-full flex-shrink-0" />
               <div className="flex-1 space-y-4 w-full">
                 <div className="h-8 bg-gray-700 rounded w-1/3" />
                 <div className="h-4 bg-gray-700 rounded w-1/4" />
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   {[1, 2, 3, 4].map(i => <div key={i} className="w-16 h-16 bg-gray-700 rounded-xl" />)}
                 </div>
               </div>
@@ -731,131 +668,4 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ playerId }) => {
       </div>
     </div>
   );
-};
-`;
-
-files['src/components/pages/index.ts'] = `export * from './DashboardPage';
-`;
-
-files['src/components/index.ts'] = `export * from './atoms';
-export * from './molecules';
-export * from './organisms';
-export * from './pages';
-`;
-
-files['docs/index.html'] = `<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baseball Player Stats Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-  </style>
-</head>
-<body class="bg-gray-950 text-white min-h-screen p-4 sm:p-6 lg:p-10">
-  <div id="root">
-    <!-- Static preview generated for GitHub Pages -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
-      
-      <!-- Dashboard Header -->
-      <header class="flex items-center justify-between gap-4 px-4 py-3 bg-gray-900 border-b border-gray-700 rounded-xl shadow-md col-span-12">
-        <div class="flex items-center gap-2">
-          <svg class="w-6 h-6 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2z" />
-            <path d="M6 12h12" />
-            <path d="M12 6v12" />
-          </svg>
-          <span class="text-lg font-bold text-white hidden sm:inline-block">Baseball Stats</span>
-        </div>
-        <div class="flex-1 max-w-md mx-4 relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <input type="search" class="block w-full p-2 pl-10 text-sm text-white bg-gray-800 border border-gray-700 rounded-lg" placeholder="Search player..." />
-        </div>
-        <button class="p-2 text-gray-400 rounded-lg">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </button>
-      </header>
-
-      <!-- Profile Card -->
-      <section class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-gray-800 rounded-2xl shadow-lg w-full col-span-12">
-        <div class="inline-flex items-center justify-center rounded-full overflow-hidden bg-indigo-600 text-white font-bold select-none w-24 h-24 text-3xl">
-          <img src="https://i.pravatar.cc/150?u=shohei" alt="Shohei Ohtani" class="w-full h-full object-cover" />
-        </div>
-        <div class="flex-1 flex flex-col items-center sm:items-start w-full">
-          <div class="flex items-center gap-3 mb-1">
-            <h1 class="text-3xl font-extrabold tracking-tight text-white">Shohei Ohtani</h1>
-            <span class="text-2xl font-bold text-gray-500">#17</span>
-          </div>
-          <div class="flex items-center gap-2 mb-6">
-            <span class="text-gray-400">LAD</span>
-            <span class="text-gray-600">•</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">DH</span>
-          </div>
-          <div class="flex flex-wrap gap-4 justify-center sm:justify-start">
-            <div class="flex flex-col items-center justify-center px-4 py-2 rounded-xl bg-gray-800 text-white min-w-[72px]">
-              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">AVG</span>
-              <span class="text-2xl font-extrabold tabular-nums">.310</span>
-            </div>
-            <div class="flex flex-col items-center justify-center px-4 py-2 rounded-xl bg-gray-800 text-white min-w-[72px]">
-              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">HR</span>
-              <span class="text-2xl font-extrabold tabular-nums">54</span>
-            </div>
-            <div class="flex flex-col items-center justify-center px-4 py-2 rounded-xl bg-gray-800 text-white min-w-[72px]">
-              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">RBI</span>
-              <span class="text-2xl font-extrabold tabular-nums">130</span>
-            </div>
-            <div class="flex flex-col items-center justify-center px-4 py-2 rounded-xl bg-gray-800 text-white min-w-[72px]">
-              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">OPS</span>
-              <span class="text-2xl font-extrabold tabular-nums">1.036</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Chart Placeholder -->
-      <section class="flex flex-col gap-4 bg-gray-800 rounded-2xl shadow-lg p-6 w-full lg:col-span-5 h-[400px]">
-        <h2 class="flex items-center gap-3 text-lg font-bold text-white border-l-4 border-indigo-500 pl-3 mb-4">Performance Trends</h2>
-        <div class="flex-1 flex items-center justify-center text-gray-500">Chart visual here</div>
-      </section>
-
-      <!-- Table Placeholder -->
-      <section class="flex flex-col gap-3 bg-gray-800 rounded-2xl shadow-lg p-6 w-full lg:col-span-7 h-[400px]">
-        <h2 class="flex items-center gap-3 text-lg font-bold text-white border-l-4 border-indigo-500 pl-3 mb-4">Game Logs</h2>
-        <div class="flex-1 flex items-center justify-center text-gray-500">Stats table here</div>
-      </section>
-
-    </div>
-  </div>
-</body>
-</html>
-`;
-
-Object.keys(files).forEach(filepath => {
-  const dir = path.dirname(filepath);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filepath, files[filepath].trim());
-});
-
-console.log('Component files generated successfully.');
+}

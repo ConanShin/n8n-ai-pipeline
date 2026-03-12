@@ -9,12 +9,12 @@ export interface StatBadgeProps {
 export const StatBadge: React.FC<StatBadgeProps> = ({ label, value, highlight }) => {
   return (
     <div
-      className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl text-white min-w-[80px] ${highlight ? 'bg-blue-600' : 'bg-slate-800'}`}
-      role="region"
-      aria-label={`Statistic badge showing ${label}: ${value}`}
+      role="listitem"
+      aria-label={`Stat badge showing ${label}: ${value}`}
+      className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl ${highlight ? 'bg-indigo-600' : 'bg-gray-800'} text-white min-w-[72px]`}
     >
-      <span className="text-xs text-slate-400 uppercase tracking-wider">{label}</span>
-      <span className="text-lg font-bold">{value}</span>
+      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</span>
+      <span className="text-2xl font-extrabold tabular-nums">{value}</span>
     </div>
   );
 };

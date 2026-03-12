@@ -1,3 +1,4 @@
 export * from './PlayerProfileCard';
-export * from './StatFilterToggle';
-export * from './DashboardHeader';
+export * from './StatsTableRow';
+export * from './ChartTooltip';
+export * from './PerformanceChartBar';

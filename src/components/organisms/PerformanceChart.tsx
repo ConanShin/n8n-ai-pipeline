@@ -1,79 +1,89 @@
 import React, { useState } from 'react';
-import { SectionHeading } from '../atoms/SectionHeading';
-import { ChartLegend } from '../atoms/ChartLegend';
-import { GamePerformanceBar } from '../atoms/GamePerformanceBar';
-
-export interface GameData {
-  date: string;
-  hits: number;
-  homeRuns: number;
-  rbi: number;
-  opponent: string;
-}
+import { SectionHeading } from '../atoms';
+import { PerformanceChartBar, GameStat } from '../molecules';
 
 export interface PerformanceChartProps {
-  games: GameData[];
-  activeStat?: 'hits' | 'homeRuns' | 'rbi';
-  isLoading?: boolean;
+  games: GameStat[];
 }
 
-export const PerformanceChart: React.FC<PerformanceChartProps> = ({ 
-  games, 
-  activeStat = 'hits',
-  isLoading 
-}) => {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+type MetricType = 'avg' | 'hits' | 'hr' | 'rbi';
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px]" role="region" aria-label="Loading chart">
-        <div className="h-6 w-48 bg-slate-700 rounded mb-4 animate-pulse"></div>
-        <div className="flex-1 flex items-end justify-between gap-2 animate-pulse">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="w-8 bg-slate-700 rounded-t-md" style={{ height: `${Math.random() * 80 + 20}%` }}></div>
+export const PerformanceChart: React.FC<PerformanceChartProps> = ({ games }) => {
+  const [activeMetric, setActiveMetric] = useState<MetricType>('avg');
+  
+  const chartGames = [...games].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
+
+  const getMetricValue = (game: GameStat, metric: MetricType) => {
+    if (metric === 'avg') return parseFloat(game.avg);
+    return game[metric];
+  };
+
+  const maxVal = Math.max(
+    ...chartGames.map(g => getMetricValue(g, activeMetric) as number),
+    activeMetric === 'avg' ? 0.400 : 1
+  );
+
+  const metrics: { id: MetricType; label: string }[] = [
+    { id: 'avg', label: 'AVG' },
+    { id: 'hits', label: 'Hits' },
+    { id: 'hr', label: 'HR' },
+    { id: 'rbi', label: 'RBI' },
+  ];
+
+  return (
+    <section
+      role="region"
+      aria-label="Recent game performance chart"
+      className="flex flex-col gap-4 bg-gray-800 rounded-2xl shadow-lg p-6 w-full h-full"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <SectionHeading title="Performance Trends" />
+        
+        <div className="flex p-1 bg-gray-900 rounded-lg w-fit border border-gray-700">
+          {metrics.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setActiveMetric(m.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                activeMetric === m.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {m.label}
+            </button>
           ))}
         </div>
       </div>
-    );
-  }
 
-  if (!games || games.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px] text-slate-400">
-        <p>No recent games available.</p>
+      <div className="flex-1 min-h-[200px] mt-4 flex items-end justify-between gap-1 sm:gap-2">
+        {chartGames.length > 0 ? (
+          chartGames.map((game, i) => {
+            const rawVal = getMetricValue(game, activeMetric);
+            const normalized = maxVal === 0 ? 0 : (rawVal as number) / maxVal;
+            const dateLabel = game.date.split('-').slice(1).join('/'); // MM/DD
+            
+            return (
+              <PerformanceChartBar
+                key={`${game.date}-${i}`}
+                label={dateLabel}
+                value={normalized}
+                rawValue={game[activeMetric]}
+                color={activeMetric === 'avg' ? 'bg-indigo-500' : 'bg-emerald-500'}
+                tooltipData={{
+                  date: game.date,
+                  avg: game.avg,
+                  hits: game.hits,
+                  hr: game.hr,
+                  rbi: game.rbi
+                }}
+              />
+            );
+          })
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500 text-sm h-full">
+            No data available
+          </div>
+        )}
       </div>
-    );
-  }
-
-  const maxValue = Math.max(...games.map(g => g[activeStat]), 1);
-  const statLabels = {
-    hits: 'Hits',
-    homeRuns: 'Home Runs',
-    rbi: 'RBIs'
-  };
-
-  return (
-    <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full" role="region" aria-label="Recent game performance chart">
-      <SectionHeading title="Recent Performance" subtitle={`Last ${games.length} Games`} />
-      
-      <div className="flex-1 flex items-end justify-between gap-1 sm:gap-2 mt-8 pt-10 border-b border-slate-700 pb-2">
-        {games.map((game, idx) => (
-          <GamePerformanceBar
-            key={idx}
-            date={game.date}
-            value={game[activeStat]}
-            maxValue={maxValue}
-            opponent={game.opponent}
-            activeStatLabel={statLabels[activeStat]}
-            isSelected={selectedIndex === idx}
-            onClick={() => setSelectedIndex(idx === selectedIndex ? null : idx)}
-          />
-        ))}
-      </div>
-      
-      <ChartLegend items={[
-        { label: statLabels[activeStat], color: '#22D3EE' }
-      ]} />
-    </div>
+    </section>
   );
 };
