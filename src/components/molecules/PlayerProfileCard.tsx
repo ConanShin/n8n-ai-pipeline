@@ -1,80 +1,72 @@
 import React from 'react';
 import { Avatar } from '../atoms/Avatar';
+import { PositionTag } from '../atoms/PositionTag';
 import { StatBadge } from '../atoms/StatBadge';
 
 export interface PlayerProfileCardProps {
-  playerId: string;
-  fullName: string;
-  teamName: string;
-  teamLogoUrl?: string;
+  playerName: string;
+  team: string;
   position: string;
   jerseyNumber: number;
-  avatarUrl?: string;
-  nationality?: string;
-  keyStats: Array<{ label: string; value: string | number; trend?: 'up' | 'down' | 'neutral' }>;
+  photoUrl?: string;
+  stats: {
+    avg: string;
+    hr: number;
+    rbi: number;
+  };
   isLoading?: boolean;
 }
 
 export const PlayerProfileCard: React.FC<PlayerProfileCardProps> = ({
-  fullName, teamName, teamLogoUrl, position, jerseyNumber, avatarUrl, nationality, keyStats, isLoading
+  playerName,
+  team,
+  position,
+  jerseyNumber,
+  photoUrl,
+  stats,
+  isLoading
 }) => {
   if (isLoading) {
     return (
-      <div 
-        className="flex flex-col md:flex-row items-center md:items-start gap-6 p-6 md:p-8 rounded-3xl bg-gradient-to-br from-blue-700 to-blue-900 shadow-xl w-full h-48 animate-pulse"
-      >
-        <div className="w-32 h-32 bg-blue-800 rounded-full shrink-0"></div>
-        <div className="flex flex-col gap-4 w-full">
-          <div className="h-8 bg-blue-800 rounded w-1/3"></div>
-          <div className="h-6 bg-blue-800 rounded w-1/4"></div>
-          <div className="flex gap-2 mt-auto">
-            <div className="h-8 bg-blue-800 rounded w-20"></div>
-            <div className="h-8 bg-blue-800 rounded w-20"></div>
-          </div>
+      <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl w-full animate-pulse" role="region" aria-label="Loading player profile">
+        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-slate-700"></div>
+        <div className="h-6 w-32 bg-slate-700 rounded mt-2"></div>
+        <div className="h-4 w-24 bg-slate-700 rounded"></div>
+        <div className="flex gap-4 mt-4">
+          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
+          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
+          <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
         </div>
       </div>
     );
   }
 
+  const initials = playerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
   return (
     <div 
-      className="flex flex-col md:flex-row items-center md:items-start gap-6 p-6 md:p-8 rounded-3xl bg-gradient-to-br from-blue-700 to-blue-900 text-white shadow-xl w-full"
+      className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl text-white w-full"
       role="region"
-      aria-label={`Player profile for ${fullName}`}
+      aria-label={`Player profile card for ${playerName}`}
     >
-      <Avatar src={avatarUrl} alt={fullName} size="xl" />
-      <div className="flex flex-col items-center md:items-start flex-1 text-center md:text-left h-full justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{fullName}</h1>
-            <span className="text-blue-200 text-xl font-medium">#{jerseyNumber}</span>
-          </div>
-          
-          <div className="flex items-center justify-center md:justify-start gap-2 text-blue-100 mb-6">
-            {teamLogoUrl && <img src={teamLogoUrl} alt={teamName} className="w-5 h-5 rounded-full bg-white object-contain p-0.5" />}
-            <span>{teamName}</span>
-            <span>•</span>
-            <span>{position}</span>
-            {nationality && (
-              <>
-                <span>•</span>
-                <span>{nationality}</span>
-              </>
-            )}
-          </div>
+      <Avatar src={photoUrl} alt={playerName} initials={initials} />
+      
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-1 flex items-center justify-center gap-2">
+          {playerName}
+          <span className="text-slate-400 font-medium text-lg">#{jerseyNumber}</span>
+        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-slate-300">{team}</span>
+          <span className="text-slate-500">•</span>
+          <PositionTag position={position} />
         </div>
+      </div>
 
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 md:mt-0">
-          {keyStats.map((stat, idx) => (
-            <StatBadge 
-              key={idx} 
-              label={stat.label} 
-              value={stat.value} 
-              trend={stat.trend} 
-              variant="highlight" 
-            />
-          ))}
-        </div>
+      <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
+        <StatBadge label="AVG" value={stats.avg} highlight />
+        <StatBadge label="HR" value={stats.hr} />
+        <StatBadge label="RBI" value={stats.rbi} />
       </div>
     </div>
   );

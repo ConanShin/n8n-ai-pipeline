@@ -1,147 +1,79 @@
 import React, { useState } from 'react';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { ChartLegend } from '../atoms/ChartLegend';
-import { PerformanceChartTooltip } from '../atoms/PerformanceChartTooltip';
+import { GamePerformanceBar } from '../atoms/GamePerformanceBar';
 
-export interface ChartDataPoint {
+export interface GameData {
   date: string;
-  battingAverage: number;
+  hits: number;
   homeRuns: number;
-  rbis: number;
-  opponent?: string;
+  rbi: number;
+  opponent: string;
 }
 
 export interface PerformanceChartProps {
-  data: ChartDataPoint[];
-  activeMetrics: Array<'battingAverage' | 'homeRuns' | 'rbis'>;
+  games: GameData[];
+  activeStat?: 'hits' | 'homeRuns' | 'rbi';
   isLoading?: boolean;
 }
 
-export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, activeMetrics, isLoading }) => {
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-
-  const colors = {
-    battingAverage: "#3B82F6",
-    homeRuns: "#EF4444",
-    rbis: "#10B981"
-  };
-
-  const legendItems = activeMetrics.map(m => ({
-    label: m === 'battingAverage' ? 'Batting Avg' : m === 'homeRuns' ? 'Home Runs' : 'RBIs',
-    color: colors[m]
-  }));
+export const PerformanceChart: React.FC<PerformanceChartProps> = ({ 
+  games, 
+  activeStat = 'hits',
+  isLoading 
+}) => {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white shadow-md border border-gray-100 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-        <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg"></div>
+      <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px]" role="region" aria-label="Loading chart">
+        <div className="h-6 w-48 bg-slate-700 rounded mb-4 animate-pulse"></div>
+        <div className="flex-1 flex items-end justify-between gap-2 animate-pulse">
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="w-8 bg-slate-700 rounded-t-md" style={{ height: `${Math.random() * 80 + 20}%` }}></div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Calculate SVG bounds
-  const width = 800;
-  const height = 300;
-  const padding = 40;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
+  if (!games || games.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px] text-slate-400">
+        <p>No recent games available.</p>
+      </div>
+    );
+  }
 
-  const maxValue = data.length > 0 ? Math.max(...data.flatMap(d => activeMetrics.map(m => d[m]))) || 1 : 1;
-
-  const getPoints = (metric: 'battingAverage' | 'homeRuns' | 'rbis') => {
-    return data.map((d, i) => {
-      const x = padding + (i / Math.max(1, data.length - 1)) * chartWidth;
-      const y = height - padding - (d[metric] / maxValue) * chartHeight;
-      return `${x},${y}`;
-    }).join(' ');
+  const maxValue = Math.max(...games.map(g => g[activeStat]), 1);
+  const statLabels = {
+    hits: 'Hits',
+    homeRuns: 'Home Runs',
+    rbi: 'RBIs'
   };
 
   return (
-    <div 
-      className="flex flex-col gap-4 p-6 rounded-2xl bg-white shadow-md border border-gray-100"
-      role="img"
-      aria-label="Performance trend chart for selected metrics over recent games"
-    >
-      <SectionHeading title="Performance Trends" subtitle="Visualizing key metrics over time" />
-      <ChartLegend items={legendItems} />
+    <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full" role="region" aria-label="Recent game performance chart">
+      <SectionHeading title="Recent Performance" subtitle={`Last ${games.length} Games`} />
       
-      <div className="relative w-full h-64 md:h-80">
-        {data.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500">No data available</div>
-        ) : (
-          <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
-            {/* Y-axis labels */}
-            {[0, 0.5, 1].map((ratio) => (
-              <text key={ratio} x={padding - 10} y={height - padding - ratio * chartHeight + 4} textAnchor="end" className="text-xs fill-gray-400">
-                {(maxValue * ratio).toFixed(2)}
-              </text>
-            ))}
-
-            {/* Grid lines */}
-            {[0, 0.5, 1].map((ratio) => (
-              <line key={ratio} x1={padding} y1={height - padding - ratio * chartHeight} x2={width - padding} y2={height - padding - ratio * chartHeight} stroke="#E5E7EB" strokeDasharray="4 4" />
-            ))}
-            
-            {/* Lines */}
-            {activeMetrics.map(metric => (
-              <polyline
-                key={metric}
-                points={getPoints(metric)}
-                fill="none"
-                stroke={colors[metric]}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-all duration-300"
-              />
-            ))}
-
-            {/* Hover Points */}
-            {data.map((d, i) => {
-              const x = padding + (i / Math.max(1, data.length - 1)) * chartWidth;
-              return activeMetrics.map(metric => {
-                const y = height - padding - (d[metric] / maxValue) * chartHeight;
-                return (
-                  <circle
-                    key={`${metric}-${i}`}
-                    cx={x}
-                    cy={y}
-                    r={hoverIndex === i ? 6 : 4}
-                    fill={colors[metric]}
-                    stroke="white"
-                    strokeWidth="2"
-                    className="transition-all duration-200 cursor-pointer"
-                    onMouseEnter={() => setHoverIndex(i)}
-                    onMouseLeave={() => setHoverIndex(null)}
-                  />
-                );
-              });
-            })}
-          </svg>
-        )}
-
-        {/* Custom Tooltip Overlay */}
-        {hoverIndex !== null && data[hoverIndex] && (
-          <div 
-            className="absolute top-0 pointer-events-none transition-all duration-200"
-            style={{ left: `${(hoverIndex / Math.max(1, data.length - 1)) * 100}%`, transform: 'translateX(-50%)' }}
-          >
-            <div className="mt-[-10px]">
-              {activeMetrics.map((metric, idx) => (
-                <div key={idx} className="mb-1">
-                  <PerformanceChartTooltip
-                    date={data[hoverIndex].date}
-                    value={data[hoverIndex][metric]}
-                    opponent={data[hoverIndex].opponent}
-                    visible={true}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="flex-1 flex items-end justify-between gap-1 sm:gap-2 mt-8 pt-10 border-b border-slate-700 pb-2">
+        {games.map((game, idx) => (
+          <GamePerformanceBar
+            key={idx}
+            date={game.date}
+            value={game[activeStat]}
+            maxValue={maxValue}
+            opponent={game.opponent}
+            activeStatLabel={statLabels[activeStat]}
+            isSelected={selectedIndex === idx}
+            onClick={() => setSelectedIndex(idx === selectedIndex ? null : idx)}
+          />
+        ))}
       </div>
+      
+      <ChartLegend items={[
+        { label: statLabels[activeStat], color: '#22D3EE' }
+      ]} />
     </div>
   );
 };

@@ -1,69 +1,90 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerStatsDashboard } from '../templates/PlayerStatsDashboard';
+import { PlayerStatsDashboard, PlayerData } from '../templates/PlayerStatsDashboard';
 
 export interface PlayerStatsDashboardPageProps {
-  params: { playerId: string };
+  playerId: string;
 }
 
-export const PlayerStatsDashboardPage: React.FC<PlayerStatsDashboardPageProps> = ({ params }) => {
-  const [isLoading, setIsLoading] = useState(true);
+const fetchPlayerData = async (id: string): Promise<PlayerData> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        name: 'Shohei Ohtani',
+        team: 'Los Angeles Dodgers',
+        position: 'DH',
+        jerseyNumber: 17,
+        photoUrl: 'https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=200&h=200&fit=crop',
+        stats: {
+          avg: '.304',
+          hr: 54,
+          rbi: 130
+        },
+        seasonStats: [
+          { season: '2023', games: 135, atBats: 497, hits: 151, doubles: 26, triples: 8, homeRuns: 44, rbi: 95, avg: '.304', obp: '.412', slg: '.654', ops: '1.066' },
+          { season: '2024', games: 159, atBats: 636, hits: 197, doubles: 38, triples: 7, homeRuns: 54, rbi: 130, avg: '.310', obp: '.390', slg: '.646', ops: '1.036', isHighlighted: true },
+          { season: 'Career', games: 860, atBats: 3119, hits: 871, doubles: 167, triples: 36, homeRuns: 225, rbi: 567, avg: '.279', obp: '.366', slg: '.556', ops: '.922' },
+        ],
+        recentGames: [
+          { date: 'Mar 1', opponent: 'SD', hits: 2, homeRuns: 1, rbi: 3 },
+          { date: 'Mar 2', opponent: 'SD', hits: 1, homeRuns: 0, rbi: 0 },
+          { date: 'Mar 4', opponent: 'SF', hits: 3, homeRuns: 2, rbi: 4 },
+          { date: 'Mar 5', opponent: 'SF', hits: 0, homeRuns: 0, rbi: 0 },
+          { date: 'Mar 7', opponent: 'COL', hits: 2, homeRuns: 0, rbi: 1 },
+          { date: 'Mar 8', opponent: 'COL', hits: 1, homeRuns: 1, rbi: 2 },
+          { date: 'Mar 9', opponent: 'COL', hits: 2, homeRuns: 0, rbi: 0 },
+          { date: 'Mar 11', opponent: 'ARI', hits: 1, homeRuns: 0, rbi: 0 },
+          { date: 'Mar 12', opponent: 'ARI', hits: 3, homeRuns: 1, rbi: 2 },
+        ]
+      });
+    }, 1500);
+  });
+};
 
-  // Mock data
-  const profileData = {
-    playerId: params.playerId,
-    fullName: "Shohei Ohtani",
-    teamName: "Los Angeles Dodgers",
-    teamLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/6/69/Los_Angeles_Dodgers_logo.svg",
-    position: "Designated Hitter",
-    jerseyNumber: 17,
-    nationality: "🇯🇵",
-    avatarUrl: "https://i.pravatar.cc/150?u=shohei",
-    keyStats: [
-      { label: "AVG", value: ".304", trend: "up" as const },
-      { label: "HR", value: 44, trend: "up" as const },
-      { label: "RBI", value: 95, trend: "neutral" as const }
-    ]
-  };
-
-  const quickStatsData = {
-    battingAverage: ".304",
-    homeRuns: 44,
-    rbis: 95,
-    hits: 151,
-    gamesPlayed: 135
-  };
-
-  const chartData = [
-    { date: "Oct 1", battingAverage: 0.290, homeRuns: 40, rbis: 80, opponent: "SF" },
-    { date: "Oct 5", battingAverage: 0.295, homeRuns: 42, rbis: 85, opponent: "SD" },
-    { date: "Oct 10", battingAverage: 0.301, homeRuns: 43, rbis: 90, opponent: "ARI" },
-    { date: "Oct 15", battingAverage: 0.304, homeRuns: 44, rbis: 95, opponent: "COL" }
-  ];
-
-  const tableData = [
-    { date: "Oct 15", opponent: "COL", atBats: 4, hits: 2, homeRuns: 1, rbis: 3, battingAverage: ".500", isHighlighted: true },
-    { date: "Oct 10", opponent: "ARI", atBats: 5, hits: 1, homeRuns: 0, rbis: 0, battingAverage: ".200" },
-    { date: "Oct 5", opponent: "SD", atBats: 3, hits: 2, homeRuns: 1, rbis: 2, battingAverage: ".667" },
-    { date: "Oct 1", opponent: "SF", atBats: 4, hits: 1, homeRuns: 0, rbis: 0, battingAverage: ".250" },
-  ];
+export const PlayerStatsDashboardPage: React.FC<PlayerStatsDashboardPageProps> = ({ playerId }) => {
+  const [playerData, setPlayerData] = useState<PlayerData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // Simulate data loading
-    const timer = setTimeout(() => {
+    let isMounted = true;
+    
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(undefined);
+      try {
+        const data = await fetchPlayerData(playerId);
+        if (isMounted) {
+          setPlayerData(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Failed to fetch player data. Please try again later.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    if (playerId) {
+      loadData();
+    } else {
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [params.playerId]);
+      setError('No player ID provided.');
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [playerId]);
 
   return (
-    <div className="flex flex-col min-h-screen" role="document" aria-label="Player stats dashboard page">
+    <div className="flex flex-col w-full min-h-screen" role="document" aria-label="Baseball player stats page">
       <PlayerStatsDashboard 
-        playerId={params.playerId}
-        profileData={profileData}
-        quickStatsData={quickStatsData}
-        chartData={chartData}
-        tableData={tableData}
+        player={playerData}
         isLoading={isLoading}
+        error={error}
       />
     </div>
   );

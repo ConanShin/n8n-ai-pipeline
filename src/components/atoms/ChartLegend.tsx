@@ -11,13 +11,13 @@ export interface ChartLegendProps {
 
 export const ChartLegend: React.FC<ChartLegendProps> = ({ items }) => {
   return (
-    <ul className="flex flex-wrap items-center gap-4 text-sm text-gray-600" role="list" aria-label="Chart legend">
+    <div className="flex flex-wrap gap-4 mt-2" role="list" aria-label="Chart legend">
       {items.map((item, index) => (
-        <li key={index} className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-          <span>{item.label}</span>
-        </li>
+        <div key={index} className="flex items-center gap-2" role="listitem">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+          <span className="text-sm text-slate-300">{item.label}</span>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 };

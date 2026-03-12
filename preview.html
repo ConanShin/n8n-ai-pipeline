@@ -1,717 +1,549 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Baseball Player Stats Dashboard</title>
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BASEBALL-011 Component Preview</title>
+  
+  <!-- React 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body { margin: 0; padding: 0; background-color: #020617; }
+  </style>
 </head>
-<body class="bg-gray-50">
-    <div id="root"></div>
-    
-    <script type="text/babel" data-presets="react,typescript">
-const { useState, useEffect } = React;
+<body>
+  <div id="root"></div>
 
-// --- StatBadge.tsx ---
+  <script type="text/babel" data-presets="react,typescript">
+    const { useState, useEffect } = React;
 
-const StatBadge = ({ label, value, trend, variant }) => {
-  const getVariantClasses = () => {
-    // If variant is explicitly provided, use it. Otherwise derive from trend.
-    const activeVariant = variant || (trend === 'up' ? 'up' : trend === 'down' ? 'down' : 'default');
-    
-    switch (activeVariant) {
-      case 'up': return 'bg-green-100 text-green-700';
-      case 'down': return 'bg-red-100 text-red-700';
-      case 'highlight': return 'bg-blue-600 text-white';
-      case 'default':
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : trend === 'neutral' ? '-' : '';
-
-  return (
-    <span 
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${getVariantClasses()}`}
-      role="status"
-      aria-label={`Stat badge showing ${label}: ${value}`}
-    >
-      <span className="opacity-75">{label}</span>
-      <span>{value}</span>
-      {trendIcon && <span>{trendIcon}</span>}
-    </span>
-  );
-};
-
-// --- Avatar.tsx ---
-
-const Avatar = ({ src, alt, initials, size = 'md' }) => {
-  const [hasError, setHasError] = useState(false);
-
-  const sizeClasses = {
-    sm: 'w-10 h-10 text-xs',
-    md: 'w-16 h-16 text-sm',
-    lg: 'w-24 h-24 text-lg',
-    xl: 'w-32 h-32 text-2xl',
-  };
-
-  const displayInitials = initials || alt.slice(0, 2).toUpperCase();
-
-  return (
-    <div 
-      className={`relative flex items-center justify-center rounded-full overflow-hidden bg-gray-200 shrink-0 ${sizeClasses[size]}`}
-      role="img"
-      aria-label={alt}
-    >
-      {src && !hasError ? (
-        <img 
-          src={src} 
-          alt={alt} 
-          className="w-full h-full object-cover" 
-          onError={() => setHasError(true)} 
-        />
-      ) : (
-        <span className="font-semibold text-gray-500">{displayInitials}</span>
-      )}
-    </div>
-  );
-};
-
-// --- SectionHeading.tsx ---
-
-const SectionHeading = ({ title, subtitle }) => {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <h2 className="text-xl font-semibold text-gray-800" aria-label={title} aria-level={2}>
-        {title}
-      </h2>
-      {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
-    </div>
-  );
-};
-
-// --- PerformanceChartTooltip.tsx ---
-
-const PerformanceChartTooltip = ({ date, value, opponent, visible = true }) => {
-  if (!visible) return null;
-
-  return (
-    <div 
-      className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-gray-900 text-white text-xs shadow-xl pointer-events-none absolute z-50 transform -translate-x-1/2 -translate-y-full mb-2"
-      role="tooltip"
-      aria-label={`Chart tooltip: ${value} on ${date}`}
-    >
-      <div className="font-bold">{date}</div>
-      <div>Value: {value}</div>
-      {opponent && <div>vs {opponent}</div>}
-    </div>
-  );
-};
-
-// --- ChartLegend.tsx ---
-
-
-const ChartLegend = ({ items }) => {
-  return (
-    <ul className="flex flex-wrap items-center gap-4 text-sm text-gray-600" role="list" aria-label="Chart legend">
-      {items.map((item, index) => (
-        <li key={index} className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-          <span>{item.label}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-// --- StatCard.tsx ---
-
-const StatCard = ({ label, value, trend, trendValue, icon }) => {
-  return (
-    <div 
-      className="flex flex-col gap-2 p-5 rounded-2xl bg-white shadow-md border border-gray-100 min-w-[140px]"
-      role="region"
-      aria-label={`${label} stat card`}
-    >
-      <div className="flex justify-between items-center">
-        <span className="text-xs uppercase tracking-widest font-medium text-gray-500">{label}</span>
-        {icon && <span className="text-gray-400">{icon}</span>}
-      </div>
-      <div className="text-3xl font-extrabold tabular-nums text-gray-900">{value}</div>
-      {trendValue && (
-        <div className="mt-1 flex items-center">
-          <StatBadge label="vs Last" value={trendValue} trend={trend} />
+    const StatBadge = ({ label, value, highlight }) => {
+      return (
+        <div
+          className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl text-white min-w-[80px] ${highlight ? 'bg-blue-600' : 'bg-slate-800'}`}
+          role="region"
+          aria-label={`Statistic badge showing ${label}: ${value}`}
+        >
+          <span className="text-xs text-slate-400 uppercase tracking-wider">{label}</span>
+          <span className="text-lg font-bold">{value}</span>
         </div>
-      )}
-    </div>
-  );
-};
+      );
+    };
 
-// --- PlayerProfileCard.tsx ---
+    const Avatar = ({ src, alt, initials, size = 'md' }) => {
+      const [hasError, setHasError] = useState(false);
 
-const PlayerProfileCard = ({
-  fullName, teamName, teamLogoUrl, position, jerseyNumber, avatarUrl, nationality, keyStats, isLoading
-}) => {
-  if (isLoading) {
-    return (
-      <div 
-        className="flex flex-col md:flex-row items-center md:items-start gap-6 p-6 md:p-8 rounded-3xl bg-gradient-to-br from-blue-700 to-blue-900 shadow-xl w-full h-48 animate-pulse"
-      >
-        <div className="w-32 h-32 bg-blue-800 rounded-full shrink-0"></div>
-        <div className="flex flex-col gap-4 w-full">
-          <div className="h-8 bg-blue-800 rounded w-1/3"></div>
-          <div className="h-6 bg-blue-800 rounded w-1/4"></div>
-          <div className="flex gap-2 mt-auto">
-            <div className="h-8 bg-blue-800 rounded w-20"></div>
-            <div className="h-8 bg-blue-800 rounded w-20"></div>
+      const sizeClasses = {
+        sm: 'w-16 h-16 md:w-20 md:h-20',
+        md: 'w-24 h-24 md:w-32 md:h-32',
+        lg: 'w-32 h-32 md:w-40 md:h-40',
+      };
+
+      const baseClasses = `rounded-full object-cover border-4 border-blue-500 shadow-lg flex items-center justify-center bg-slate-700 text-white font-bold text-2xl ${sizeClasses[size]}`;
+
+      if (!src || hasError) {
+        return (
+          <div className={baseClasses} role="img" aria-label={alt}>
+            {initials || alt.substring(0, 2).toUpperCase()}
           </div>
-        </div>
-      </div>
-    );
-  }
+        );
+      }
 
-  return (
-    <div 
-      className="flex flex-col md:flex-row items-center md:items-start gap-6 p-6 md:p-8 rounded-3xl bg-gradient-to-br from-blue-700 to-blue-900 text-white shadow-xl w-full"
-      role="region"
-      aria-label={`Player profile for ${fullName}`}
-    >
-      <Avatar src={avatarUrl} alt={fullName} size="xl" />
-      <div className="flex flex-col items-center md:items-start flex-1 text-center md:text-left h-full justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{fullName}</h1>
-            <span className="text-blue-200 text-xl font-medium">#{jerseyNumber}</span>
+      return (
+        <img
+          src={src}
+          alt={alt}
+          className={baseClasses}
+          onError={() => setHasError(true)}
+          role="img"
+          aria-label={alt}
+        />
+      );
+    };
+
+    const PositionTag = ({ position }) => {
+      return (
+        <span
+          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white uppercase tracking-widest"
+          role="text"
+          aria-label={`Position: ${position}`}
+        >
+          {position}
+        </span>
+      );
+    };
+
+    const SectionHeading = ({ title, subtitle }) => {
+      return (
+        <div className="flex flex-col gap-1 mb-4" role="heading" aria-label={title}>
+          <h2 className="text-xl font-bold text-white relative inline-block">
+            {title}
+            <span className="absolute -bottom-1 left-0 w-12 h-1 bg-cyan-400 rounded-full"></span>
+          </h2>
+          {subtitle && <p className="text-sm text-slate-400 mt-2">{subtitle}</p>}
+        </div>
+      );
+    };
+
+    const StatsTableRow = (props) => {
+      const { season, games, atBats, hits, doubles, triples, homeRuns, rbi, avg, obp, slg, ops, isHighlighted } = props;
+      
+      return (
+        <tr 
+          className={`border-b border-slate-700 hover:bg-slate-700/50 transition-colors ${isHighlighted ? 'bg-slate-800/80 font-medium' : ''}`}
+          role="row"
+          aria-label={`Stats for ${season}`}
+        >
+          <th scope="row" className="px-4 py-3 text-left font-normal text-white">{season}</th>
+          <td className="px-4 py-3 text-right text-slate-300">{games}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{atBats}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{hits}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{doubles}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{triples}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{homeRuns}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{rbi}</td>
+          <td className="px-4 py-3 text-right font-semibold text-white">{avg}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{obp}</td>
+          <td className="px-4 py-3 text-right text-slate-300">{slg}</td>
+          <td className="px-4 py-3 text-right font-semibold text-cyan-400">{ops}</td>
+        </tr>
+      );
+    };
+
+    const GamePerformanceBar = ({
+      date,
+      value,
+      maxValue,
+      isSelected,
+      onClick,
+      onMouseEnter,
+      onMouseLeave,
+      opponent,
+      activeStatLabel
+    }) => {
+      const heightPercentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
+      
+      return (
+        <div 
+          className="flex flex-col items-center justify-end gap-2 cursor-pointer group relative h-48 w-8 md:w-12"
+          role="img"
+          aria-label={`Game on ${date}: ${value}`}
+          onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          tabIndex={0}
+        >
+          <div className={`absolute bottom-full mb-2 bg-slate-900 text-white text-xs p-2 rounded shadow-lg whitespace-nowrap z-10 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none'}`}>
+            <div className="font-bold">{date} vs {opponent}</div>
+            <div>{activeStatLabel}: {value}</div>
           </div>
           
-          <div className="flex items-center justify-center md:justify-start gap-2 text-blue-100 mb-6">
-            {teamLogoUrl && <img src={teamLogoUrl} alt={teamName} className="w-5 h-5 rounded-full bg-white object-contain p-0.5" />}
-            <span>{teamName}</span>
-            <span>•</span>
-            <span>{position}</span>
-            {nationality && (
-              <>
-                <span>•</span>
-                <span>{nationality}</span>
-              </>
-            )}
+          <div 
+            className={`w-full bg-cyan-400 rounded-t-md transition-all duration-300 ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-800 bg-cyan-300' : 'group-hover:bg-cyan-300'}`}
+            style={{ height: `${Math.max(heightPercentage, 2)}%` }}
+          ></div>
+          
+          <div className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
+            {date}
           </div>
         </div>
+      );
+    };
 
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 md:mt-0">
-          {keyStats.map((stat, idx) => (
-            <StatBadge 
-              key={idx} 
-              label={stat.label} 
-              value={stat.value} 
-              trend={stat.trend} 
-              variant="highlight" 
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- StatsTableRow.tsx ---
-
-const StatsTableRow = ({
-  date, opponent, atBats, hits, homeRuns, rbis, battingAverage, isHighlighted
-}) => {
-  return (
-    <div 
-      className={`grid grid-cols-7 gap-2 px-4 py-3 text-sm border-b border-gray-100 hover:bg-blue-50 transition-colors duration-150 ${isHighlighted ? 'bg-yellow-50 font-semibold' : 'bg-white'}`}
-      role="row"
-      aria-label={`Game stats row for ${date} vs ${opponent}`}
-    >
-      <div className="text-gray-600 truncate">{date || '-'}</div>
-      <div className="text-gray-600 truncate">{opponent || '-'}</div>
-      <div className="tabular-nums text-gray-700">{atBats}</div>
-      <div className="tabular-nums text-gray-700">{hits}</div>
-      <div className="tabular-nums text-gray-700">{homeRuns}</div>
-      <div className="tabular-nums text-gray-700">{rbis}</div>
-      <div className="tabular-nums text-gray-700">{battingAverage}</div>
-    </div>
-  );
-};
-
-// --- DashboardFilterBar.tsx ---
-
-const DashboardFilterBar = ({
-  selectedSeason, availableSeasons, activeMetrics, onSeasonChange, onMetricToggle
-}) => {
-  const metrics = [
-    { id: 'battingAverage', label: 'Batting Avg' },
-    { id: 'homeRuns', label: 'Home Runs' },
-    { id: 'rbis', label: 'RBIs' }
-  ];
-
-  return (
-    <div 
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 w-full"
-      role="toolbar"
-      aria-label="Dashboard filter controls"
-    >
-      <div className="flex items-center gap-2">
-        <label htmlFor="season-select" className="text-sm font-medium text-gray-700">Season:</label>
-        <select 
-          id="season-select"
-          value={selectedSeason} 
-          onChange={(e) => onSeasonChange(e.target.value)}
-          className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-        >
-          {availableSeasons.map(season => (
-            <option key={season} value={season}>{season}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {metrics.map(metric => {
-          const isActive = activeMetrics.includes(metric.id);
-          return (
-            <button
-              key={metric.id}
-              onClick={() => onMetricToggle(metric.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent'
-              } border`}
-            >
-              {metric.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// --- StatsTable.tsx ---
-
-const StatsTable = ({
-  rows, sortBy = 'date', sortDirection = 'desc', currentPage = 1, totalPages = 1, isLoading
-}) => {
-  const [internalSortBy, setInternalSortBy] = useState(sortBy);
-  const [internalSortDir, setInternalSortDir] = useState(sortDirection);
-  const [internalPage, setInternalPage] = useState(currentPage);
-
-  const columns = [
-    { key: 'date', label: 'Date', sortable: true },
-    { key: 'opponent', label: 'OPP', sortable: false },
-    { key: 'atBats', label: 'AB', sortable: true },
-    { key: 'hits', label: 'H', sortable: true },
-    { key: 'homeRuns', label: 'HR', sortable: true },
-    { key: 'rbis', label: 'RBI', sortable: true },
-    { key: 'battingAverage', label: 'AVG', sortable: true }
-  ];
-
-  const handleSort = (key, isSortable) => {
-    if (!isSortable) return;
-    if (internalSortBy === key) {
-      setInternalSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setInternalSortBy(key);
-      setInternalSortDir('desc');
-    }
-  };
-
-  const sortedRows = [...rows].sort((a, b) => {
-    const aVal = a[internalSortBy as keyof StatsTableRowProps];
-    const bVal = b[internalSortBy as keyof StatsTableRowProps];
-
-    if (aVal === bVal) return 0;
-    
-    // Sort logic
-    if (internalSortDir === 'asc') {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
-  });
-
-  return (
-    <div className="flex flex-col gap-4 w-full">
-      <SectionHeading title="Game Logs" subtitle="Recent per-game performance statistics" />
-      
-      <div 
-        className="flex flex-col gap-0 rounded-2xl overflow-hidden bg-white shadow-md border border-gray-100"
-        role="table"
-        aria-label="Player game statistics table"
-        aria-live="polite"
-      >
-        <div className="grid grid-cols-7 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
-          {columns.map(col => (
-            <div 
-              key={col.key} 
-              className={`text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1 ${col.sortable ? 'cursor-pointer select-none hover:text-gray-900' : ''}`}
-              onClick={() => handleSort(col.key, col.sortable)}
-            >
-              {col.label}
-              {col.sortable && internalSortBy === col.key && (
-                <span>{internalSortDir === 'asc' ? '↑' : '↓'}</span>
-              )}
+    const ChartLegend = ({ items }) => {
+      return (
+        <div className="flex flex-wrap gap-4 mt-2" role="list" aria-label="Chart legend">
+          {items.map((item, index) => (
+            <div key={index} className="flex items-center gap-2" role="listitem">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+              <span className="text-sm text-slate-300">{item.label}</span>
             </div>
           ))}
         </div>
+      );
+    };
 
-        {isLoading ? (
-          <div className="flex flex-col">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 border-b border-gray-100 bg-gray-50 animate-pulse"></div>
-            ))}
+    const PlayerProfileCard = ({
+      playerName,
+      team,
+      position,
+      jerseyNumber,
+      photoUrl,
+      stats,
+      isLoading
+    }) => {
+      if (isLoading) {
+        return (
+          <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl w-full animate-pulse" role="region" aria-label="Loading player profile">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-slate-700"></div>
+            <div className="h-6 w-32 bg-slate-700 rounded mt-2"></div>
+            <div className="h-4 w-24 bg-slate-700 rounded"></div>
+            <div className="flex gap-4 mt-4">
+              <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
+              <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
+              <div className="w-20 h-16 bg-slate-700 rounded-xl"></div>
+            </div>
           </div>
-        ) : sortedRows.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No game data available</div>
-        ) : (
-          <div className="flex flex-col max-h-[400px] overflow-y-auto">
-            {sortedRows.map((row, i) => (
-              <StatsTableRow key={i} {...row} />
-            ))}
-          </div>
-        )}
+        );
+      }
 
-        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-          <span className="text-sm text-gray-600">Page {internalPage} of {totalPages}</span>
-          <div className="flex gap-2">
-            <button 
-              disabled={internalPage <= 1 || isLoading}
-              onClick={() => setInternalPage(p => Math.max(1, p - 1))}
-              className="px-3 py-1 bg-white border border-gray-200 rounded text-sm disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <button 
-              disabled={internalPage >= totalPages || isLoading}
-              onClick={() => setInternalPage(p => Math.min(totalPages, p + 1))}
-              className="px-3 py-1 bg-white border border-gray-200 rounded text-sm disabled:opacity-50"
-            >
-              Next
-            </button>
+      const initials = playerName ? playerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '';
+
+      return (
+        <div 
+          className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl text-white w-full"
+          role="region"
+          aria-label={`Player profile card for ${playerName}`}
+        >
+          <Avatar src={photoUrl} alt={playerName} initials={initials} />
+          
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-1 flex items-center justify-center gap-2">
+              {playerName}
+              <span className="text-slate-400 font-medium text-lg">#{jerseyNumber}</span>
+            </h1>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-slate-300">{team}</span>
+              <span className="text-slate-500">•</span>
+              <PositionTag position={position} />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
+            <StatBadge label="AVG" value={stats.avg} highlight />
+            <StatBadge label="HR" value={stats.hr} />
+            <StatBadge label="RBI" value={stats.rbi} />
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };
 
-// --- PerformanceChart.tsx ---
+    const StatFilterToggle = ({ options, activeOption, onChange }) => {
+      return (
+        <div 
+          className="flex flex-row gap-1 p-1 rounded-xl bg-slate-900 w-fit"
+          role="group"
+          aria-label="Filter chart by statistic"
+        >
+          {options.map(option => {
+            const isActive = activeOption === option.value;
+            return (
+              <button
+                key={option.value}
+                onClick={() => onChange(option.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                aria-pressed={isActive}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
 
+    const DashboardHeader = ({ dashboardTitle, season, teamLogoUrl }) => {
+      return (
+        <header 
+          className="flex items-center justify-between px-6 py-4 bg-slate-900 border-b border-slate-700 w-full"
+          role="banner"
+          aria-label="Dashboard header"
+        >
+          <div className="flex items-center gap-4">
+            {teamLogoUrl && (
+              <img src={teamLogoUrl} alt="Team Logo" className="w-10 h-10 object-contain" />
+            )}
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">{dashboardTitle}</h1>
+          </div>
+          {season && (
+            <div className="text-sm font-medium text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+              {season}
+            </div>
+          )}
+        </header>
+      );
+    };
 
-const PerformanceChart = ({ data, activeMetrics, isLoading }) => {
-  const [hoverIndex, setHoverIndex] = useState(null);
+    const StatsTable = ({ rows, caption, isLoading }) => {
+      if (isLoading) {
+        return (
+          <div className="w-full overflow-x-auto rounded-2xl bg-slate-800 shadow-lg p-6" role="table" aria-label="Loading batting statistics">
+            <div className="h-6 w-48 bg-slate-700 rounded mb-6 animate-pulse"></div>
+            <div className="space-y-4 animate-pulse">
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-10 w-full bg-slate-700 rounded"></div>)}
+            </div>
+          </div>
+        );
+      }
 
-  const colors = {
-    battingAverage: "#3B82F6",
-    homeRuns: "#EF4444",
-    rbis: "#10B981"
-  };
+      if (!rows || rows.length === 0) {
+        return (
+          <div className="w-full rounded-2xl bg-slate-800 shadow-lg p-6 flex flex-col items-center justify-center text-slate-400 min-h-[200px]">
+            <p>No statistics available.</p>
+          </div>
+        );
+      }
 
-  const legendItems = activeMetrics.map(m => ({
-    label: m === 'battingAverage' ? 'Batting Avg' : m === 'homeRuns' ? 'Home Runs' : 'RBIs',
-    color: colors[m]
-  }));
+      return (
+        <div className="w-full overflow-x-auto rounded-2xl bg-slate-800 shadow-lg p-4 md:p-6">
+          <SectionHeading title="Batting Statistics" />
+          <table className="w-full text-sm mt-4 min-w-[800px]" role="table" aria-label={caption || "Batting statistics table"}>
+            {caption && <caption className="sr-only">{caption}</caption>}
+            <thead>
+              <tr className="border-b-2 border-slate-700 text-slate-400 uppercase tracking-wider text-xs">
+                <th scope="col" className="px-4 py-3 text-left font-semibold">Season</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">G</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">AB</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">H</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">2B</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">3B</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">HR</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">RBI</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">AVG</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">OBP</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">SLG</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">OPS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => (
+                <StatsTableRow key={idx} {...row} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white shadow-md border border-gray-100 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-        <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg"></div>
-      </div>
-    );
-  }
+    const PerformanceChart = ({ 
+      games, 
+      activeStat = 'hits',
+      isLoading 
+    }) => {
+      const [selectedIndex, setSelectedIndex] = useState(null);
 
-  // Calculate SVG bounds
-  const width = 800;
-  const height = 300;
-  const padding = 40;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-
-  const maxValue = data.length > 0 ? Math.max(...data.flatMap(d => activeMetrics.map(m => d[m]))) || 1 : 1;
-
-  const getPoints = (metric: 'battingAverage' | 'homeRuns' | 'rbis') => {
-    return data.map((d, i) => {
-      const x = padding + (i / Math.max(1, data.length - 1)) * chartWidth;
-      const y = height - padding - (d[metric] / maxValue) * chartHeight;
-      return `${x},${y}`;
-    }).join(' ');
-  };
-
-  return (
-    <div 
-      className="flex flex-col gap-4 p-6 rounded-2xl bg-white shadow-md border border-gray-100"
-      role="img"
-      aria-label="Performance trend chart for selected metrics over recent games"
-    >
-      <SectionHeading title="Performance Trends" subtitle="Visualizing key metrics over time" />
-      <ChartLegend items={legendItems} />
-      
-      <div className="relative w-full h-64 md:h-80">
-        {data.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500">No data available</div>
-        ) : (
-          <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
-            {/* Y-axis labels */}
-            {[0, 0.5, 1].map((ratio) => (
-              <text key={ratio} x={padding - 10} y={height - padding - ratio * chartHeight + 4} textAnchor="end" className="text-xs fill-gray-400">
-                {(maxValue * ratio).toFixed(2)}
-              </text>
-            ))}
-
-            {/* Grid lines */}
-            {[0, 0.5, 1].map((ratio) => (
-              <line key={ratio} x1={padding} y1={height - padding - ratio * chartHeight} x2={width - padding} y2={height - padding - ratio * chartHeight} stroke="#E5E7EB" strokeDasharray="4 4" />
-            ))}
-            
-            {/* Lines */}
-            {activeMetrics.map(metric => (
-              <polyline
-                key={metric}
-                points={getPoints(metric)}
-                fill="none"
-                stroke={colors[metric]}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-all duration-300"
-              />
-            ))}
-
-            {/* Hover Points */}
-            {data.map((d, i) => {
-              const x = padding + (i / Math.max(1, data.length - 1)) * chartWidth;
-              return activeMetrics.map(metric => {
-                const y = height - padding - (d[metric] / maxValue) * chartHeight;
-                return (
-                  <circle
-                    key={`${metric}-${i}`}
-                    cx={x}
-                    cy={y}
-                    r={hoverIndex === i ? 6 : 4}
-                    fill={colors[metric]}
-                    stroke="white"
-                    strokeWidth="2"
-                    className="transition-all duration-200 cursor-pointer"
-                    onMouseEnter={() => setHoverIndex(i)}
-                    onMouseLeave={() => setHoverIndex(null)}
-                  />
-                );
-              });
-            })}
-          </svg>
-        )}
-
-        {/* Custom Tooltip Overlay */}
-        {hoverIndex !== null && data[hoverIndex] && (
-          <div 
-            className="absolute top-0 pointer-events-none transition-all duration-200"
-            style={{ left: `${(hoverIndex / Math.max(1, data.length - 1)) * 100}%`, transform: 'translateX(-50%)' }}
-          >
-            <div className="mt-[-10px]">
-              {activeMetrics.map((metric, idx) => (
-                <div key={idx} className="mb-1">
-                  <PerformanceChartTooltip
-                    date={data[hoverIndex].date}
-                    value={data[hoverIndex][metric]}
-                    opponent={data[hoverIndex].opponent}
-                    visible={true}
-                  />
-                </div>
+      if (isLoading) {
+        return (
+          <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px]" role="region" aria-label="Loading chart">
+            <div className="h-6 w-48 bg-slate-700 rounded mb-4 animate-pulse"></div>
+            <div className="flex-1 flex items-end justify-between gap-2 animate-pulse">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="w-8 bg-slate-700 rounded-t-md" style={{ height: `${Math.random() * 80 + 20}%` }}></div>
               ))}
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-};
+        );
+      }
 
-// --- QuickStatsStrip.tsx ---
-
-const QuickStatsStrip = ({
-  battingAverage, homeRuns, rbis, hits, gamesPlayed, isLoading
-}) => {
-  const cards = [
-    { label: 'Batting Average', value: battingAverage },
-    { label: 'Home Runs', value: homeRuns },
-    { label: 'RBIs', value: rbis },
-    { label: 'Hits', value: hits }
-  ];
-
-  if (gamesPlayed !== undefined) {
-    cards.push({ label: 'Games Played', value: gamesPlayed });
-  }
-
-  return (
-    <div 
-      className="flex flex-row gap-4 overflow-x-auto pb-2 scrollbar-hide w-full snap-x"
-      role="region"
-      aria-label="Quick statistics overview"
-    >
-      {isLoading ? (
-        [...Array(4)].map((_, i) => (
-          <div key={i} className="flex-1 min-w-[140px] snap-center">
-            <StatCard label="Loading..." value="-" isLoading={true} />
+      if (!games || games.length === 0) {
+        return (
+          <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-800 shadow-lg w-full min-h-[300px] text-slate-400">
+            <p>No recent games available.</p>
           </div>
-        ))
-      ) : (
-        cards.map((card, i) => (
-          <div key={i} className="flex-1 min-w-[140px] snap-center">
-            <StatCard label={card.label} value={card.value} />
+        );
+      }
+
+      const maxValue = Math.max(...games.map(g => g[activeStat]), 1);
+      const statLabels = {
+        hits: 'Hits',
+        homeRuns: 'Home Runs',
+        rbi: 'RBIs'
+      };
+
+      return (
+        <div className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-800 shadow-lg w-full" role="region" aria-label="Recent game performance chart">
+          <SectionHeading title="Recent Performance" subtitle={`Last ${games.length} Games`} />
+          
+          <div className="flex-1 flex items-end justify-between gap-1 sm:gap-2 mt-8 pt-10 border-b border-slate-700 pb-2">
+            {games.map((game, idx) => (
+              <GamePerformanceBar
+                key={idx}
+                date={game.date}
+                value={game[activeStat]}
+                maxValue={maxValue}
+                opponent={game.opponent}
+                activeStatLabel={statLabels[activeStat]}
+                isSelected={selectedIndex === idx}
+                onClick={() => setSelectedIndex(idx === selectedIndex ? null : idx)}
+              />
+            ))}
           </div>
-        ))
-      )}
-    </div>
-  );
-};
+          
+          <ChartLegend items={[
+            { label: statLabels[activeStat], color: '#22D3EE' }
+          ]} />
+        </div>
+      );
+    };
 
-// --- PlayerStatsDashboard.tsx ---
+    const PlayerStatsDashboard = ({ player, isLoading, error }) => {
+      const [activeStat, setActiveStat] = useState('hits');
 
-const PlayerStatsDashboard = ({
-  playerId, profileData, quickStatsData, chartData, tableData, isLoading
-}) => {
-  const [selectedSeason, setSelectedSeason] = useState('2025');
-  const [activeMetrics, setActiveMetrics] = useState(['battingAverage']);
+      if (error) {
+        return (
+          <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6" role="main" aria-label="Error loading dashboard">
+            <div className="bg-red-900/20 border border-red-500 text-red-400 p-6 rounded-2xl max-w-md text-center">
+              <h2 className="text-xl font-bold mb-2">Error Loading Data</h2>
+              <p>{error}</p>
+            </div>
+          </div>
+        );
+      }
 
-  const handleMetricToggle = (metric: 'battingAverage' | 'homeRuns' | 'rbis') => {
-    setActiveMetrics(prev => 
-      prev.includes(metric) 
-        ? prev.filter(m => m !== metric)
-        : [...prev, metric]
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50" role="main" aria-label="Baseball player statistics dashboard">
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm px-4 md:px-8 py-3 flex items-center justify-between">
-        <div className="text-xl font-bold text-blue-700">MLB Stats</div>
-        <div className="text-sm text-gray-500">Player ID: {playerId}</div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col gap-6">
-        <section className="w-full">
-          <PlayerProfileCard {...profileData} isLoading={isLoading} />
-        </section>
-
-        <section className="w-full">
-          <QuickStatsStrip {...quickStatsData} isLoading={isLoading} />
-        </section>
-
-        <section className="w-full flex flex-col gap-4">
-          <DashboardFilterBar 
-            selectedSeason={selectedSeason}
-            availableSeasons={['2025', '2024', '2023', 'Career']}
-            activeMetrics={activeMetrics}
-            onSeasonChange={setSelectedSeason}
-            onMetricToggle={handleMetricToggle}
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col" role="main" aria-label="Baseball player statistics dashboard">
+          <DashboardHeader 
+            dashboardTitle="Player Stats Dashboard" 
+            season="2026 Season" 
           />
-          <PerformanceChart 
-            data={chartData} 
-            activeMetrics={activeMetrics.length > 0 ? activeMetrics : ['battingAverage']} 
-            isLoading={isLoading} 
+          
+          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
+            <div className="col-span-1 flex flex-col gap-6">
+              <PlayerProfileCard 
+                playerName={player?.name || ''}
+                team={player?.team || ''}
+                position={player?.position || ''}
+                jerseyNumber={player?.jerseyNumber || 0}
+                photoUrl={player?.photoUrl}
+                stats={player?.stats || { avg: '.000', hr: 0, rbi: 0 }}
+                isLoading={isLoading}
+              />
+            </div>
+            
+            <div className="col-span-1 flex flex-col gap-6 w-full overflow-hidden">
+              <StatsTable 
+                rows={player?.seasonStats || []} 
+                caption={`${player?.name || 'Player'} Batting Statistics`}
+                isLoading={isLoading}
+              />
+              
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-end">
+                  <StatFilterToggle 
+                    options={[
+                      { value: 'hits', label: 'Hits' },
+                      { value: 'homeRuns', label: 'Home Runs' },
+                      { value: 'rbi', label: 'RBIs' }
+                    ]}
+                    activeOption={activeStat}
+                    onChange={(val) => setActiveStat(val)}
+                  />
+                </div>
+                <PerformanceChart 
+                  games={player?.recentGames || []} 
+                  activeStat={activeStat}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const fetchPlayerData = async (id) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            name: 'Shohei Ohtani',
+            team: 'Los Angeles Dodgers',
+            position: 'DH',
+            jerseyNumber: 17,
+            photoUrl: 'https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=200&h=200&fit=crop',
+            stats: {
+              avg: '.304',
+              hr: 54,
+              rbi: 130
+            },
+            seasonStats: [
+              { season: '2023', games: 135, atBats: 497, hits: 151, doubles: 26, triples: 8, homeRuns: 44, rbi: 95, avg: '.304', obp: '.412', slg: '.654', ops: '1.066' },
+              { season: '2024', games: 159, atBats: 636, hits: 197, doubles: 38, triples: 7, homeRuns: 54, rbi: 130, avg: '.310', obp: '.390', slg: '.646', ops: '1.036', isHighlighted: true },
+              { season: 'Career', games: 860, atBats: 3119, hits: 871, doubles: 167, triples: 36, homeRuns: 225, rbi: 567, avg: '.279', obp: '.366', slg: '.556', ops: '.922' },
+            ],
+            recentGames: [
+              { date: 'Mar 1', opponent: 'SD', hits: 2, homeRuns: 1, rbi: 3 },
+              { date: 'Mar 2', opponent: 'SD', hits: 1, homeRuns: 0, rbi: 0 },
+              { date: 'Mar 4', opponent: 'SF', hits: 3, homeRuns: 2, rbi: 4 },
+              { date: 'Mar 5', opponent: 'SF', hits: 0, homeRuns: 0, rbi: 0 },
+              { date: 'Mar 7', opponent: 'COL', hits: 2, homeRuns: 0, rbi: 1 },
+              { date: 'Mar 8', opponent: 'COL', hits: 1, homeRuns: 1, rbi: 2 },
+              { date: 'Mar 9', opponent: 'COL', hits: 2, homeRuns: 0, rbi: 0 },
+              { date: 'Mar 11', opponent: 'ARI', hits: 1, homeRuns: 0, rbi: 0 },
+              { date: 'Mar 12', opponent: 'ARI', hits: 3, homeRuns: 1, rbi: 2 },
+            ]
+          });
+        }, 1500);
+      });
+    };
+
+    const PlayerStatsDashboardPage = ({ playerId }) => {
+      const [playerData, setPlayerData] = useState(null);
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState(undefined);
+
+      useEffect(() => {
+        let isMounted = true;
+        
+        const loadData = async () => {
+          setIsLoading(true);
+          setError(undefined);
+          try {
+            const data = await fetchPlayerData(playerId);
+            if (isMounted) {
+              setPlayerData(data);
+            }
+          } catch (err) {
+            if (isMounted) {
+              setError('Failed to fetch player data. Please try again later.');
+            }
+          } finally {
+            if (isMounted) {
+              setIsLoading(false);
+            }
+          }
+        };
+
+        if (playerId) {
+          loadData();
+        } else {
+          setIsLoading(false);
+          setError('No player ID provided.');
+        }
+
+        return () => {
+          isMounted = false;
+        };
+      }, [playerId]);
+
+      return (
+        <div className="flex flex-col w-full min-h-screen" role="document" aria-label="Baseball player stats page">
+          <PlayerStatsDashboard 
+            player={playerData}
+            isLoading={isLoading}
+            error={error}
           />
-        </section>
+        </div>
+      );
+    };
 
-        <section className="w-full">
-          <StatsTable rows={tableData} isLoading={isLoading} totalPages={3} currentPage={1} />
-        </section>
-      </main>
-    </div>
-  );
-};
+    const App = () => {
+      return <PlayerStatsDashboardPage playerId="ohtani-17" />;
+    };
 
-// --- PlayerStatsDashboardPage.tsx ---
-
-const PlayerStatsDashboardPage = ({ params }) => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Mock data
-  const profileData = {
-    playerId: params.playerId,
-    fullName: "Shohei Ohtani",
-    teamName: "Los Angeles Dodgers",
-    teamLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/6/69/Los_Angeles_Dodgers_logo.svg",
-    position: "Designated Hitter",
-    jerseyNumber: 17,
-    nationality: "🇯🇵",
-    avatarUrl: "https://i.pravatar.cc/150?u=shohei",
-    keyStats: [
-      { label: "AVG", value: ".304", trend: "up" as const },
-      { label: "HR", value: 44, trend: "up" as const },
-      { label: "RBI", value: 95, trend: "neutral" as const }
-    ]
-  };
-
-  const quickStatsData = {
-    battingAverage: ".304",
-    homeRuns: 44,
-    rbis: 95,
-    hits: 151,
-    gamesPlayed: 135
-  };
-
-  const chartData = [
-    { date: "Oct 1", battingAverage: 0.290, homeRuns: 40, rbis: 80, opponent: "SF" },
-    { date: "Oct 5", battingAverage: 0.295, homeRuns: 42, rbis: 85, opponent: "SD" },
-    { date: "Oct 10", battingAverage: 0.301, homeRuns: 43, rbis: 90, opponent: "ARI" },
-    { date: "Oct 15", battingAverage: 0.304, homeRuns: 44, rbis: 95, opponent: "COL" }
-  ];
-
-  const tableData = [
-    { date: "Oct 15", opponent: "COL", atBats: 4, hits: 2, homeRuns: 1, rbis: 3, battingAverage: ".500", isHighlighted: true },
-    { date: "Oct 10", opponent: "ARI", atBats: 5, hits: 1, homeRuns: 0, rbis: 0, battingAverage: ".200" },
-    { date: "Oct 5", opponent: "SD", atBats: 3, hits: 2, homeRuns: 1, rbis: 2, battingAverage: ".667" },
-    { date: "Oct 1", opponent: "SF", atBats: 4, hits: 1, homeRuns: 0, rbis: 0, battingAverage: ".250" },
-  ];
-
-  useEffect(() => {
-    // Simulate data loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [params.playerId]);
-
-  return (
-    <div className="flex flex-col min-h-screen" role="document" aria-label="Player stats dashboard page">
-      <PlayerStatsDashboard 
-        playerId={params.playerId}
-        profileData={profileData}
-        quickStatsData={quickStatsData}
-        chartData={chartData}
-        tableData={tableData}
-        isLoading={isLoading}
-      />
-    </div>
-  );
-};
-
-// --- App Mount ---
-const App = () => {
-    return <PlayerStatsDashboardPage params={{ playerId: "ohtani-17" }} />;
-};
-
-const rootElement = document.getElementById('root');
-const root = ReactDOM.createRoot(rootElement);
-root.render(<App />);
-
-    </script>
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
 </body>
 </html>

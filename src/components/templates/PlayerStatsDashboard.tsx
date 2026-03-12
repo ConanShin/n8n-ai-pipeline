@@ -1,68 +1,95 @@
 import React, { useState } from 'react';
-import { PlayerProfileCard, PlayerProfileCardProps } from '../molecules/PlayerProfileCard';
-import { QuickStatsStrip, QuickStatsStripProps } from '../organisms/QuickStatsStrip';
-import { DashboardFilterBar, DashboardFilterBarProps } from '../molecules/DashboardFilterBar';
-import { PerformanceChart, PerformanceChartProps } from '../organisms/PerformanceChart';
-import { StatsTable, StatsTableProps } from '../organisms/StatsTable';
+import { DashboardHeader } from '../molecules/DashboardHeader';
+import { PlayerProfileCard } from '../molecules/PlayerProfileCard';
+import { StatsTable } from '../organisms/StatsTable';
+import { StatFilterToggle } from '../molecules/StatFilterToggle';
+import { PerformanceChart, GameData } from '../organisms/PerformanceChart';
+import { StatsTableRowProps } from '../atoms/StatsTableRow';
 
-export interface PlayerStatsDashboardProps {
-  playerId: string;
-  profileData: PlayerProfileCardProps;
-  quickStatsData: QuickStatsStripProps;
-  chartData: PerformanceChartProps['data'];
-  tableData: StatsTableProps['rows'];
-  isLoading?: boolean;
+export interface PlayerData {
+  name: string;
+  team: string;
+  position: string;
+  jerseyNumber: number;
+  photoUrl?: string;
+  stats: {
+    avg: string;
+    hr: number;
+    rbi: number;
+  };
+  seasonStats: StatsTableRowProps[];
+  recentGames: GameData[];
 }
 
-export const PlayerStatsDashboard: React.FC<PlayerStatsDashboardProps> = ({
-  playerId, profileData, quickStatsData, chartData, tableData, isLoading
-}) => {
-  const [selectedSeason, setSelectedSeason] = useState('2025');
-  const [activeMetrics, setActiveMetrics] = useState<Array<'battingAverage' | 'homeRuns' | 'rbis'>>(['battingAverage']);
+export interface PlayerStatsDashboardProps {
+  player: PlayerData | null;
+  isLoading?: boolean;
+  error?: string;
+}
 
-  const handleMetricToggle = (metric: 'battingAverage' | 'homeRuns' | 'rbis') => {
-    setActiveMetrics(prev => 
-      prev.includes(metric) 
-        ? prev.filter(m => m !== metric)
-        : [...prev, metric]
+export const PlayerStatsDashboard: React.FC<PlayerStatsDashboardProps> = ({ player, isLoading, error }) => {
+  const [activeStat, setActiveStat] = useState<'hits' | 'homeRuns' | 'rbi'>('hits');
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6" role="main" aria-label="Error loading dashboard">
+        <div className="bg-red-900/20 border border-red-500 text-red-400 p-6 rounded-2xl max-w-md text-center">
+          <h2 className="text-xl font-bold mb-2">Error Loading Data</h2>
+          <p>{error}</p>
+        </div>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50" role="main" aria-label="Baseball player statistics dashboard">
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm px-4 md:px-8 py-3 flex items-center justify-between">
-        <div className="text-xl font-bold text-blue-700">MLB Stats</div>
-        <div className="text-sm text-gray-500">Player ID: {playerId}</div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col gap-6">
-        <section className="w-full">
-          <PlayerProfileCard {...profileData} isLoading={isLoading} />
-        </section>
-
-        <section className="w-full">
-          <QuickStatsStrip {...quickStatsData} isLoading={isLoading} />
-        </section>
-
-        <section className="w-full flex flex-col gap-4">
-          <DashboardFilterBar 
-            selectedSeason={selectedSeason}
-            availableSeasons={['2025', '2024', '2023', 'Career']}
-            activeMetrics={activeMetrics}
-            onSeasonChange={setSelectedSeason}
-            onMetricToggle={handleMetricToggle}
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col" role="main" aria-label="Baseball player statistics dashboard">
+      <DashboardHeader 
+        dashboardTitle="Player Stats Dashboard" 
+        season="2026 Season" 
+      />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
+        {/* Sidebar */}
+        <div className="col-span-1 flex flex-col gap-6">
+          <PlayerProfileCard 
+            playerName={player?.name || ''}
+            team={player?.team || ''}
+            position={player?.position || ''}
+            jerseyNumber={player?.jerseyNumber || 0}
+            photoUrl={player?.photoUrl}
+            stats={player?.stats || { avg: '.000', hr: 0, rbi: 0 }}
+            isLoading={isLoading}
           />
-          <PerformanceChart 
-            data={chartData} 
-            activeMetrics={activeMetrics.length > 0 ? activeMetrics : ['battingAverage']} 
-            isLoading={isLoading} 
+        </div>
+        
+        {/* Main Content */}
+        <div className="col-span-1 flex flex-col gap-6 w-full overflow-hidden">
+          <StatsTable 
+            rows={player?.seasonStats || []} 
+            caption={`${player?.name || 'Player'} Batting Statistics`}
+            isLoading={isLoading}
           />
-        </section>
-
-        <section className="w-full">
-          <StatsTable rows={tableData} isLoading={isLoading} totalPages={3} currentPage={1} />
-        </section>
-      </main>
+          
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-end">
+              <StatFilterToggle 
+                options={[
+                  { value: 'hits', label: 'Hits' },
+                  { value: 'homeRuns', label: 'Home Runs' },
+                  { value: 'rbi', label: 'RBIs' }
+                ]}
+                activeOption={activeStat}
+                onChange={(val) => setActiveStat(val as any)}
+              />
+            </div>
+            <PerformanceChart 
+              games={player?.recentGames || []} 
+              activeStat={activeStat}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
