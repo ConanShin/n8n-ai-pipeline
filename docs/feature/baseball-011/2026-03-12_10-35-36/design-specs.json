@@ -1,0 +1,406 @@
+{
+  "ticket": "BASEBALL-011",
+  "title": "Modern Baseball Player Stats Dashboard",
+  "description": "A responsive dashboard displaying baseball player statistics including batting average, home runs, RBIs, and recent game performance. Composed of a player profile card, stats table, and performance chart.",
+  "components": [
+    {
+      "name": "PlayerAvatar",
+      "type": "atom",
+      "description": "Circular player headshot image with fallback initials placeholder",
+      "props": {
+        "src": { "type": "string", "required": false, "description": "URL of the player's headshot image" },
+        "alt": { "type": "string", "required": true, "description": "Accessible alt text for the player image" },
+        "initials": { "type": "string", "required": true, "description": "Player initials shown as fallback when image is unavailable" },
+        "size": { "type": "string", "required": false, "description": "Size variant: 'sm' | 'md' | 'lg'. Defaults to 'md'" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative flex items-center justify-center rounded-full overflow-hidden bg-gray-200 shrink-0"
+      },
+      "variants": {
+        "sm": "w-10 h-10 text-sm",
+        "md": "w-20 h-20 text-xl",
+        "lg": "w-28 h-28 text-3xl"
+      },
+      "states": ["default", "error"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "Player profile photo"
+      }
+    },
+    {
+      "name": "StatBadge",
+      "type": "atom",
+      "description": "A small pill/badge component displaying a stat label and its value with color coding",
+      "props": {
+        "label": { "type": "string", "required": true, "description": "Short label for the stat (e.g., 'AVG', 'HR', 'RBI')" },
+        "value": { "type": "string | number", "required": true, "description": "The stat value to display" },
+        "variant": { "type": "string", "required": false, "description": "Color variant: 'blue' | 'green' | 'red' | 'yellow' | 'gray'. Defaults to 'gray'" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "inline-flex flex-col items-center justify-center px-4 py-2 rounded-xl gap-0.5"
+      },
+      "variants": {
+        "blue": "bg-blue-100 text-blue-800",
+        "green": "bg-green-100 text-green-800",
+        "red": "bg-red-100 text-red-800",
+        "yellow": "bg-yellow-100 text-yellow-800",
+        "gray": "bg-gray-100 text-gray-700"
+      },
+      "states": ["default"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "Stat badge"
+      }
+    },
+    {
+      "name": "SectionHeading",
+      "type": "atom",
+      "description": "Section title heading with optional subtitle",
+      "props": {
+        "title": { "type": "string", "required": true, "description": "Main heading text" },
+        "subtitle": { "type": "string", "required": false, "description": "Optional sub-text below the heading" },
+        "level": { "type": "number", "required": false, "description": "HTML heading level (2–4). Defaults to 2" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-0.5"
+      },
+      "states": ["default"],
+      "accessibility": {
+        "role": "heading",
+        "ariaLabel": "Section heading"
+      }
+    },
+    {
+      "name": "LoadingSpinner",
+      "type": "atom",
+      "description": "Animated loading indicator used during data fetching states",
+      "props": {
+        "size": { "type": "string", "required": false, "description": "Size variant: 'sm' | 'md' | 'lg'. Defaults to 'md'" },
+        "label": { "type": "string", "required": false, "description": "Screen-reader accessible label. Defaults to 'Loading...'" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center"
+      },
+      "states": ["default"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "Loading"
+      }
+    },
+    {
+      "name": "EmptyState",
+      "type": "atom",
+      "description": "Placeholder content shown when no data is available",
+      "props": {
+        "icon": { "type": "string", "required": false, "description": "Icon name or emoji to display" },
+        "message": { "type": "string", "required": true, "description": "Primary empty state message" },
+        "subMessage": { "type": "string", "required": false, "description": "Optional secondary hint message" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-center gap-3 py-16 text-center text-gray-400"
+      },
+      "states": ["default"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "No data available"
+      }
+    },
+    {
+      "name": "PlayerProfileCard",
+      "type": "molecule",
+      "description": "Card showing the player's photo, name, team, position, jersey number, and key headline stats (AVG, HR, RBI). Acts as the identity section of the dashboard.",
+      "props": {
+        "playerName": { "type": "string", "required": true, "description": "Full name of the player" },
+        "teamName": { "type": "string", "required": true, "description": "Name of the player's team" },
+        "teamLogoUrl": { "type": "string", "required": false, "description": "URL of the team logo" },
+        "position": { "type": "string", "required": true, "description": "Player's fielding position (e.g., 'CF', '1B', 'SP')" },
+        "jerseyNumber": { "type": "string | number", "required": true, "description": "Player's jersey number" },
+        "avatarUrl": { "type": "string", "required": false, "description": "URL of the player headshot" },
+        "battingAverage": { "type": "number", "required": true, "description": "Player's batting average (e.g., 0.312)" },
+        "homeRuns": { "type": "number", "required": true, "description": "Total home runs" },
+        "rbi": { "type": "number", "required": true, "description": "Total runs batted in" },
+        "season": { "type": "string", "required": false, "description": "Season year or label (e.g., '2025 Season')" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-white rounded-2xl shadow-md border border-gray-100 w-full"
+      },
+      "children": ["PlayerAvatar", "SectionHeading", "StatBadge"],
+      "internalLayout": {
+        "avatarArea": "shrink-0",
+        "infoArea": "flex flex-col gap-3 flex-1",
+        "nameRow": "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3",
+        "metaRow": "flex items-center gap-2 text-sm text-gray-500",
+        "statsRow": "flex flex-wrap gap-3 mt-2"
+      },
+      "states": ["default", "loading", "error"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "Player profile"
+      }
+    },
+    {
+      "name": "StatsTableRow",
+      "type": "molecule",
+      "description": "A single row in the player stats table representing one game or stat line",
+      "props": {
+        "date": { "type": "string", "required": true, "description": "Date of the game (e.g., 'Mar 10')" },
+        "opponent": { "type": "string", "required": true, "description": "Opposing team abbreviation" },
+        "atBats": { "type": "number", "required": true, "description": "At bats in the game" },
+        "hits": { "type": "number", "required": true, "description": "Hits in the game" },
+        "homeRuns": { "type": "number", "required": true, "description": "Home runs in the game" },
+        "rbi": { "type": "number", "required": true, "description": "RBIs in the game" },
+        "battingAverage": { "type": "number", "required": true, "description": "Batting average for the game" },
+        "isHighlighted": { "type": "boolean", "required": false, "description": "Whether to visually highlight this row (e.g., notable performance)" }
+      },
+      "layout": {
+        "display": "grid",
+        "tailwind": "grid grid-cols-7 items-center px-4 py-3 text-sm border-b border-gray-100 last:border-none hover:bg-gray-50 transition-colors"
+      },
+      "states": ["default", "highlighted"],
+      "accessibility": {
+        "role": "row",
+        "ariaLabel": "Game stats row"
+      }
+    },
+    {
+      "name": "PerformanceChartBar",
+      "type": "molecule",
+      "description": "A single vertical bar representing a game's batting performance in the chart (e.g., hits or batting average). Includes a tooltip on hover.",
+      "props": {
+        "value": { "type": "number", "required": true, "description": "Numeric value to visualise" },
+        "maxValue": { "type": "number", "required": true, "description": "Maximum possible value for scale normalization" },
+        "label": { "type": "string", "required": true, "description": "X-axis label (e.g., date or game number)" },
+        "tooltipText": { "type": "string", "required": false, "description": "Text shown in the hover tooltip" },
+        "color": { "type": "string", "required": false, "description": "Tailwind background color class. Defaults to 'bg-blue-500'" },
+        "isActive": { "type": "boolean", "required": false, "description": "Whether this bar is currently highlighted/selected" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-end gap-1 h-full"
+      },
+      "states": ["default", "hover", "active"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "Performance bar chart item"
+      }
+    },
+    {
+      "name": "StatsTable",
+      "type": "organism",
+      "description": "A full table displaying game-by-game batting statistics with sortable columns, a header row, and data rows for recent games. Includes an empty and loading state.",
+      "props": {
+        "rows": {
+          "type": "array",
+          "required": true,
+          "description": "Array of game stat objects (each matching StatsTableRow props)"
+        },
+        "isLoading": { "type": "boolean", "required": false, "description": "Shows skeleton/spinner when true" },
+        "sortKey": { "type": "string", "required": false, "description": "Currently active sort column key" },
+        "sortDirection": { "type": "string", "required": false, "description": "'asc' | 'desc'" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col w-full bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden"
+      },
+      "children": ["SectionHeading", "StatsTableRow", "LoadingSpinner", "EmptyState"],
+      "internalLayout": {
+        "header": "flex items-center justify-between px-6 py-4 border-b border-gray-100",
+        "tableHeader": "grid grid-cols-7 px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50",
+        "tableBody": "divide-y divide-gray-100",
+        "footer": "px-6 py-3 text-xs text-gray-400 text-right"
+      },
+      "columns": [
+        { "key": "date", "label": "Date", "sortable": true },
+        { "key": "opponent", "label": "OPP", "sortable": false },
+        { "key": "atBats", "label": "AB", "sortable": true },
+        { "key": "hits", "label": "H", "sortable": true },
+        { "key": "homeRuns", "label": "HR", "sortable": true },
+        { "key": "rbi", "label": "RBI", "sortable": true },
+        { "key": "battingAverage", "label": "AVG", "sortable": true }
+      ],
+      "states": ["default", "loading", "empty", "error"],
+      "accessibility": {
+        "role": "table",
+        "ariaLabel": "Player game-by-game statistics table"
+      }
+    },
+    {
+      "name": "PerformanceChart",
+      "type": "organism",
+      "description": "Bar chart visualising the player's recent game performance trend (e.g., hits or batting average over the last N games). Includes chart legend, axis labels, and hover tooltips.",
+      "props": {
+        "data": {
+          "type": "array",
+          "required": true,
+          "description": "Array of data point objects with { label, value } for each recent game"
+        },
+        "metric": { "type": "string", "required": false, "description": "The stat being plotted: 'hits' | 'homeRuns' | 'battingAverage'. Defaults to 'hits'" },
+        "title": { "type": "string", "required": false, "description": "Chart title shown in the card header" },
+        "isLoading": { "type": "boolean", "required": false, "description": "Shows skeleton state when true" },
+        "maxGames": { "type": "number", "required": false, "description": "Maximum number of recent games to display. Defaults to 10" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col w-full bg-white rounded-2xl shadow-md border border-gray-100 p-6 gap-4"
+      },
+      "children": ["SectionHeading", "PerformanceChartBar", "LoadingSpinner", "EmptyState"],
+      "internalLayout": {
+        "header": "flex items-center justify-between",
+        "metricSelector": "flex gap-2",
+        "chartArea": "relative flex items-end justify-between gap-1 h-48 mt-4",
+        "xAxis": "flex justify-between text-xs text-gray-400 mt-1",
+        "legend": "flex items-center gap-2 text-xs text-gray-500 mt-2"
+      },
+      "states": ["default", "loading", "empty", "error"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "Player performance bar chart"
+      }
+    },
+    {
+      "name": "DashboardTemplate",
+      "type": "template",
+      "description": "Defines the overall page layout grid for the dashboard: top profile card spanning full width, then a two-column layout with the performance chart and stats table below on larger screens.",
+      "props": {
+        "isLoading": { "type": "boolean", "required": false, "description": "Propagates loading state to all child organisms" }
+      },
+      "layout": {
+        "display": "grid",
+        "tailwind": "grid grid-cols-1 gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full"
+      },
+      "children": ["PlayerProfileCard", "PerformanceChart", "StatsTable"],
+      "internalLayout": {
+        "profileRow": "col-span-1",
+        "bottomRow": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+      },
+      "states": ["default", "loading"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Baseball player stats dashboard layout"
+      }
+    },
+    {
+      "name": "PlayerStatsDashboardPage",
+      "type": "page",
+      "description": "Top-level page component. Renders the page chrome (top navigation bar, page title) and the DashboardTemplate with all data-connected organisms.",
+      "props": {
+        "playerId": { "type": "string", "required": true, "description": "Unique identifier for the player whose stats are displayed" }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col min-h-screen bg-gray-50"
+      },
+      "children": ["DashboardTemplate"],
+      "internalLayout": {
+        "navbar": "w-full bg-white shadow-sm border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between",
+        "navTitle": "text-lg font-bold text-gray-900 tracking-tight",
+        "navActions": "flex items-center gap-3",
+        "pageBody": "flex-1 py-6"
+      },
+      "states": ["default", "loading", "error"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "Baseball player statistics dashboard page"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#2563EB",
+    "primaryLight": "#DBEAFE",
+    "secondary": "#10B981",
+    "secondaryLight": "#D1FAE5",
+    "accent": "#F59E0B",
+    "accentLight": "#FEF3C7",
+    "danger": "#EF4444",
+    "dangerLight": "#FEE2E2",
+    "neutral900": "#111827",
+    "neutral700": "#374151",
+    "neutral500": "#6B7280",
+    "neutral300": "#D1D5DB",
+    "neutral100": "#F3F4F6",
+    "surface": "#FFFFFF",
+    "background": "#F9FAFB"
+  },
+  "typography": {
+    "playerName": "text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight",
+    "teamName": "text-base font-medium text-gray-500",
+    "statValue": "text-2xl font-extrabold",
+    "statLabel": "text-xs font-semibold uppercase tracking-wide",
+    "tableHeader": "text-xs font-semibold text-gray-400 uppercase tracking-wider",
+    "tableCell": "text-sm text-gray-700",
+    "chartLabel": "text-xs text-gray-400",
+    "sectionTitle": "text-lg font-semibold text-gray-800",
+    "badge": "text-xs font-bold uppercase"
+  },
+  "interactions": [
+    {
+      "trigger": "hover",
+      "component": "StatsTableRow",
+      "action": "Row background transitions to gray-50 to indicate interactivity"
+    },
+    {
+      "trigger": "click",
+      "component": "StatsTable column header",
+      "action": "Toggles sort direction (asc/desc) for the selected column; active column header shows sort arrow indicator"
+    },
+    {
+      "trigger": "hover",
+      "component": "PerformanceChartBar",
+      "action": "Bar scales up slightly (scale-105) and a tooltip appears above showing the date and exact stat value"
+    },
+    {
+      "trigger": "click",
+      "component": "PerformanceChart metric selector",
+      "action": "Switches the chart data between 'Hits', 'Home Runs', and 'Batting Average' metrics; selected button gets primary color fill"
+    },
+    {
+      "trigger": "load",
+      "component": "PlayerStatsDashboardPage",
+      "action": "All data-dependent sections display LoadingSpinner / skeleton placeholder while data is being fetched"
+    },
+    {
+      "trigger": "error",
+      "component": "PlayerStatsDashboardPage",
+      "action": "An error banner is shown at the top of the page with a retry button; affected sections show EmptyState with an error message"
+    },
+    {
+      "trigger": "resize",
+      "component": "DashboardTemplate",
+      "action": "Layout reflows: on mobile, PerformanceChart and StatsTable stack vertically; on lg+ screens they sit side by side in a two-column grid"
+    }
+  ],
+  "responsiveBreakpoints": {
+    "sm": "640px — single-column cards switch to row-direction player profile",
+    "md": "768px — increased padding, stats badge font sizes grow",
+    "lg": "1024px — DashboardTemplate switches bottom section to two-column grid",
+    "xl": "1280px — max content width capped at max-w-7xl centered on page"
+  },
+  "designTokens": {
+    "borderRadius": {
+      "card": "rounded-2xl",
+      "badge": "rounded-xl",
+      "button": "rounded-lg",
+      "avatar": "rounded-full"
+    },
+    "shadow": {
+      "card": "shadow-md",
+      "navbar": "shadow-sm",
+      "tooltip": "shadow-lg"
+    },
+    "spacing": {
+      "cardPadding": "p-6",
+      "sectionGap": "gap-6",
+      "innerGap": "gap-4"
+    },
+    "transition": {
+      "default": "transition-colors duration-150 ease-in-out",
+      "scale": "transition-transform duration-150 ease-in-out"
+    }
+  }
+}
