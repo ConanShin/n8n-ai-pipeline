@@ -1,264 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Cart Preview - TEST-8000</title>
+    <title>야구 타이밍 게임</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        body { background-color: #f9fafb; }
+        body { margin: 0; padding: 0; background-color: #030712; }
+        @keyframes bounce-custom {
+            0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+            50% { transform: none; animation-timing-function: cubic-bezier(0,0,0.2,1); }
+        }
+        .animate-bounce-custom { animation: bounce-custom 1s infinite; }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gray-950 flex justify-center items-center min-h-screen">
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // --- Components ---
-
-        // QuantitySelector
-        const QuantitySelector = ({ quantity, onIncrement, onDecrement, disabled = false }) => {
-            return (
-                <div 
-                    className={`flex items-center space-x-2 border rounded-md p-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
-                    role="group"
-                    aria-label="Quantity controls"
-                >
-                    <button
-                        onClick={onDecrement}
-                        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
-                        aria-label="Decrease quantity"
-                        disabled={disabled}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                    </button>
-                    
-                    <span className="w-8 text-center font-medium" role="status">
-                        {quantity}
-                    </span>
-                    
-                    <button
-                        onClick={onIncrement}
-                        className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
-                        aria-label="Increase quantity"
-                        disabled={disabled}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                    </button>
+    <main class="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-gray-950 text-white overflow-hidden relative shadow-2xl md:rounded-3xl border border-gray-800">
+        
+        <!-- GameHeader -->
+        <header class="flex items-center justify-between w-full px-4 py-3 bg-gray-900 border-b border-gray-700 z-10">
+            <div class="flex flex-col items-center gap-0.5">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Score</span>
+                <span class="text-4xl font-black tabular-nums text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.7)]">42</span>
+            </div>
+            
+            <div class="grid grid-cols-3 grid-rows-2 w-16 h-12 place-items-center relative">
+                <div class="col-start-2 row-start-1">
+                    <div class="w-4 h-4 rotate-45 border-2 border-yellow-400 bg-yellow-400 shadow-[0_0_6px_2px_rgba(250,204,21,0.5)]"></div>
                 </div>
-            );
-        };
-
-        // CartItem
-        const CartItem = ({ product, quantity, onQuantityChange, onRemove, isRemoving = false }) => {
-            const handleIncrement = () => onQuantityChange(quantity + 1);
-            const handleDecrement = () => {
-                if (quantity > 1) {
-                    onQuantityChange(quantity - 1);
-                }
-            };
-
-            return (
-                <article 
-                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200 ${isRemoving ? 'opacity-50 pointer-events-none' : ''}`}
-                    role="article"
-                >
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <img 
-                            src={product.image} 
-                            alt={product.name} 
-                            className="w-20 h-20 object-cover rounded-md bg-gray-100"
-                        />
-                        
-                        <div className="flex-1 flex flex-col gap-1">
-                            <h3 className="font-semibold text-lg">{product.name}</h3>
-                            <span className="text-gray-500">${product.price.toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                        <QuantitySelector 
-                            quantity={quantity}
-                            onIncrement={handleIncrement}
-                            onDecrement={handleDecrement}
-                            disabled={isRemoving}
-                        />
-                        
-                        <button
-                            onClick={onRemove}
-                            className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
-                            aria-label={`Remove ${product.name} from cart`}
-                            disabled={isRemoving}
-                        >
-                            Remove
-                        </button>
-                    </div>
-                </article>
-            );
-        };
-
-        // CartSummary
-        const CartSummary = ({ subtotal, onCheckout, isLoading = false }) => {
-            return (
-                <div 
-                    className="flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
-                    role="complementary"
-                    aria-label="Order summary"
-                >
-                    <div className="flex justify-between items-center text-lg font-bold">
-                        <span>Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    
-                    <button
-                        onClick={onCheckout}
-                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Processing...' : 'Checkout'}
-                    </button>
+                <div class="col-start-1 row-start-2">
+                    <div class="w-4 h-4 rotate-45 border-2 border-gray-600 bg-transparent"></div>
                 </div>
-            );
-        };
-
-        // ShoppingCart
-        const ShoppingCart = ({ items: initialItems, onCheckout }) => {
-            const [items, setItems] = useState(initialItems);
-            const [isLoading, setIsLoading] = useState(false);
-
-            useEffect(() => {
-                setItems(initialItems);
-            }, [initialItems]);
-
-            const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-
-            const handleQuantityChange = (index, newQuantity) => {
-                const newItems = [...items];
-                newItems[index] = { ...newItems[index], quantity: newQuantity };
-                setItems(newItems);
-            };
-
-            const handleRemove = (index) => {
-                const newItems = items.filter((_, i) => i !== index);
-                setItems(newItems);
-            };
-
-            const handleCheckout = () => {
-                setIsLoading(true);
-                if (onCheckout) {
-                    onCheckout();
-                } else {
-                    setTimeout(() => {
-                        setIsLoading(false);
-                        alert('Proceeding to checkout...');
-                    }, 1000);
-                }
-            };
-
-            if (items.length === 0) {
-                return (
-                    <div 
-                        className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
-                        role="main" 
-                        aria-label="Shopping cart"
-                    >
-                        <div className="lg:col-span-2 space-y-4">
-                            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                <p className="text-xl font-medium">Your cart is empty</p>
-                            </div>
-                        </div>
-                        <div className="lg:col-span-1">
-                           <CartSummary subtotal={0} onCheckout={handleCheckout} isLoading={isLoading} />
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <main 
-                    className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
-                    role="main"
-                    aria-label="Shopping cart"
-                >
-                    <div className="lg:col-span-2 space-y-4">
-                        {items.map((item, index) => (
-                            <CartItem
-                                key={`${item.product.id}-${index}`}
-                                product={item.product}
-                                quantity={item.quantity}
-                                onQuantityChange={(qty) => handleQuantityChange(index, qty)}
-                                onRemove={() => handleRemove(index)}
-                            />
-                        ))}
-                    </div>
-                    
-                    <div className="lg:col-span-1">
-                        <CartSummary 
-                            subtotal={subtotal} 
-                            onCheckout={handleCheckout} 
-                            isLoading={isLoading}
-                        />
-                    </div>
-                </main>
-            );
-        };
-
-        // --- App / Preview Data ---
-
-        const mockItems = [
-            {
-                product: {
-                    id: 1,
-                    name: "Wireless Headphones",
-                    price: 199.99,
-                    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80"
-                },
-                quantity: 1
-            },
-            {
-                product: {
-                    id: 2,
-                    name: "Smart Watch Series 7",
-                    price: 399.50,
-                    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80"
-                },
-                quantity: 2
-            },
-            {
-                product: {
-                    id: 3,
-                    name: "Mechanical Keyboard",
-                    price: 129.00,
-                    image: "https://images.unsplash.com/photo-1587829741301-dc798b91add1?w=300&q=80"
-                },
-                quantity: 1
-            }
-        ];
-
-        const App = () => {
-            return (
-                <div className="min-h-screen bg-gray-50 py-8">
-                    <header className="max-w-7xl mx-auto px-4 sm:px-6 mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-                    </header>
-                    <ShoppingCart items={mockItems} />
+                <div class="col-start-3 row-start-2">
+                    <div class="w-4 h-4 rotate-45 border-2 border-yellow-400 bg-yellow-400 shadow-[0_0_6px_2px_rgba(250,204,21,0.5)]"></div>
                 </div>
-            );
-        };
+            </div>
+            
+            <div class="flex flex-col items-center gap-1">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Out</span>
+                <div class="flex gap-1.5">
+                    <div class="w-3.5 h-3.5 rounded-full border-2 border-red-500 bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.6)]"></div>
+                    <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-500 bg-transparent"></div>
+                    <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-500 bg-transparent"></div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- GameField -->
+        <div class="relative flex-1 w-full bg-gradient-to-b from-sky-900 via-green-900 to-green-800 overflow-hidden min-h-[50vh]">
+            <div class="absolute inset-0 w-full h-full pointer-events-none">
+                <div class="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_40px,rgba(255,255,255,0.03)_40px,rgba(255,255,255,0.03)_41px)]"></div>
+                <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-48 h-48 border-2 border-white/20 rotate-45"></div>
+                <div class="absolute top-[25%] left-1/2 -translate-x-1/2 w-16 h-8 rounded-[100%] bg-yellow-800/40 border border-yellow-700/30"></div>
+            </div>
+            
+            <div class="absolute top-[20%] left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-16 animate-bounce-custom">
+                <span class="text-5xl">🤾</span>
+            </div>
+            
+            <div class="absolute inset-0 pointer-events-none z-10">
+                <div class="absolute rounded-full bg-white border border-gray-300 shadow-lg top-[60%] left-[46%] w-[25px] h-[25px]" style="transform: translate(-50%, -50%);">
+                    <div class="absolute inset-0 border-2 border-red-400 rounded-full rotate-45 opacity-50"></div>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-28 left-1/2 -translate-x-1/2 w-4/5 max-w-sm flex flex-col items-center gap-2">
+                <span class="text-xs text-gray-400 font-medium tracking-wider uppercase">Timing</span>
+                <div class="relative w-full h-4 rounded-full bg-gray-700/70 backdrop-blur-sm overflow-hidden border border-gray-600/50">
+                    <div class="absolute top-0 h-full bg-yellow-400/30 border border-yellow-400/60" style="left: 78%; width: 4%;"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-green-400 to-yellow-400" style="width: 50%;"></div>
+                    <div class="absolute top-1/2 -translate-y-1/2 w-1 h-6 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]" style="left: 50%; transform: translate(-50%, -50%);"></div>
+                </div>
+            </div>
+        </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        <!-- BattingZone -->
+        <div class="relative w-full flex items-center justify-center py-4 bg-gray-950/80 border-t border-gray-800 select-none h-32 md:h-40 cursor-pointer">
+            <div class="w-24 h-24 flex items-center justify-center">
+                <div class="w-20 h-20 flex items-center justify-center text-5xl transition-all">🧍🏏</div>
+            </div>
+            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                <span class="text-sm text-gray-500 font-medium tracking-wider animate-pulse">TAP!</span>
+            </div>
+        </div>
+        
+    </main>
+
 </body>
 </html>
