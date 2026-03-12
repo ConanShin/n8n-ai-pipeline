@@ -1,67 +1,67 @@
-import React from 'react';
-import { DashboardHeader } from '../molecules/DashboardHeader';
-import { PlayerProfileCard } from '../molecules/PlayerProfileCard';
-import { StatsTable, StatItem } from '../organisms/StatsTable';
-import { PerformanceChart, GameStat } from '../organisms/PerformanceChart';
+import React, { useState } from 'react';
+import { PlayerProfileCard, PlayerProfileCardProps } from '../molecules/PlayerProfileCard';
+import { QuickStatsStrip, QuickStatsStripProps } from '../organisms/QuickStatsStrip';
+import { DashboardFilterBar, DashboardFilterBarProps } from '../molecules/DashboardFilterBar';
+import { PerformanceChart, PerformanceChartProps } from '../organisms/PerformanceChart';
+import { StatsTable, StatsTableProps } from '../organisms/StatsTable';
 
 export interface PlayerStatsDashboardProps {
   playerId: string;
-  season: string;
+  profileData: PlayerProfileCardProps;
+  quickStatsData: QuickStatsStripProps;
+  chartData: PerformanceChartProps['data'];
+  tableData: StatsTableProps['rows'];
   isLoading?: boolean;
-  hasError?: boolean;
-  onSeasonChange?: (season: string) => void;
-  playerData?: any;
-  statsData?: StatItem[];
-  gamesData?: GameStat[];
 }
 
 export const PlayerStatsDashboard: React.FC<PlayerStatsDashboardProps> = ({
-  playerId,
-  season,
-  isLoading,
-  hasError,
-  onSeasonChange,
-  playerData,
-  statsData = [],
-  gamesData = []
+  playerId, profileData, quickStatsData, chartData, tableData, isLoading
 }) => {
-  if (hasError) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-50">
-        <DashboardHeader title="Baseball Stats" selectedSeason={season} seasons={['2026', '2025', '2024']} />
-        <div className="flex flex-col items-center justify-center gap-4 text-center py-24 text-gray-500">
-          <p className="text-xl">Error loading dashboard data.</p>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
-        </div>
-      </div>
+  const [selectedSeason, setSelectedSeason] = useState('2025');
+  const [activeMetrics, setActiveMetrics] = useState<Array<'battingAverage' | 'homeRuns' | 'rbis'>>(['battingAverage']);
+
+  const handleMetricToggle = (metric: 'battingAverage' | 'homeRuns' | 'rbis') => {
+    setActiveMetrics(prev => 
+      prev.includes(metric) 
+        ? prev.filter(m => m !== metric)
+        : [...prev, metric]
     );
-  }
+  };
 
   return (
-    <div role="main" aria-label="Baseball player statistics dashboard" className="flex flex-col min-h-screen bg-gray-50">
-      <DashboardHeader 
-        title="Baseball Stats" 
-        selectedSeason={season} 
-        seasons={['2026', '2025', '2024']} 
-        onSeasonChange={onSeasonChange} 
-      />
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 w-full">
-          <PlayerProfileCard 
-            playerName={playerData?.name || "Loading..."}
-            teamName={playerData?.team || "Loading..."}
-            position={playerData?.position || "-"}
-            jerseyNumber={playerData?.jerseyNumber || 0}
-            battingAverage={playerData?.avg || 0}
-            homeRuns={playerData?.hr || 0}
-            rbi={playerData?.rbi || 0}
-            isLoading={isLoading}
+    <div className="min-h-screen bg-gray-50" role="main" aria-label="Baseball player statistics dashboard">
+      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm px-4 md:px-8 py-3 flex items-center justify-between">
+        <div className="text-xl font-bold text-blue-700">MLB Stats</div>
+        <div className="text-sm text-gray-500">Player ID: {playerId}</div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col gap-6">
+        <section className="w-full">
+          <PlayerProfileCard {...profileData} isLoading={isLoading} />
+        </section>
+
+        <section className="w-full">
+          <QuickStatsStrip {...quickStatsData} isLoading={isLoading} />
+        </section>
+
+        <section className="w-full flex flex-col gap-4">
+          <DashboardFilterBar 
+            selectedSeason={selectedSeason}
+            availableSeasons={['2025', '2024', '2023', 'Career']}
+            activeMetrics={activeMetrics}
+            onSeasonChange={setSelectedSeason}
+            onMetricToggle={handleMetricToggle}
           />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <StatsTable stats={statsData} isLoading={isLoading} />
-          <PerformanceChart games={gamesData} isLoading={isLoading} />
-        </div>
+          <PerformanceChart 
+            data={chartData} 
+            activeMetrics={activeMetrics.length > 0 ? activeMetrics : ['battingAverage']} 
+            isLoading={isLoading} 
+          />
+        </section>
+
+        <section className="w-full">
+          <StatsTable rows={tableData} isLoading={isLoading} totalPages={3} currentPage={1} />
+        </section>
       </main>
     </div>
   );
