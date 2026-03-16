@@ -2,599 +2,430 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-// --- Interfaces ---
-export interface GameHeaderProps {
-  score: number;
-  outCount: number;
-  maxOuts?: number;
-  baseStatus: { first: boolean; second: boolean; third: boolean };
-}
-
-export interface ScoreDisplayProps {
-  score: number;
-}
-
-export interface BaseDiagramProps {
-  first: boolean;
-  second: boolean;
-  third: boolean;
-}
-
-export interface OutCountIndicatorProps {
-  outCount: number;
-  maxOuts?: number;
-}
-
-export interface GameFieldProps {
-  gameState: 'idle' | 'pitching' | 'hit' | 'strike';
-  pitchSpeed?: number;
-  pitchProgress: number;
-}
-
-export interface PitcherSpriteProps {
-  isPitching: boolean;
-}
-
-export interface BallTrajectoryProps {
-  isVisible: boolean;
-  pitchDuration: number;
-  progress: number;
-}
-
-export interface TimingGaugeProps {
-  isActive: boolean;
-  progress: number;
-  sweetSpotStart: number;
-  sweetSpotEnd: number;
-}
-
-export interface BattingZoneProps {
-  onBat: (forceProgress?: number) => void;
-  isDisabled?: boolean;
-  swingState: 'idle' | 'swinging' | 'hit' | 'miss' | 'disabled';
-}
-
-export interface BatterSpriteProps {
-  swingState: 'idle' | 'swinging' | 'hit' | 'miss' | 'disabled';
-}
-
-export interface BatSwingFeedbackProps {
-  result: 'homerun' | 'triple' | 'double' | 'single' | 'strike' | null;
-  isVisible: boolean;
-}
-
-export interface TapHintLabelProps {
-  isHighlighted: boolean;
-}
-
-export interface GameResultOverlayProps {
-  isVisible: boolean;
-  finalScore: number;
-  resultSummary: { homerun: number; triple: number; double: number; single: number; strike: number };
-  onRestart: () => void;
-}
-
-export interface ResultTitleProps {
-  grade: 'excellent' | 'good' | 'average' | 'poor';
-}
-
-export interface FinalScoreDisplayProps {
-  score: number;
-}
-
-export interface ResultSummaryCardProps {
-  homerun: number;
-  triple: number;
-  double: number;
-  single: number;
-  strike: number;
-}
-
-export interface RestartButtonProps {
-  onClick: () => void;
-}
-
-export interface StartScreenProps {
-  onStart: () => void;
-  isVisible: boolean;
-}
-
-export interface StartButtonProps {
-  onClick: () => void;
-}
+// --- Types ---
+type HitResult = '홈런' | '3루타' | '2루타' | '1루타' | '스트라이크' | 'none';
+type HitVariant = 'homerun' | 'triple' | 'double' | 'single' | 'strike' | 'none';
+type Grade = 'mvp' | 'good' | 'tryAgain';
 
 // --- Atoms ---
-export const FieldBackground: React.FC = () => (
-  <div className="absolute inset-0 w-full h-full pointer-events-none">
-    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_40px,rgba(255,255,255,0.03)_40px,rgba(255,255,255,0.03)_41px)]" />
-    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-48 h-48 border-2 border-white/20 rotate-45" />
-    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-yellow-800/40 border border-yellow-700/30" />
+const ScoreBadge: React.FC<{ score: number }> = ({ score }) => (
+  <div className="flex flex-col items-center gap-0.5" role="status" aria-label="현재 점수" aria-live="polite">
+    <span className="text-xs font-semibold tracking-widest text-yellow-300 uppercase">SCORE</span>
+    <span className="text-3xl font-extrabold text-white tabular-nums">{score}</span>
   </div>
 );
 
-export const PitcherSprite: React.FC<PitcherSpriteProps> = ({ isPitching }) => (
-  <div className={`absolute top-[20%] left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-16 ${isPitching ? 'animate-bounce' : ''}`}>
-    <span className="text-5xl">🤾</span>
-  </div>
-);
-
-export const BatterSprite: React.FC<BatterSpriteProps> = ({ swingState }) => {
-  let content = '🧍🏏';
-  let tw = 'w-20 h-20 flex items-center justify-center text-5xl transition-all';
-  
-  if (swingState === 'swinging') {
-    content = '🏌️';
-    tw += ' -rotate-45 scale-110';
-  } else if (swingState === 'hit') {
-    content = '🏌️💥';
-    tw += ' scale-125';
-  } else if (swingState === 'miss') {
-    content = '🤦🏏';
-    tw += ' opacity-70 rotate-12';
-  }
-
-  return (
-    <div className="w-24 h-24 flex items-center justify-center">
-      <div className={tw}>{content}</div>
-    </div>
-  );
-};
-
-export const BatSwingFeedback: React.FC<BatSwingFeedbackProps> = ({ result, isVisible }) => {
-  if (!isVisible || !result) return null;
-  
-  const config: Record<string, { text: string, color: string }> = {
-    homerun: { text: "HOMERUN", color: "text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.9)] text-5xl animate-bounce" },
-    triple: { text: "TRIPLE", color: "text-orange-400 drop-shadow-[0_0_12px_rgba(251,146,60,0.8)] text-4xl animate-bounce" },
-    double: { text: "DOUBLE", color: "text-green-400 drop-shadow-[0_0_12px_rgba(74,222,128,0.8)] text-4xl" },
-    single: { text: "SINGLE", color: "text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.8)] text-3xl" },
-    strike: { text: "STRIKE", color: "text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] text-3xl" },
+const HitResultLabel: React.FC<{ label?: string; variant?: HitVariant }> = ({ label, variant = 'none' }) => {
+  const styles: Record<HitVariant, string> = {
+    homerun: "text-2xl font-black text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] animate-bounce",
+    triple: "text-xl font-bold text-orange-400",
+    double: "text-xl font-bold text-green-400",
+    single: "text-xl font-bold text-blue-300",
+    strike: "text-xl font-bold text-red-400",
+    none: "invisible"
   };
-
-  const { text, color } = config[result] || config.strike;
-
   return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
-      <div className={`flex flex-col items-center gap-1 transition-all duration-300 scale-110`}>
-        <span className={`font-black tracking-widest ${color}`}>
-          {text}
-        </span>
-      </div>
+    <div className="flex items-center justify-center min-h-[32px]" role="status" aria-live="assertive" aria-label="타격 결과">
+      <span className={styles[variant]}>{label || ''}</span>
     </div>
   );
 };
 
-export const TapHintLabel: React.FC<TapHintLabelProps> = ({ isHighlighted }) => (
-  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-    <span className={isHighlighted 
-      ? "text-base text-yellow-400 font-bold tracking-widest drop-shadow-[0_0_6px_rgba(250,204,21,0.7)]" 
-      : "text-sm text-gray-500 font-medium tracking-wider animate-pulse"}>
-      TAP!
-    </span>
+const BallIcon: React.FC<{ active: boolean }> = ({ active }) => (
+  <div className="flex items-center justify-center" role="img" aria-label="야구공">
+    <div className={active ? "w-5 h-5 rounded-full bg-white border-2 border-yellow-300 shadow-md" : "w-5 h-5 rounded-full bg-gray-600 border-2 border-gray-500 opacity-50"} />
   </div>
 );
 
-export const ResultTitle: React.FC<ResultTitleProps> = ({ grade }) => {
-  const config = {
-    excellent: { emoji: "🏆", text: "홈런왕!", tw: "text-yellow-400 drop-shadow-[0_0_16px_rgba(250,204,21,0.8)]" },
-    good: { emoji: "⚾", text: "훌륭해요!", tw: "text-green-400" },
-    average: { emoji: "👏", text: "분전했어요!", tw: "text-blue-400" },
-    poor: { emoji: "💪", text: "다시 도전!", tw: "text-gray-300" },
+const FieldBackground: React.FC = () => (
+  <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-green-700 via-green-600 to-green-500" role="img" aria-label="야구장 배경" aria-hidden="true">
+    <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 w-8 h-4 bg-amber-700/60 rounded-full"></div>
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-2/5 bg-amber-800/40 rounded-t-full"></div>
+  </div>
+);
+
+const PitchLane: React.FC<{ visible?: boolean }> = ({ visible = true }) => {
+  if (!visible) return null;
+  return (
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center h-full" role="presentation" aria-hidden="true">
+      <div className="w-1 h-full bg-white/10 rounded-full" />
+    </div>
+  );
+};
+
+const BaseballBall: React.FC<{ x: number; y: number; scale: number; state: 'flying' | 'hit' | 'strike' }> = ({ x, y, scale, state }) => (
+  <div 
+    className="absolute pointer-events-none z-10"
+    style={{ 
+      left: `${x}%`, top: `${y}%`, 
+      transform: `translate(-50%, -50%) scale(${scale})`,
+      transition: state === 'flying' ? 'none' : 'all 0.3s ease-out'
+    }}
+    role="img" aria-label="날아오는 야구공" aria-hidden="true"
+  >
+    <div className={`w-6 h-6 rounded-full bg-white border border-red-400 shadow-lg relative flex items-center justify-center`}>
+      {state === 'hit' && (
+        <div className="absolute inset-0 rounded-full ring-4 ring-yellow-300 ring-opacity-80 scale-150 opacity-0 animate-ping duration-300" />
+      )}
+    </div>
+  </div>
+);
+
+const TimingTrack: React.FC = () => (
+  <div className="absolute inset-0 bg-gray-700 rounded-full" role="presentation" aria-hidden="true" />
+);
+
+const HitZone: React.FC = () => (
+  <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex flex-row items-center h-full w-full" role="presentation" aria-hidden="true">
+    <div className="absolute inset-0 h-full flex-1 bg-red-700/60 rounded-full" />
+    <div className="absolute left-1/2 -translate-x-1/2 h-full flex flex-row items-center justify-center w-[70%] bg-blue-400" />
+    <div className="absolute left-1/2 -translate-x-1/2 h-full flex flex-row items-center justify-center w-[44%] bg-green-400" />
+    <div className="absolute left-1/2 -translate-x-1/2 h-full flex flex-row items-center justify-center w-[24%] bg-orange-400" />
+    <div className="absolute left-1/2 -translate-x-1/2 h-full flex flex-row items-center justify-center w-[10%] bg-yellow-400 z-10" />
+  </div>
+);
+
+const TimingMarker: React.FC<{ position: number }> = ({ position }) => (
+  <div 
+    className="absolute top-0 bottom-0 w-1 bg-white rounded-full shadow-[0_0_6px_2px_rgba(255,255,255,0.8)] z-20"
+    style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+    role="presentation" aria-hidden="true" 
+  />
+);
+
+const BatterSilhouette: React.FC<{ isSwinging?: boolean }> = ({ isSwinging }) => (
+  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-28 opacity-90 pointer-events-none" role="img" aria-label="타자 캐릭터" aria-hidden="true">
+    <svg viewBox="0 0 100 120" className="w-full h-full fill-gray-800 stroke-gray-600">
+      <circle cx="50" cy="20" r="15" />
+      <rect x="35" y="40" width="30" height="50" rx="10" />
+      <rect x={isSwinging ? "-20" : "60"} y={isSwinging ? "40" : "10"} width="8" height="60" rx="4" className="fill-yellow-600" transform={isSwinging ? "rotate(-45 50 60)" : "rotate(30 65 20)"} style={{transition: 'all 0.1s'}} />
+    </svg>
+  </div>
+);
+
+const SwingButton: React.FC<{ onSwing: () => void; disabled?: boolean }> = ({ onSwing, disabled }) => (
+  <button 
+    className="absolute inset-0 w-full h-full cursor-pointer bg-transparent active:bg-white/5 transition-colors z-10 outline-none"
+    onClick={onSwing} disabled={disabled} aria-label="배팅하기 — 탭하여 스윙" tabIndex={0}
+  />
+);
+
+const ResultGradeIcon: React.FC<{ grade: Grade }> = ({ grade }) => {
+  const styles = {
+    mvp: "bg-yellow-400 text-5xl shadow-[0_0_20px_rgba(250,204,21,0.7)]",
+    good: "bg-green-500 text-4xl",
+    tryAgain: "bg-gray-600 text-4xl"
   };
-  const { emoji, text, tw } = config[grade];
+  const emojis = { mvp: "🏆", good: "⭐", tryAgain: "🔄" };
   return (
-    <div className="flex flex-col items-center gap-2 mb-4">
-      <span className="text-6xl">{emoji}</span>
-      <h1 className={`text-4xl font-black ${tw}`}>{text}</h1>
+    <div className={`flex items-center justify-center w-20 h-20 rounded-full ${styles[grade]}`} role="img" aria-label="게임 결과 등급 아이콘">
+      {emojis[grade]}
     </div>
   );
 };
 
-export const RestartButton: React.FC<RestartButtonProps> = ({ onClick }) => (
-  <button 
-    onClick={onClick}
-    className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-950 text-lg font-black tracking-wide shadow-[0_4px_24px_rgba(250,204,21,0.4)] active:scale-95 transition-transform duration-100 hover:shadow-[0_4px_32px_rgba(250,204,21,0.6)] flex items-center justify-center gap-2 cursor-pointer"
-  >
-    <span>⚾</span> 다시 도전하기
-  </button>
-);
-
-export const GameLogoTitle: React.FC = () => (
-  <div className="flex flex-col items-center gap-2 text-center">
-    <span className="text-7xl mb-2">⚾</span>
-    <h1 className="text-4xl font-black text-white tracking-tight">야구 타이밍 게임</h1>
-    <span className="text-sm text-gray-400 font-medium tracking-widest uppercase">Tap on Beat · Hit the Ball</span>
+const FinalScoreDisplay: React.FC<{ score: number }> = ({ score }) => (
+  <div className="flex flex-col items-center gap-1" role="status" aria-label="최종 점수">
+    <span className="text-sm tracking-widest text-gray-400 uppercase">FINAL SCORE</span>
+    <span className="text-5xl font-black text-white tabular-nums">{score}</span>
   </div>
 );
 
-export const StartButton: React.FC<StartButtonProps> = ({ onClick }) => (
-  <button 
-    onClick={onClick}
-    className="w-full max-w-sm py-5 rounded-2xl bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-950 text-xl font-black tracking-wide shadow-[0_6px_32px_rgba(250,204,21,0.45)] active:scale-95 transition-all duration-150 hover:shadow-[0_8px_40px_rgba(250,204,21,0.6)] flex items-center justify-center gap-2 cursor-pointer"
-  >
-    <span>⚾</span> 게임 시작!
-  </button>
+const HitHistoryItem: React.FC<{ inning: number; result: HitResult }> = ({ inning, result }) => {
+  const resultStyles: Record<string, string> = {
+    "홈런": "bg-yellow-400 text-yellow-900",
+    "3루타": "bg-orange-400 text-orange-900",
+    "2루타": "bg-green-400 text-green-900",
+    "1루타": "bg-blue-400 text-blue-900",
+    "스트라이크": "bg-red-700 text-red-100",
+    "none": "bg-gray-700 text-gray-400"
+  };
+  const ordinals = ["1st", "2nd", "3rd"];
+  return (
+    <div className="flex flex-col items-center gap-1" role="listitem" aria-label="타석 결과">
+      <span className="text-xs text-gray-500">{ordinals[inning - 1]}</span>
+      <span className={`px-2 py-1 rounded-lg text-sm font-bold ${resultStyles[result] || resultStyles.none}`}>
+        {result === 'none' ? '-' : result}
+      </span>
+    </div>
+  );
+};
+
+const RestartButton: React.FC<{onClick: () => void}> = ({ onClick }) => (
+  <button onClick={onClick} className="w-full py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 active:scale-95 transition-all font-bold text-gray-900 text-base text-center justify-center flex" aria-label="다시 하기" tabIndex={0}>다시 하기</button>
+);
+
+const HomeButton: React.FC<{onClick: () => void}> = ({ onClick }) => (
+  <button onClick={onClick} className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 active:scale-95 transition-all font-semibold text-gray-200 text-base text-center justify-center flex" aria-label="홈으로 돌아가기" tabIndex={0}>홈으로</button>
 );
 
 // --- Molecules ---
-export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score }) => (
-  <div className="flex flex-col items-center gap-0.5">
-    <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Score</span>
-    <span className="text-4xl font-black tabular-nums text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.7)]">
-      {score}
-    </span>
+const AttemptsIndicator: React.FC<{ total: number; remaining: number }> = ({ total, remaining }) => (
+  <div className="flex flex-row items-center gap-2" role="img" aria-label="남은 기회 표시">
+    {Array.from({ length: total }).map((_, i) => <BallIcon key={i} active={i < remaining} />)}
   </div>
 );
 
-export const BaseDiagram: React.FC<BaseDiagramProps> = ({ first, second, third }) => {
-  const BaseIcon = ({ occupied }: { occupied: boolean }) => (
-    <div className={`w-4 h-4 rotate-45 border-2 ${
-      occupied 
-        ? 'border-yellow-400 bg-yellow-400 shadow-[0_0_6px_2px_rgba(250,204,21,0.5)]' 
-        : 'border-gray-600 bg-transparent'
-    }`} />
-  );
+const TimingBar: React.FC<{ markerPosition: number; isActive: boolean }> = ({ markerPosition, isActive }) => (
+  <div className={`relative w-4/5 max-w-sm sm:max-w-md h-8 mx-auto mb-4 rounded-full overflow-hidden ${!isActive ? 'opacity-50' : ''}`} role="meter" aria-label="타이밍 게이지" aria-valuemin={0} aria-valuemax={100} aria-valuenow={markerPosition}>
+    <TimingTrack />
+    <HitZone />
+    <TimingMarker position={markerPosition} />
+  </div>
+);
 
-  return (
-    <div className="grid grid-cols-3 grid-rows-2 w-16 h-12 place-items-center relative">
-      <div className="col-start-2 row-start-1"><BaseIcon occupied={second} /></div>
-      <div className="col-start-1 row-start-2"><BaseIcon occupied={third} /></div>
-      <div className="col-start-3 row-start-2"><BaseIcon occupied={first} /></div>
-    </div>
-  );
-};
-
-export const OutCountIndicator: React.FC<OutCountIndicatorProps> = ({ outCount, maxOuts = 3 }) => {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Out</span>
-      <div className="flex gap-1.5">
-        {Array.from({ length: maxOuts }).map((_, i) => (
-          <div 
-            key={i} 
-            className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
-              i < outCount 
-                ? 'border-red-500 bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.6)]' 
-                : 'border-gray-500 bg-transparent'
-            }`} 
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const BallTrajectory: React.FC<BallTrajectoryProps> = ({ isVisible, progress }) => {
-  if (!isVisible) return null;
-  const top = 22 + (90 - 22) * progress;
-  const left = 48 + (44 - 48) * progress;
-  const size = 12 + (40 - 12) * progress;
+const ResultCard: React.FC<{ finalScore: number; hits: HitResult[]; onRestart: () => void; onHome: () => void }> = ({ finalScore, hits, onRestart, onHome }) => {
+  let grade: Grade = 'tryAgain';
+  if (finalScore >= 8) grade = 'mvp';
+  else if (finalScore >= 3) grade = 'good';
   
   return (
-    <div className="absolute inset-0 pointer-events-none z-10">
-      <div 
-        className="absolute rounded-full bg-white border border-gray-300 shadow-lg"
-        style={{
-          top: `${top}%`,
-          left: `${left}%`,
-          width: `${size}px`,
-          height: `${size}px`,
-          transform: 'translate(-50%, -50%)'
-        }}
-      >
-        <div className="absolute inset-0 border-2 border-red-400 rounded-full rotate-45 opacity-50"></div>
+    <div className="flex flex-col items-center gap-6 w-full max-w-xs bg-gray-900 rounded-2xl p-8 shadow-2xl border border-gray-700" role="document" aria-label="게임 결과 카드">
+      <ResultGradeIcon grade={grade} />
+      <FinalScoreDisplay score={finalScore} />
+      <div className="flex flex-row items-center justify-center gap-3 w-full" role="list" aria-label="타석 결과 목록">
+        {Array.from({ length: 3 }).map((_, i) => <HitHistoryItem key={i} inning={i + 1} result={hits[i] || 'none'} />)}
       </div>
-    </div>
-  );
-};
-
-export const TimingGauge: React.FC<TimingGaugeProps> = ({ isActive, progress, sweetSpotStart, sweetSpotEnd }) => (
-  <div className={`absolute bottom-28 left-1/2 -translate-x-1/2 w-4/5 max-w-sm flex flex-col items-center gap-2 transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-    <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Timing</span>
-    <div className="relative w-full h-4 rounded-full bg-gray-700/70 backdrop-blur-sm overflow-hidden border border-gray-600/50">
-      <div 
-        className="absolute top-0 h-full bg-yellow-400/30 border border-yellow-400/60"
-        style={{ left: `${sweetSpotStart * 100}%`, width: `${(sweetSpotEnd - sweetSpotStart) * 100}%` }}
-      />
-      <div 
-        className="h-full rounded-full bg-gradient-to-r from-green-400 to-yellow-400 transition-all duration-75"
-        style={{ width: `${progress * 100}%` }}
-      />
-      <div 
-        className="absolute top-1/2 -translate-y-1/2 w-1 h-6 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]"
-        style={{ left: `${progress * 100}%`, transform: 'translate(-50%, -50%)' }}
-      />
-    </div>
-  </div>
-);
-
-export const FinalScoreDisplay: React.FC<FinalScoreDisplayProps> = ({ score }) => {
-  const [displayScore, setDisplayScore] = useState(0);
-
-  useEffect(() => {
-    let startTime: number;
-    let animationFrame: number;
-    const duration = 1200;
-
-    const animate = (time: number) => {
-      if (!startTime) startTime = time;
-      const progress = Math.min((time - startTime) / duration, 1);
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setDisplayScore(Math.floor(score * easeProgress));
-
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setDisplayScore(score);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [score]);
-
-  return (
-    <div className="flex flex-col items-center gap-1 mb-6">
-      <span className="text-sm font-semibold text-gray-400 uppercase tracking-widest">Final Score</span>
-      <div className="flex items-baseline gap-2">
-        <span className="text-7xl font-black tabular-nums text-white">{displayScore}</span>
-        <span className="text-xl text-gray-400 font-medium">pts</span>
-      </div>
-    </div>
-  );
-};
-
-export const ResultSummaryCard: React.FC<ResultSummaryCardProps> = ({ homerun, triple, double, single, strike }) => {
-  const rows = [
-    { key: "homerun", label: "홈런", icon: "🏆", valueColor: "text-yellow-400", value: homerun },
-    { key: "triple", label: "3루타", icon: "🔥", valueColor: "text-orange-400", value: triple },
-    { key: "double", label: "2루타", icon: "⚡", valueColor: "text-green-400", value: double },
-    { key: "single", label: "1루타", icon: "⚾", valueColor: "text-blue-400", value: single },
-    { key: "strike", label: "스트라이크", icon: "❌", valueColor: "text-red-400", value: strike }
-  ];
-
-  return (
-    <div className="w-full max-w-xs bg-gray-800/70 rounded-2xl border border-gray-700 p-5 mb-6 backdrop-blur-sm">
-      {rows.map((row) => (
-        <div key={row.key} className="flex items-center justify-between py-2 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/40 transition-colors px-2 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-gray-300">
-            <span className="text-lg w-6 text-center">{row.icon}</span>
-            <span>{row.label}</span>
-          </div>
-          <span className={`text-base font-bold ${row.valueColor}`}>{row.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-export const RulesSummaryCard: React.FC = () => {
-  const ruleItems = [
-    { icon: "🏆", label: "홈런", description: "가장 빠른 타이밍 (퍼펙트)", color: "text-yellow-400" },
-    { icon: "🔥", label: "3루타", description: "타이밍이 조금 빠름", color: "text-orange-400" },
-    { icon: "⚡", label: "2루타", description: "타이밍이 약간 늦음", color: "text-green-400" },
-    { icon: "⚾", label: "1루타", description: "타이밍이 꽤 늦음", color: "text-blue-400" },
-    { icon: "❌", label: "스트라이크", description: "타이밍 완전 실패", color: "text-red-400" }
-  ];
-
-  return (
-    <div className="w-full max-w-sm bg-gray-800/60 rounded-2xl border border-gray-700 p-5 backdrop-blur-sm">
-      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">판정 기준</h3>
-      <div className="flex flex-col gap-1">
-        {ruleItems.map((item, idx) => (
-          <div key={idx} className="flex items-center gap-3 py-1.5 hover:bg-gray-700/40 transition-colors px-2 rounded-lg">
-            <span className="text-xl w-7 text-center">{item.icon}</span>
-            <span className={`text-sm font-bold w-16 ${item.color}`}>{item.label}</span>
-            <span className="text-xs text-gray-400">{item.description}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-center gap-2 text-sm text-gray-300">
-        기회는 총 3번 (3아웃 게임)
+      <div className="flex flex-col gap-3 w-full" role="group" aria-label="게임 결과 액션 버튼">
+        <RestartButton onClick={onRestart} />
+        <HomeButton onClick={onHome} />
       </div>
     </div>
   );
 };
 
 // --- Organisms ---
-export const GameHeader: React.FC<GameHeaderProps> = ({ score, outCount, maxOuts = 3, baseStatus }) => (
-  <header className="flex items-center justify-between w-full px-4 py-3 bg-gray-900 border-b border-gray-700 z-10">
-    <ScoreDisplay score={score} />
-    <BaseDiagram {...baseStatus} />
-    <OutCountIndicator outCount={outCount} maxOuts={maxOuts} />
+const GameHeader: React.FC<{ score: number; attemptsLeft: number; lastHitLabel?: string; lastHitVariant?: HitVariant }> = ({ score, attemptsLeft, lastHitLabel, lastHitVariant }) => (
+  <header className="flex flex-row items-center justify-between w-full px-4 py-3 bg-black/40 backdrop-blur-sm z-10" role="banner" aria-label="게임 정보 헤더">
+    <ScoreBadge score={score} />
+    <HitResultLabel label={lastHitLabel} variant={lastHitVariant} />
+    <AttemptsIndicator total={3} remaining={attemptsLeft} />
   </header>
 );
 
-export const GameField: React.FC<GameFieldProps> = ({ gameState, pitchProgress }) => (
-  <div className="relative flex-1 w-full bg-gradient-to-b from-sky-900 via-green-900 to-green-800 overflow-hidden min-h-[50vh]">
+const GameField: React.FC<{ isPlaying: boolean; ballPosition: { x: number; y: number }; ballScale: number; markerPosition: number; isTimingActive: boolean; ballState: 'flying' | 'hit' | 'strike' }> = ({ isPlaying, ballPosition, ballScale, markerPosition, isTimingActive, ballState }) => (
+  <main className="relative flex flex-col items-center justify-end w-full flex-1 overflow-hidden lg:max-w-2xl lg:mx-auto" role="region" aria-label="게임 필드 — 공이 날아오는 영역">
     <FieldBackground />
-    <PitcherSprite isPitching={gameState === 'pitching'} />
-    <BallTrajectory isVisible={gameState === 'pitching'} pitchDuration={1500} progress={pitchProgress} />
-    <TimingGauge 
-      isActive={gameState === 'pitching'} 
-      progress={pitchProgress} 
-      sweetSpotStart={0.78} 
-      sweetSpotEnd={0.82} 
-    />
-  </div>
+    <PitchLane visible={true} />
+    <BaseballBall x={ballPosition.x} y={ballPosition.y} scale={ballScale} state={ballState} />
+    <div className="z-10 w-full mb-8">
+      <TimingBar markerPosition={markerPosition} isActive={isTimingActive} />
+    </div>
+  </main>
 );
 
-export const BattingZone: React.FC<BattingZoneProps> = ({ onBat, isDisabled, swingState }) => (
-  <div 
-    className={`relative w-full flex items-center justify-center py-4 bg-gray-950/80 border-t border-gray-800 select-none h-32 md:h-40 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer active:bg-gray-900/80'}`}
-    onClick={() => !isDisabled && onBat()}
-    onTouchStart={(e) => {
-      e.preventDefault();
-      if (!isDisabled) onBat();
-    }}
-  >
-    <BatterSprite swingState={swingState} />
-    <TapHintLabel isHighlighted={swingState === 'idle'} />
-  </div>
-);
-
-export const GameResultOverlay: React.FC<GameResultOverlayProps> = ({ isVisible, finalScore, resultSummary, onRestart }) => {
-  if (!isVisible) return null;
-  let grade: 'excellent' | 'good' | 'average' | 'poor' = 'poor';
-  if (finalScore >= 10) grade = 'excellent';
-  else if (finalScore >= 5) grade = 'good';
-  else if (finalScore >= 1) grade = 'average';
+const BatterZone: React.FC<{ isSwinging: boolean; isDisabled: boolean; onSwing: () => void }> = ({ isSwinging, isDisabled, onSwing }) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.code === 'Space' || e.code === 'Enter') && !isDisabled) { e.preventDefault(); onSwing(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDisabled, onSwing]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950/90 backdrop-blur-sm px-6">
-      <ResultTitle grade={grade} />
-      <FinalScoreDisplay score={finalScore} />
-      <ResultSummaryCard {...resultSummary} />
-      <RestartButton onClick={onRestart} />
+    <div className="relative flex items-end justify-center w-full h-40 md:h-52 bg-gradient-to-t from-black/60 to-transparent z-10 lg:max-w-2xl lg:mx-auto" role="region" aria-label="타자 영역">
+      <BatterSilhouette isSwinging={isSwinging} />
+      <SwingButton onSwing={onSwing} disabled={isDisabled} />
     </div>
   );
 };
 
-// --- Templates ---
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, isVisible }) => {
+const GameResultOverlay: React.FC<{ isVisible: boolean; finalScore: number; hits: HitResult[]; onRestart: () => void; onHome: () => void }> = ({ isVisible, finalScore, hits, onRestart, onHome }) => {
   if (!isVisible) return null;
   return (
-    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-gray-950 px-6 gap-8">
-      <GameLogoTitle />
-      <RulesSummaryCard />
-      <StartButton onClick={onStart} />
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm px-6 transition-opacity duration-500" role="dialog" aria-modal="true" aria-label="게임 결과 화면">
+      <div className="transform transition-transform duration-500 translate-y-0">
+        <ResultCard finalScore={finalScore} hits={hits} onRestart={onRestart} onHome={onHome} />
+      </div>
     </div>
   );
 };
 
-// --- Page ---
+// --- Main Page Component ---
 export default function Page() {
-  const [gameState, setGameState] = useState<'start' | 'idle' | 'pitching' | 'result'>('start');
+  const [gameState, setGameState] = useState<'idle' | 'countdown' | 'playing' | 'result'>('idle');
   const [score, setScore] = useState(0);
-  const [outCount, setOutCount] = useState(0);
-  const [baseStatus, setBaseStatus] = useState({ first: false, second: false, third: false });
-  const [resultSummary, setResultSummary] = useState({ homerun: 0, triple: 0, double: 0, single: 0, strike: 0 });
-  const [pitchProgress, setPitchProgress] = useState(0);
-  const [swingState, setSwingState] = useState<'idle' | 'swinging' | 'hit' | 'miss' | 'disabled'>('idle');
-  const [swingResult, setSwingResult] = useState<'homerun' | 'triple' | 'double' | 'single' | 'strike' | null>(null);
-
+  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [hits, setHits] = useState<HitResult[]>([]);
+  
+  const [lastHitLabel, setLastHitLabel] = useState('');
+  const [lastHitVariant, setLastHitVariant] = useState<HitVariant>('none');
+  
+  const [ballState, setBallState] = useState<'flying' | 'hit' | 'strike'>('flying');
+  const [ballPosition, setBallPosition] = useState({ x: 50, y: 0 });
+  const [ballScale, setBallScale] = useState(0.15);
+  const [markerPosition, setMarkerPosition] = useState(50);
+  
+  const [isSwinging, setIsSwinging] = useState(false);
+  const [countdown, setCountdown] = useState<string | null>(null);
+  
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   const pitchDuration = 1500;
-  const pitchProgressRef = useRef(0);
-  const swingStateRef = useRef(swingState);
-  swingStateRef.current = swingState;
-  const outCountRef = useRef(outCount);
-  useEffect(() => { outCountRef.current = outCount; }, [outCount]);
+  const markerDuration = 1200; 
+
+  const startCountdown = useCallback(() => {
+    setCountdown('3');
+    setTimeout(() => setCountdown('2'), 1000);
+    setTimeout(() => setCountdown('1'), 2000);
+    setTimeout(() => {
+      setCountdown('GO!');
+      setTimeout(() => {
+        setCountdown(null);
+        startPitch();
+      }, 1000);
+    }, 3000);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startGame = useCallback(() => {
+    setGameState('countdown');
     setScore(0);
-    setOutCount(0);
-    setBaseStatus({ first: false, second: false, third: false });
-    setResultSummary({ homerun: 0, triple: 0, double: 0, single: 0, strike: 0 });
-    setGameState('idle');
-    setTimeout(() => setGameState('pitching'), 500);
-  }, []);
+    setAttemptsLeft(3);
+    setHits([]);
+    setLastHitVariant('none');
+    setLastHitLabel('');
+    startCountdown();
+  }, [startCountdown]);
 
-  const handleBat = useCallback((forceProgress?: number) => {
-    if (swingStateRef.current !== 'idle') return;
+  const startPitch = useCallback(() => {
+    setGameState('playing');
+    setBallState('flying');
+    setBallPosition({ x: 50, y: 0 });
+    setBallScale(0.15);
+    setMarkerPosition(0);
+    setLastHitVariant('none');
+    setLastHitLabel('');
+    startTimeRef.current = performance.now();
     
-    const p = forceProgress !== undefined ? forceProgress : pitchProgressRef.current;
-    let result: 'homerun' | 'triple' | 'double' | 'single' | 'strike' = 'strike';
-    
-    if (p >= 0.78 && p <= 0.82) result = 'homerun';
-    else if (p >= 0.73 && p <= 0.87) result = 'triple';
-    else if (p >= 0.65 && p <= 0.92) result = 'double';
-    else if (p >= 0.50 && p <= 0.98) result = 'single';
-    
-    setSwingResult(result);
-    setSwingState(result === 'strike' ? 'miss' : 'hit');
-    setResultSummary(s => ({ ...s, [result]: s[result] + 1 }));
-    
-    if (result === 'strike') {
-      setOutCount(o => o + 1);
-    } else {
-      setBaseStatus(bases => {
-        let b = [bases.first, bases.second, bases.third];
-        let newB = [false, false, false];
-        let addedScore = 0;
-        const hitBases = result === 'homerun' ? 4 : result === 'triple' ? 3 : result === 'double' ? 2 : 1;
-        
-        for (let i = 2; i >= 0; i--) {
-          if (b[i]) {
-            const nextBase = i + hitBases;
-            if (nextBase >= 3) addedScore++;
-            else newB[nextBase] = true;
-          }
-        }
-        if (hitBases === 4) addedScore++;
-        else newB[hitBases - 1] = true;
-        
-        setScore(s => s + addedScore);
-        return { first: newB[0], second: newB[1], third: newB[2] };
-      });
-    }
-    
-    setTimeout(() => {
-      if (outCountRef.current >= 3) {
-        setGameState('result');
-      } else {
-        setPitchProgress(0);
-        pitchProgressRef.current = 0;
-        setSwingState('idle');
-        setSwingResult(null);
-        setGameState('idle');
-        setTimeout(() => setGameState('pitching'), 500);
-      }
-    }, 1500);
-  }, []);
-
-  useEffect(() => {
-    let animationFrame: number;
-    let startTime: number;
-
     const animate = (time: number) => {
-      if (!startTime) startTime = time;
-      const elapsed = time - startTime;
-      const progress = Math.min(elapsed / pitchDuration, 1);
+      if (!startTimeRef.current) startTimeRef.current = time;
+      const elapsed = time - startTimeRef.current;
       
-      pitchProgressRef.current = progress;
-      setPitchProgress(progress);
+      const markerCycle = (elapsed % markerDuration) / markerDuration; 
+      const mPos = markerCycle < 0.5 
+        ? markerCycle * 200 
+        : (1 - markerCycle) * 200; 
+      setMarkerPosition(mPos);
       
-      if (progress < 1) {
-        if (swingStateRef.current === 'idle') {
-          animationFrame = requestAnimationFrame(animate);
-        }
+      const ballProgress = Math.min(elapsed / pitchDuration, 1);
+      setBallPosition({ x: 50, y: ballProgress * 100 });
+      setBallScale(0.15 + ballProgress * 1.35); 
+      
+      if (ballProgress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
       } else {
-        if (swingStateRef.current === 'idle') {
-          handleBat(1.0);
-        }
+        handleStrike(mPos);
       }
     };
+    animationRef.current = requestAnimationFrame(animate);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (gameState === 'pitching' && swingState === 'idle') {
-      animationFrame = requestAnimationFrame(animate);
+  const stopAnimations = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    startTimeRef.current = null;
+  };
+
+  const evaluateHit = (mPos: number) => {
+    if (mPos >= 45 && mPos <= 55) return { result: '홈런' as HitResult, variant: 'homerun' as HitVariant, pts: 4 };
+    if ((mPos >= 38 && mPos < 45) || (mPos > 55 && mPos <= 62)) return { result: '3루타' as HitResult, variant: 'triple' as HitVariant, pts: 3 };
+    if ((mPos >= 28 && mPos < 38) || (mPos > 62 && mPos <= 72)) return { result: '2루타' as HitResult, variant: 'double' as HitVariant, pts: 2 };
+    if ((mPos >= 15 && mPos < 28) || (mPos > 72 && mPos <= 85)) return { result: '1루타' as HitResult, variant: 'single' as HitVariant, pts: 1 };
+    return { result: '스트라이크' as HitResult, variant: 'strike' as HitVariant, pts: 0 };
+  };
+
+  const handleSwing = useCallback(() => {
+    if (gameState !== 'playing') return;
+    
+    setIsSwinging(true);
+    setTimeout(() => setIsSwinging(false), 250);
+    
+    stopAnimations();
+    
+    const hitData = evaluateHit(markerPosition);
+    
+    if (hitData.result === '스트라이크') {
+      handleStrike(markerPosition);
+    } else {
+      setBallState('hit');
+      setLastHitLabel(hitData.result);
+      setLastHitVariant(hitData.variant);
+      setScore(s => s + hitData.pts);
+      recordAttempt(hitData.result);
     }
+  }, [gameState, markerPosition]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return () => cancelAnimationFrame(animationFrame);
-  }, [gameState, handleBat]);
+  const handleStrike = (mPos: number) => {
+    stopAnimations();
+    setBallState('strike');
+    setLastHitLabel('스트라이크');
+    setLastHitVariant('strike');
+    recordAttempt('스트라이크');
+  };
+
+  const recordAttempt = (result: HitResult) => {
+    setHits(prev => {
+      const newHits = [...prev, result];
+      const newAttempts = 3 - newHits.length;
+      setAttemptsLeft(newAttempts);
+      
+      setTimeout(() => {
+        if (newAttempts <= 0) {
+          setGameState('result');
+        } else {
+          startPitch();
+        }
+      }, 2000);
+      
+      return newHits;
+    });
+  };
+
+  useEffect(() => {
+    startGame();
+    return () => stopAnimations();
+  }, [startGame]);
 
   return (
-    <main className="flex flex-col h-[100dvh] w-full max-w-md mx-auto text-white overflow-hidden relative shadow-2xl md:rounded-3xl">
-      <StartScreen isVisible={gameState === 'start'} onStart={startGame} />
-      
-      <GameHeader score={score} outCount={outCount} baseStatus={baseStatus} />
-      
-      <div className="relative flex-1 flex flex-col w-full">
-        <GameField gameState={gameState} pitchProgress={pitchProgress} />
-        <BatSwingFeedback isVisible={swingState === 'hit' || swingState === 'miss'} result={swingResult} />
+    <>
+      <style>{`
+        @keyframes flash {
+          0% { box-shadow: inset 0 0 0 10px rgba(239,68,68,1); }
+          100% { box-shadow: inset 0 0 0 0px rgba(239,68,68,0); }
+        }
+      `}</style>
+      <div className={`flex flex-col items-center justify-between min-h-screen w-full overflow-hidden select-none relative ${ballState === 'strike' ? 'animate-[flash_0.4s_ease-out]' : ''}`} role="main" aria-label="야구 게임 메인 페이지">
+        <GameHeader score={score} attemptsLeft={attemptsLeft} lastHitLabel={lastHitLabel} lastHitVariant={lastHitVariant} />
+        
+        <GameField 
+          isPlaying={gameState === 'playing'}
+          ballPosition={ballPosition}
+          ballScale={ballScale}
+          markerPosition={markerPosition}
+          isTimingActive={gameState === 'playing'}
+          ballState={ballState}
+        />
+        
+        {countdown && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <span className="text-8xl font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] animate-bounce">{countdown}</span>
+          </div>
+        )}
+        
+        <BatterZone 
+          isSwinging={isSwinging} 
+          isDisabled={gameState !== 'playing'} 
+          onSwing={handleSwing} 
+        />
+        
+        <GameResultOverlay 
+          isVisible={gameState === 'result'} 
+          finalScore={score} 
+          hits={hits} 
+          onRestart={startGame} 
+          onHome={() => console.log('Go home')} 
+        />
       </div>
-
-      <BattingZone 
-        onBat={handleBat} 
-        isDisabled={gameState !== 'pitching' || swingState !== 'idle'} 
-        swingState={swingState} 
-      />
-      
-      <GameResultOverlay 
-        isVisible={gameState === 'result'} 
-        finalScore={score} 
-        resultSummary={resultSummary} 
-        onRestart={startGame} 
-      />
-    </main>
+    </>
   );
 }
