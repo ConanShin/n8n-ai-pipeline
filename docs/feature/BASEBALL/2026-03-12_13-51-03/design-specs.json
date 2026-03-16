@@ -1,0 +1,1046 @@
+{
+  "ticket": "BASEBALL",
+  "title": "웹 기반 야구 게임 (Web Baseball Timing Game)",
+  "description": "시간에 맞춰 화면을 탭하면 날아오는 공에 박자를 맞춰 배팅을 휘두르는 리듬 기반 야구 게임. 점수는 홈런·1~3루타·스트라이크로 구분하며, 플레이어는 총 3번의 기회(아웃)를 가진다.",
+  "components": [
+    {
+      "name": "GamePage",
+      "type": "page",
+      "description": "야구 게임 전체 페이지. 게임 시작 전(로비), 게임 진행 중, 게임 종료(결과) 세 가지 화면 상태를 관리한다.",
+      "props": {
+        "gameState": {
+          "type": "'lobby' | 'playing' | 'result'",
+          "required": true,
+          "description": "현재 게임 화면 상태"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-center min-h-screen w-full bg-gray-950 overflow-hidden"
+      },
+      "children": [
+        "LobbyScreen",
+        "GameScreen",
+        "ResultScreen"
+      ],
+      "states": ["lobby", "playing", "result"],
+      "accessibility": {
+        "role": "main",
+        "ariaLabel": "야구 타이밍 게임"
+      }
+    },
+    {
+      "name": "LobbyScreen",
+      "type": "template",
+      "description": "게임 시작 전 로비 화면. 게임 제목, 규칙 설명, 시작 버튼으로 구성된다.",
+      "props": {
+        "onStart": {
+          "type": "function",
+          "required": true,
+          "description": "게임 시작 버튼 클릭 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-center gap-8 w-full h-full px-6 py-12"
+      },
+      "children": [
+        "GameTitle",
+        "RuleCard",
+        "StartButton"
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "게임 로비"
+      }
+    },
+    {
+      "name": "GameTitle",
+      "type": "atom",
+      "description": "야구 게임 타이틀 텍스트 및 아이콘 영역.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "게임 제목 문자열 (예: ⚾ BASEBALL)"
+        },
+        "subtitle": {
+          "type": "string",
+          "required": false,
+          "description": "서브타이틀 문자열 (예: 타이밍을 맞춰 홈런을 노려라!)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center gap-2 text-center"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "heading",
+        "ariaLabel": "야구 게임 타이틀",
+        "ariaLevel": 1
+      },
+      "visualSpec": {
+        "title": {
+          "tailwind": "text-5xl md:text-7xl font-extrabold text-yellow-400 tracking-widest drop-shadow-lg"
+        },
+        "subtitle": {
+          "tailwind": "text-base md:text-lg text-gray-300 font-medium"
+        }
+      }
+    },
+    {
+      "name": "RuleCard",
+      "type": "molecule",
+      "description": "게임 규칙을 시각적으로 요약한 카드 컴포넌트. 점수 체계(홈런, 3루타, 2루타, 1루타, 스트라이크)와 기회(3번) 안내를 포함한다.",
+      "props": {
+        "rules": {
+          "type": "Array<{ icon: string; label: string; description: string; color: string }>",
+          "required": true,
+          "description": "점수 규칙 항목 목록"
+        },
+        "chances": {
+          "type": "number",
+          "required": true,
+          "description": "총 기회 횟수 (기본값: 3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-4 bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-xl"
+      },
+      "children": [
+        "RuleItem"
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "게임 규칙 설명"
+      },
+      "ruleItems": [
+        { "icon": "💥", "label": "홈런",  "timing": "완벽 (±50ms)",  "color": "text-yellow-400", "points": 4 },
+        { "icon": "🔥", "label": "3루타", "timing": "훌륭 (±100ms)", "color": "text-orange-400", "points": 3 },
+        { "icon": "✅", "label": "2루타", "timing": "좋음 (±150ms)", "color": "text-green-400",  "points": 2 },
+        { "icon": "👍", "label": "1루타", "timing": "보통 (±200ms)", "color": "text-blue-400",   "points": 1 },
+        { "icon": "❌", "label": "스트라이크", "timing": "미스",      "color": "text-red-400",    "points": 0 }
+      ]
+    },
+    {
+      "name": "RuleItem",
+      "type": "atom",
+      "description": "개별 규칙 행. 아이콘, 라벨, 타이밍 범위, 점수를 한 줄로 표시한다.",
+      "props": {
+        "icon": {
+          "type": "string",
+          "required": true,
+          "description": "결과 이모지 아이콘"
+        },
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "결과 라벨 (예: 홈런)"
+        },
+        "timing": {
+          "type": "string",
+          "required": true,
+          "description": "타이밍 범위 설명"
+        },
+        "color": {
+          "type": "string",
+          "required": true,
+          "description": "텍스트 색상 Tailwind 클래스"
+        },
+        "points": {
+          "type": "number",
+          "required": true,
+          "description": "획득 점수"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-between gap-3 text-sm md:text-base"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "listitem",
+        "ariaLabel": "규칙 항목"
+      }
+    },
+    {
+      "name": "StartButton",
+      "type": "atom",
+      "description": "게임 시작 버튼. 탭/클릭 시 게임 플레이 화면으로 전환된다.",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "버튼 텍스트 (기본값: '게임 시작')"
+        },
+        "onClick": {
+          "type": "function",
+          "required": true,
+          "description": "클릭 이벤트 핸들러"
+        },
+        "disabled": {
+          "type": "boolean",
+          "required": false,
+          "description": "버튼 비활성화 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center w-full max-w-xs"
+      },
+      "children": [],
+      "states": ["default", "hover", "active", "disabled"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "야구 게임 시작"
+      },
+      "visualSpec": {
+        "base": "w-full py-4 px-8 text-xl font-bold rounded-full bg-yellow-400 text-gray-900 shadow-lg transition-all duration-150",
+        "hover": "hover:bg-yellow-300 hover:scale-105",
+        "active": "active:scale-95",
+        "disabled": "disabled:opacity-40 disabled:cursor-not-allowed"
+      }
+    },
+    {
+      "name": "GameScreen",
+      "type": "template",
+      "description": "게임 플레이 메인 화면. 상단 HUD(점수·기회), 중앙 야구장 뷰(공 날아오는 애니메이션), 하단 타이밍 입력 영역으로 구성된다.",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "현재 누적 점수"
+        },
+        "chancesLeft": {
+          "type": "number",
+          "required": true,
+          "description": "남은 기회 수 (0~3)"
+        },
+        "ballState": {
+          "type": "'idle' | 'incoming' | 'hit' | 'miss'",
+          "required": true,
+          "description": "현재 투구 공의 상태"
+        },
+        "lastResult": {
+          "type": "'homerun' | 'triple' | 'double' | 'single' | 'strike' | null",
+          "required": false,
+          "description": "직전 타격 결과"
+        },
+        "onBat": {
+          "type": "function",
+          "required": true,
+          "description": "화면 탭/클릭 시 배팅 이벤트 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-between w-full h-full min-h-screen select-none"
+      },
+      "children": [
+        "GameHUD",
+        "BallField",
+        "TimingZone",
+        "ResultFeedback"
+      ],
+      "states": ["playing", "waiting"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "게임 플레이 화면",
+        "ariaLive": "polite"
+      }
+    },
+    {
+      "name": "GameHUD",
+      "type": "organism",
+      "description": "게임 상단 HUD. 현재 점수, 남은 기회(아웃 카운트), 현재 이닝/투구 횟수를 표시한다.",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "현재 누적 점수"
+        },
+        "chancesLeft": {
+          "type": "number",
+          "required": true,
+          "description": "남은 기회 수"
+        },
+        "totalChances": {
+          "type": "number",
+          "required": false,
+          "description": "총 기회 수 (기본값: 3)"
+        },
+        "pitchCount": {
+          "type": "number",
+          "required": false,
+          "description": "현재 투구 횟수"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-between w-full px-4 pt-4 pb-2 bg-gray-900 border-b border-gray-700"
+      },
+      "children": [
+        "ScoreDisplay",
+        "ChanceIndicator"
+      ],
+      "states": ["default", "lastChance"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "게임 현황 표시"
+      }
+    },
+    {
+      "name": "ScoreDisplay",
+      "type": "molecule",
+      "description": "현재 점수를 강조하여 표시하는 컴포넌트.",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "표시할 점수 값"
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "점수 레이블 (기본값: 'SCORE')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-start gap-0.5"
+      },
+      "children": [],
+      "states": ["default", "scoreUp"],
+      "accessibility": {
+        "role": "text",
+        "ariaLabel": "현재 점수"
+      },
+      "visualSpec": {
+        "label": "text-xs font-semibold text-gray-400 uppercase tracking-widest",
+        "value": "text-3xl md:text-4xl font-extrabold text-white tabular-nums",
+        "scoreUpAnimation": "animate-bounce text-yellow-400"
+      }
+    },
+    {
+      "name": "ChanceIndicator",
+      "type": "molecule",
+      "description": "남은 기회를 야구공 아이콘 배열로 시각적으로 표시한다. 남은 기회는 흰 공, 소진된 기회는 어두운 공으로 표시.",
+      "props": {
+        "chancesLeft": {
+          "type": "number",
+          "required": true,
+          "description": "남은 기회 수"
+        },
+        "totalChances": {
+          "type": "number",
+          "required": false,
+          "description": "총 기회 수 (기본값: 3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-end gap-0.5"
+      },
+      "children": [
+        "ChanceBall"
+      ],
+      "states": ["default", "lastChance", "noChance"],
+      "accessibility": {
+        "role": "status",
+        "ariaLabel": "남은 기회 표시"
+      }
+    },
+    {
+      "name": "ChanceBall",
+      "type": "atom",
+      "description": "기회 하나를 나타내는 야구공 아이콘. 활성/소진 상태를 색상으로 구분한다.",
+      "props": {
+        "active": {
+          "type": "boolean",
+          "required": true,
+          "description": "기회가 남아 있으면 true, 소진되었으면 false"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "inline-flex"
+      },
+      "children": [],
+      "states": ["active", "used"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "기회 공"
+      },
+      "visualSpec": {
+        "active": "text-2xl opacity-100 drop-shadow",
+        "used": "text-2xl opacity-25 grayscale"
+      }
+    },
+    {
+      "name": "BallField",
+      "type": "organism",
+      "description": "야구장 원근감 배경 위에서 투수가 던진 공이 타자 방향으로 날아오는 애니메이션을 표현하는 핵심 게임 영역. 화면 전체를 탭하면 배팅이 발동된다.",
+      "props": {
+        "ballState": {
+          "type": "'idle' | 'incoming' | 'hit' | 'miss'",
+          "required": true,
+          "description": "공의 현재 상태"
+        },
+        "ballSpeed": {
+          "type": "number",
+          "required": false,
+          "description": "공이 날아오는 속도(ms). 낮을수록 빠름 (기본값: 1500)"
+        },
+        "onTap": {
+          "type": "function",
+          "required": true,
+          "description": "화면 탭 이벤트 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "relative flex items-center justify-center flex-1 w-full overflow-hidden cursor-pointer bg-gradient-to-b from-sky-600 to-green-800"
+      },
+      "children": [
+        "PitchingMound",
+        "BaseballBall",
+        "BatterSilhouette",
+        "TapHint"
+      ],
+      "states": ["idle", "incoming", "hit", "miss"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "배팅 타이밍 입력 영역 - 탭하여 배팅",
+        "tabIndex": 0
+      },
+      "visualSpec": {
+        "background": "bg-gradient-to-b from-sky-700 via-green-700 to-green-900",
+        "infield": "절대 위치 하단, 마름모형 내야 다이아몬드 SVG 표현"
+      }
+    },
+    {
+      "name": "PitchingMound",
+      "type": "atom",
+      "description": "화면 원경(상단)에 위치한 투수 마운드 시각 요소. 투구 전 투수 실루엣을 표시한다.",
+      "props": {
+        "isWinding": {
+          "type": "boolean",
+          "required": false,
+          "description": "투구 준비(와인드업) 애니메이션 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center"
+      },
+      "children": [],
+      "states": ["idle", "winding"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "투수 마운드"
+      },
+      "visualSpec": {
+        "icon": "⚾ 투수 실루엣 이모지 또는 SVG",
+        "size": "w-10 h-10 md:w-14 md:h-14",
+        "winding": "animate-pulse"
+      }
+    },
+    {
+      "name": "BaseballBall",
+      "type": "atom",
+      "description": "투수 마운드에서 타자 쪽으로 날아오는 야구공. CSS 트랜지션으로 멀리서(작게)→가까이(크게) 이동하는 원근감을 표현한다.",
+      "props": {
+        "state": {
+          "type": "'idle' | 'incoming' | 'hit' | 'miss'",
+          "required": true,
+          "description": "공의 현재 상태"
+        },
+        "speed": {
+          "type": "number",
+          "required": false,
+          "description": "이동 트랜지션 시간(ms)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute transition-all ease-linear"
+      },
+      "children": [],
+      "states": ["idle", "incoming", "hit", "miss"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "날아오는 야구공"
+      },
+      "visualSpec": {
+        "idle": {
+          "tailwind": "top-1/3 left-1/2 -translate-x-1/2 w-4 h-4 opacity-0"
+        },
+        "incoming": {
+          "tailwind": "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-24 md:h-24 opacity-100",
+          "animation": "scale-up-center 공이 원경에서 근경으로 커지며 날아오는 CSS 키프레임 애니메이션"
+        },
+        "hit": {
+          "tailwind": "opacity-0 scale-150",
+          "animation": "타격 후 공이 사라지거나 홈런 궤적 애니메이션"
+        },
+        "miss": {
+          "tailwind": "opacity-0",
+          "animation": "공이 포수 방향으로 지나가는 애니메이션"
+        },
+        "ballElement": "⚾ 이모지 또는 흰색 원형 div with drop-shadow"
+      }
+    },
+    {
+      "name": "BatterSilhouette",
+      "type": "atom",
+      "description": "화면 하단 우측(또는 좌측)에 위치한 타자 실루엣. 배팅 시 스윙 애니메이션이 재생된다.",
+      "props": {
+        "isSwinging": {
+          "type": "boolean",
+          "required": true,
+          "description": "스윙 애니메이션 활성화 여부"
+        },
+        "result": {
+          "type": "'homerun' | 'triple' | 'double' | 'single' | 'strike' | null",
+          "required": false,
+          "description": "타격 결과 (애니메이션 분기용)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute bottom-20 right-4 md:right-16"
+      },
+      "children": [],
+      "states": ["idle", "swinging", "homerun", "strike"],
+      "accessibility": {
+        "role": "img",
+        "ariaLabel": "타자 실루엣"
+      },
+      "visualSpec": {
+        "size": "w-16 h-24 md:w-24 md:h-36",
+        "idle": "타자 준비 자세 SVG/이모지",
+        "swinging": "rotate-[-30deg] transition-transform duration-100 스윙 모션",
+        "homerun": "스윙 후 홈런 포즈 + 파티클 이펙트"
+      }
+    },
+    {
+      "name": "TapHint",
+      "type": "atom",
+      "description": "게임 시작 직후 또는 대기 중 '탭하여 배팅!' 안내 문구. 첫 투구 전 한 번만 표시된다.",
+      "props": {
+        "visible": {
+          "type": "boolean",
+          "required": true,
+          "description": "힌트 표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute bottom-8 left-1/2 -translate-x-1/2"
+      },
+      "children": [],
+      "states": ["visible", "hidden"],
+      "accessibility": {
+        "role": "note",
+        "ariaLabel": "탭 안내 메시지"
+      },
+      "visualSpec": {
+        "text": "탭하여 배팅!",
+        "tailwind": "text-white text-sm font-semibold bg-black/40 px-4 py-2 rounded-full animate-bounce"
+      }
+    },
+    {
+      "name": "TimingZone",
+      "type": "organism",
+      "description": "화면 하단 타이밍 바. 공이 스트라이크 존에 들어오는 타이밍을 시각적으로 표시하는 리듬 게임 스타일 UI. 타이밍 바 중앙에 히트 존이 강조 표시된다.",
+      "props": {
+        "progress": {
+          "type": "number",
+          "required": true,
+          "description": "공 진행률 0~100 (퍼센트)"
+        },
+        "zones": {
+          "type": "Array<{ label: string; color: string; rangeStart: number; rangeEnd: number }>",
+          "required": true,
+          "description": "타이밍 구간 정의 (홈런/3루타/2루타/1루타/스트라이크)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center w-full px-4 pb-4 gap-2"
+      },
+      "children": [
+        "TimingBar",
+        "TimingCursor"
+      ],
+      "states": ["active", "idle", "result"],
+      "accessibility": {
+        "role": "progressbar",
+        "ariaLabel": "타이밍 진행 바",
+        "ariaValueMin": 0,
+        "ariaValueMax": 100,
+        "ariaValueNow": "progress"
+      },
+      "visualSpec": {
+        "zones": [
+          { "label": "스트라이크", "color": "bg-red-600",    "rangeStart": 0,  "rangeEnd": 30 },
+          { "label": "1루타",     "color": "bg-blue-500",   "rangeStart": 30, "rangeEnd": 42 },
+          { "label": "2루타",     "color": "bg-green-500",  "rangeStart": 42, "rangeEnd": 52 },
+          { "label": "홈런",      "color": "bg-yellow-400", "rangeStart": 52, "rangeEnd": 60 },
+          { "label": "2루타",     "color": "bg-green-500",  "rangeStart": 60, "rangeEnd": 70 },
+          { "label": "1루타",     "color": "bg-blue-500",   "rangeStart": 70, "rangeEnd": 82 },
+          { "label": "스트라이크", "color": "bg-red-600",    "rangeStart": 82, "rangeEnd": 100 }
+        ]
+      }
+    },
+    {
+      "name": "TimingBar",
+      "type": "molecule",
+      "description": "타이밍 구간을 색상 블록으로 나누어 표시하는 가로 바. 중앙이 완벽 타이밍 구역(홈런 존).",
+      "props": {
+        "zones": {
+          "type": "Array<{ color: string; flex: number }>",
+          "required": true,
+          "description": "각 구간의 색상과 너비 비율"
+        },
+        "height": {
+          "type": "string",
+          "required": false,
+          "description": "바 높이 Tailwind 클래스 (기본값: 'h-6')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex w-full h-6 rounded-full overflow-hidden shadow-inner"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "presentation",
+        "ariaLabel": "타이밍 구간 바"
+      }
+    },
+    {
+      "name": "TimingCursor",
+      "type": "atom",
+      "description": "공의 진행에 따라 타이밍 바 위를 이동하는 커서(세로선 + 삼각형 마커). 플레이어는 이 커서가 원하는 구간에 왔을 때 탭해야 한다.",
+      "props": {
+        "progress": {
+          "type": "number",
+          "required": true,
+          "description": "0~100 사이의 진행률, 바 위의 위치를 결정"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute top-0 h-full w-1 transition-none"
+      },
+      "children": [],
+      "states": ["moving", "stopped"],
+      "accessibility": {
+        "role": "presentation",
+        "ariaHidden": true
+      },
+      "visualSpec": {
+        "cursor": "w-1 h-full bg-white rounded shadow-md shadow-white/50",
+        "marker": "하단에 흰색 삼각형 마커, filter: drop-shadow"
+      }
+    },
+    {
+      "name": "ResultFeedback",
+      "type": "molecule",
+      "description": "타격 결과를 화면 중앙에 크게 팝업으로 표시하는 피드백 레이어. 홈런/안타/스트라이크 텍스트와 이펙트를 포함한다.",
+      "props": {
+        "result": {
+          "type": "'homerun' | 'triple' | 'double' | 'single' | 'strike' | null",
+          "required": true,
+          "description": "타격 결과값"
+        },
+        "visible": {
+          "type": "boolean",
+          "required": true,
+          "description": "표시 여부"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "absolute inset-0 flex items-center justify-center pointer-events-none"
+      },
+      "children": [],
+      "states": ["hidden", "homerun", "triple", "double", "single", "strike"],
+      "accessibility": {
+        "role": "alert",
+        "ariaLive": "assertive",
+        "ariaLabel": "타격 결과"
+      },
+      "visualSpec": {
+        "homerun": {
+          "text": "💥 홈런!",
+          "tailwind": "text-5xl md:text-7xl font-extrabold text-yellow-400 animate-ping-once drop-shadow-2xl",
+          "background": "confetti 파티클 이펙트 오버레이"
+        },
+        "triple": {
+          "text": "🔥 3루타!",
+          "tailwind": "text-4xl md:text-6xl font-bold text-orange-400 animate-bounce-once"
+        },
+        "double": {
+          "text": "✅ 2루타!",
+          "tailwind": "text-4xl md:text-6xl font-bold text-green-400 animate-bounce-once"
+        },
+        "single": {
+          "text": "👍 1루타!",
+          "tailwind": "text-3xl md:text-5xl font-bold text-blue-400"
+        },
+        "strike": {
+          "text": "❌ 스트라이크!",
+          "tailwind": "text-3xl md:text-5xl font-bold text-red-400 animate-shake"
+        }
+      }
+    },
+    {
+      "name": "ResultScreen",
+      "type": "template",
+      "description": "게임 종료 후 최종 결과 화면. 최종 점수, 타격 기록, 재도전/공유 버튼을 표시한다.",
+      "props": {
+        "finalScore": {
+          "type": "number",
+          "required": true,
+          "description": "최종 누적 점수"
+        },
+        "hitRecord": {
+          "type": "Array<'homerun' | 'triple' | 'double' | 'single' | 'strike'>",
+          "required": true,
+          "description": "매 투구별 타격 결과 기록 배열 (총 3개)"
+        },
+        "onRetry": {
+          "type": "function",
+          "required": true,
+          "description": "다시 하기 버튼 핸들러"
+        },
+        "onShare": {
+          "type": "function",
+          "required": false,
+          "description": "결과 공유 버튼 핸들러"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center justify-center gap-8 w-full h-full min-h-screen px-6 py-12 bg-gray-950"
+      },
+      "children": [
+        "ResultTitle",
+        "FinalScoreCard",
+        "HitRecordList",
+        "RetryButton",
+        "ShareButton"
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "region",
+        "ariaLabel": "게임 결과 화면"
+      }
+    },
+    {
+      "name": "ResultTitle",
+      "type": "atom",
+      "description": "결과 화면 상단 제목. 점수에 따라 등급 메시지를 다르게 표시한다.",
+      "props": {
+        "grade": {
+          "type": "'S' | 'A' | 'B' | 'C' | 'D'",
+          "required": true,
+          "description": "점수 기반 등급"
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "등급별 응원 메시지 (예: '완벽한 타자!')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center gap-2 text-center"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "heading",
+        "ariaLevel": 2,
+        "ariaLabel": "결과 등급 및 메시지"
+      },
+      "visualSpec": {
+        "grade": "text-6xl font-extrabold text-yellow-400",
+        "message": "text-xl text-gray-200 font-semibold"
+      }
+    },
+    {
+      "name": "FinalScoreCard",
+      "type": "molecule",
+      "description": "최종 점수를 카드 형태로 강조 표시하는 컴포넌트.",
+      "props": {
+        "score": {
+          "type": "number",
+          "required": true,
+          "description": "최종 점수"
+        },
+        "maxScore": {
+          "type": "number",
+          "required": false,
+          "description": "최대 가능 점수 (기본값: 12 = 홈런×3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center gap-1 bg-gray-800 border border-yellow-400/30 rounded-2xl px-10 py-6 shadow-xl"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "text",
+        "ariaLabel": "최종 점수 카드"
+      },
+      "visualSpec": {
+        "label": "text-xs font-semibold text-gray-400 uppercase tracking-widest",
+        "score": "text-6xl font-extrabold text-white tabular-nums",
+        "maxScore": "text-sm text-gray-500"
+      }
+    },
+    {
+      "name": "HitRecordList",
+      "type": "molecule",
+      "description": "3번의 타격 결과를 아이콘 배열로 요약 표시하는 컴포넌트.",
+      "props": {
+        "records": {
+          "type": "Array<'homerun' | 'triple' | 'double' | 'single' | 'strike'>",
+          "required": true,
+          "description": "타격 결과 배열 (길이: 3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center gap-4"
+      },
+      "children": [
+        "HitRecordItem"
+      ],
+      "states": ["default"],
+      "accessibility": {
+        "role": "list",
+        "ariaLabel": "타격 기록 목록"
+      }
+    },
+    {
+      "name": "HitRecordItem",
+      "type": "atom",
+      "description": "개별 타격 결과 아이템. 아이콘과 결과 라벨을 세로로 표시한다.",
+      "props": {
+        "result": {
+          "type": "'homerun' | 'triple' | 'double' | 'single' | 'strike'",
+          "required": true,
+          "description": "해당 타격의 결과"
+        },
+        "index": {
+          "type": "number",
+          "required": true,
+          "description": "몇 번째 타석인지 (1~3)"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col items-center gap-1"
+      },
+      "children": [],
+      "states": ["homerun", "triple", "double", "single", "strike"],
+      "accessibility": {
+        "role": "listitem",
+        "ariaLabel": "타격 결과 항목"
+      },
+      "visualSpec": {
+        "icon": "text-3xl",
+        "label": "text-xs font-bold",
+        "indexLabel": "text-gray-500 text-xs",
+        "colorMap": {
+          "homerun": "text-yellow-400",
+          "triple":  "text-orange-400",
+          "double":  "text-green-400",
+          "single":  "text-blue-400",
+          "strike":  "text-red-400"
+        }
+      }
+    },
+    {
+      "name": "RetryButton",
+      "type": "atom",
+      "description": "다시 하기 버튼. 클릭 시 게임을 초기화하고 로비 또는 즉시 플레이 화면으로 전환.",
+      "props": {
+        "onClick": {
+          "type": "function",
+          "required": true,
+          "description": "클릭 이벤트 핸들러"
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "버튼 텍스트 (기본값: '다시 하기')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center w-full max-w-xs"
+      },
+      "children": [],
+      "states": ["default", "hover", "active"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "게임 다시 하기"
+      },
+      "visualSpec": {
+        "base": "w-full py-4 px-8 text-xl font-bold rounded-full bg-yellow-400 text-gray-900 shadow-lg transition-all duration-150",
+        "hover": "hover:bg-yellow-300 hover:scale-105",
+        "active": "active:scale-95"
+      }
+    },
+    {
+      "name": "ShareButton",
+      "type": "atom",
+      "description": "결과를 SNS 또는 링크로 공유하는 보조 버튼.",
+      "props": {
+        "onClick": {
+          "type": "function",
+          "required": false,
+          "description": "클릭 이벤트 핸들러"
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "버튼 텍스트 (기본값: '결과 공유')"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex items-center justify-center w-full max-w-xs"
+      },
+      "children": [],
+      "states": ["default", "hover", "active"],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "게임 결과 공유"
+      },
+      "visualSpec": {
+        "base": "w-full py-3 px-8 text-base font-semibold rounded-full border border-gray-600 text-gray-300 bg-transparent hover:border-yellow-400 hover:text-yellow-400 transition-all duration-150"
+      }
+    }
+  ],
+  "colorPalette": {
+    "primary": "#FACC15",
+    "primaryHover": "#FDE047",
+    "secondary": "#3B82F6",
+    "danger": "#EF4444",
+    "success": "#22C55E",
+    "warning": "#F97316",
+    "background": "#030712",
+    "surface": "#111827",
+    "surfaceBorder": "#374151",
+    "textPrimary": "#F9FAFB",
+    "textSecondary": "#9CA3AF",
+    "homerunZone": "#FACC15",
+    "tripleZone": "#F97316",
+    "doubleZone": "#22C55E",
+    "singleZone": "#3B82F6",
+    "strikeZone": "#EF4444",
+    "skyBackground": "#0369A1",
+    "fieldGreen": "#166534"
+  },
+  "typography": {
+    "fontFamily": "system-ui, 'Noto Sans KR', sans-serif",
+    "gameTitle": "text-5xl md:text-7xl font-extrabold tracking-widest",
+    "sectionTitle": "text-2xl font-bold",
+    "score": "text-6xl font-extrabold tabular-nums",
+    "body": "text-base font-medium",
+    "caption": "text-xs font-semibold uppercase tracking-widest"
+  },
+  "layout": {
+    "breakpoints": {
+      "mobile": "< 640px (기본, 세로 모드 최적화)",
+      "tablet": "640px ~ 1024px",
+      "desktop": "> 1024px"
+    },
+    "containerMaxWidth": "max-w-md (모바일 중심, 최대 448px)",
+    "orientation": "portrait 우선 (가로 모드는 보조 지원)"
+  },
+  "interactions": [
+    {
+      "trigger": "click / tap (LobbyScreen → StartButton)",
+      "action": "gameState를 'lobby'에서 'playing'으로 전환하고 첫 투구 시퀀스를 시작한다."
+    },
+    {
+      "trigger": "공 투구 시작 (ballState: idle → incoming)",
+      "action": "BaseballBall이 원경에서 근경으로 확대 이동하는 CSS 애니메이션을 재생하고, TimingCursor가 왼쪽에서 오른쪽으로 이동을 시작한다."
+    },
+    {
+      "trigger": "tap / keydown(Space) 배팅 입력 (ballState: incoming)",
+      "action": "현재 TimingCursor의 progress 값을 캡처하여 타이밍 구간을 판정하고(홈런/3루타/2루타/1루타/스트라이크), BatterSilhouette 스윙 애니메이션을 재생한다."
+    },
+    {
+      "trigger": "타이밍 판정 완료 (hit result 확정)",
+      "action": "ResultFeedback 레이어에 결과 텍스트를 1.5초간 표시하고, GameHUD의 점수를 업데이트한다. 스트라이크인 경우 ChanceIndicator의 공 하나를 소진 처리한다."
+    },
+    {
+      "trigger": "공이 스트라이크 존을 완전히 통과 (miss)",
+      "action": "ballState를 'miss'로 전환, 스트라이크 처리하고 ResultFeedback에 '❌ 스트라이크!'를 표시한다."
+    },
+    {
+      "trigger": "chancesLeft === 0 (모든 기회 소진)",
+      "action": "gameState를 'playing'에서 'result'로 전환하고 ResultScreen을 렌더링한다."
+    },
+    {
+      "trigger": "click / tap (ResultScreen → RetryButton)",
+      "action": "게임 상태를 완전히 초기화(점수 0, 기회 3)하고 gameState를 'playing' 또는 'lobby'로 전환한다."
+    },
+    {
+      "trigger": "click / tap (ResultScreen → ShareButton)",
+      "action": "Web Share API 또는 클립보드 복사를 통해 최종 점수와 타격 기록을 공유한다."
+    },
+    {
+      "trigger": "hover (StartButton / RetryButton)",
+      "action": "버튼 배경색 밝아지고 scale-105 확대 효과 적용 (Tailwind hover: 유틸리티)."
+    },
+    {
+      "trigger": "홈런 판정",
+      "action": "ResultFeedback에 confetti 파티클 이펙트 + '💥 홈런!' 텍스트 표시, BaseballBall이 화면 상단으로 날아가는 궤적 애니메이션 재생."
+    }
+  ],
+  "animations": {
+    "ballIncoming": "공이 top:10%, scale:0.15 → top:50%, scale:1 로 transition-all ease-linear 진행 (duration = ballSpeed ms)",
+    "swingMotion": "BatterSilhouette rotate -30deg → 0deg duration-100",
+    "resultPopup": "opacity-0 scale-50 → opacity-100 scale-100 duration-150 ease-out, 이후 1.5초 후 opacity-0",
+    "cursorMove": "TimingCursor left: 0% → 100% linear transition (duration = ballSpeed ms)",
+    "confetti": "홈런 시 다수의 색종이 파티클이 화면 상단에서 낙하 (CSS keyframes 또는 canvas)",
+    "scoreUp": "점수 변경 시 숫자 animate-bounce 1회 + 색상 yellow-400 강조"
+  },
+  "gameLogic": {
+    "note": "이 섹션은 UI 구조 이해를 위한 참고 정보이며 구현 코드가 아닙니다.",
+    "totalChances": 3,
+    "pitchesPerGame": 3,
+    "timingWindows": {
+      "homerun": "커서가 중앙 홈런존 내에 있을 때 탭 (±50ms 또는 전체 바의 중앙 8% 구간)",
+      "triple":  "홈런존 인접 구간 (±100ms)",
+      "double":  "중간 구간 (±150ms)",
+      "single":  "외곽 구간 (±200ms)",
+      "strike":  "히트존 밖에서 탭하거나 탭 안 함"
+    },
+    "scoring": {
+      "homerun": 4,
+      "triple":  3,
+      "double":  2,
+      "single":  1,
+      "strike":  0
+    },
+    "chanceRule": "스트라이크 1회 = 기회 1회 소진. 기회 3회 소진 시 게임 종료."
+  }
+}
