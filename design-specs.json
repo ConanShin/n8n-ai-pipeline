@@ -1,213 +1,239 @@
 {
-  "ticket": "TEST-8000",
-  "title": "Shopping Cart Component",
+  "ticket": "TEST-1007",
+  "title": "로그인 페이지 UI 개선",
   "components": [
     {
-      "name": "QuantitySelector",
-      "type": "molecule",
-      "description": "Component to increment or decrement product quantity",
+      "name": "SocialButton",
+      "type": "atom",
+      "description": "Button for social login providers",
       "props": {
-        "quantity": {
-          "type": "number",
+        "provider": {
+          "type": "string",
           "required": true,
-          "description": "Current quantity value"
+          "description": "The name of the social provider (e.g., Google, GitHub)"
         },
-        "onIncrement": {
+        "icon": {
+          "type": "ReactNode",
+          "required": true,
+          "description": "The provider's icon"
+        },
+        "onClick": {
           "type": "function",
           "required": true,
-          "description": "Handler for plus button"
-        },
-        "onDecrement": {
-          "type": "function",
-          "required": true,
-          "description": "Handler for minus button"
+          "description": "Handler for click event"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex items-center space-x-2 border rounded-md p-1"
+        "tailwind": "w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
       },
       "children": [
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Decrease quantity" }
-        },
-        {
-          "element": "span",
-          "tailwind": "w-8 text-center font-medium",
-          "accessibility": { "role": "status" }
-        },
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Increase quantity" }
-        }
+        "icon",
+        "text"
       ],
-      "states": ["default", "disabled"],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "loading",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Sign in with ${provider}"
+      }
+    },
+    {
+      "name": "PrimaryButton",
+      "type": "atom",
+      "description": "Main submission button for the login form",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Button text"
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Button type (submit, button)"
+        },
+        "isLoading": {
+          "type": "boolean",
+          "required": false,
+          "description": "Loading state"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "w-full flex items-center justify-center px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-semibold"
+      },
+      "children": [
+        "text",
+        "loadingSpinner"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "focus",
+        "loading",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "button",
+        "ariaLabel": "Submit login form"
+      }
+    },
+    {
+      "name": "InputField",
+      "type": "molecule",
+      "description": "Input field with a label and optional error message",
+      "props": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Input ID for accessibility"
+        },
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Label text"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Input type (email, password)"
+        },
+        "placeholder": {
+          "type": "string",
+          "required": false,
+          "description": "Placeholder text"
+        },
+        "error": {
+          "type": "string",
+          "required": false,
+          "description": "Error message"
+        }
+      },
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-1.5 w-full"
+      },
+      "children": [
+        "label",
+        "input",
+        "errorText"
+      ],
+      "states": [
+        "default",
+        "focus",
+        "error",
+        "disabled"
+      ],
+      "accessibility": {
+        "role": "textbox",
+        "ariaLabel": "${label} input"
+      }
+    },
+    {
+      "name": "SocialLoginGroup",
+      "type": "molecule",
+      "description": "Group of social login buttons separated by a divider",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "flex flex-col gap-3 w-full sm:flex-row sm:justify-between mt-4"
+      },
+      "children": [
+        "SocialButton(Google)",
+        "SocialButton(GitHub)",
+        "SocialButton(Kakao)"
+      ],
+      "states": [
+        "default"
+      ],
       "accessibility": {
         "role": "group",
-        "ariaLabel": "Quantity controls"
+        "ariaLabel": "Social login options"
       }
     },
     {
-      "name": "CartItem",
-      "type": "molecule",
-      "description": "Individual product item row in the cart",
-      "props": {
-        "product": {
-          "type": "object",
-          "required": true,
-          "description": "Product data (id, name, price, image)"
-        },
-        "quantity": {
-          "type": "number",
-          "required": true,
-          "description": "Current quantity"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200"
-      },
-      "children": [
-        {
-          "element": "img",
-          "tailwind": "w-20 h-20 object-cover rounded-md bg-gray-100",
-          "description": "Product thumbnail"
-        },
-        {
-          "element": "div",
-          "tailwind": "flex-1 flex flex-col gap-1",
-          "children": [
-            { "element": "h3", "tailwind": "font-semibold text-lg" },
-            { "element": "span", "tailwind": "text-gray-500" }
-          ]
-        },
-        {
-          "name": "QuantitySelector",
-          "type": "molecule"
-        },
-        {
-          "element": "button",
-          "tailwind": "text-red-500 hover:text-red-700 text-sm font-medium",
-          "content": "Remove",
-          "accessibility": { "ariaLabel": "Remove item from cart" }
-        }
-      ],
-      "states": ["default", "removing"],
-      "accessibility": {
-        "role": "article"
-      }
-    },
-    {
-      "name": "CartSummary",
-      "type": "molecule",
-      "description": "Summary section showing totals and checkout action",
-      "props": {
-        "subtotal": {
-          "type": "number",
-          "required": true,
-          "description": "Calculated total price of items"
-        }
-      },
-      "layout": {
-        "display": "flex",
-        "tailwind": "flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "flex justify-between items-center text-lg font-bold",
-          "children": [
-            { "element": "span", "content": "Subtotal" },
-            { "element": "span", "content": "${subtotal}" }
-          ]
-        },
-        {
-          "element": "button",
-          "tailwind": "w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors",
-          "content": "Checkout",
-          "accessibility": { "role": "button" }
-        }
-      ],
-      "states": ["default", "loading"],
-      "accessibility": {
-        "role": "complementary",
-        "ariaLabel": "Order summary"
-      }
-    },
-    {
-      "name": "ShoppingCart",
+      "name": "LoginForm",
       "type": "organism",
-      "description": "Main container for the shopping cart page",
+      "description": "Complete login form containing credentials inputs, primary button, and social login options",
       "props": {
-        "items": {
-          "type": "array",
+        "onSubmit": {
+          "type": "function",
           "required": true,
-          "description": "List of cart items"
+          "description": "Submit handler"
         }
       },
       "layout": {
-        "display": "grid",
-        "tailwind": "grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
+        "display": "flex",
+        "tailwind": "w-full max-w-md p-6 sm:p-8 bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col gap-6"
       },
       "children": [
-        {
-          "element": "div",
-          "tailwind": "lg:col-span-2 space-y-4",
-          "description": "List container or Empty State",
-          "states": [
-            {
-              "name": "empty",
-              "tailwind": "flex flex-col items-center justify-center py-12 text-gray-500",
-              "content": "Your cart is empty"
-            },
-            {
-              "name": "filled",
-              "children": ["CartItem list"]
-            }
-          ]
-        },
-        {
-          "name": "CartSummary",
-          "tailwind": "lg:col-span-1"
-        }
+        "FormHeader",
+        "InputField(Email)",
+        "InputField(Password)",
+        "PrimaryButton",
+        "Divider",
+        "SocialLoginGroup"
       ],
-      "states": ["loading", "empty", "filled"],
+      "states": [
+        "default",
+        "submitting",
+        "error"
+      ],
+      "accessibility": {
+        "role": "form",
+        "ariaLabel": "User login form"
+      }
+    },
+    {
+      "name": "LoginPage",
+      "type": "page",
+      "description": "The main login page layout providing responsive centering for the form",
+      "props": {},
+      "layout": {
+        "display": "flex",
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8"
+      },
+      "children": [
+        "LoginForm"
+      ],
+      "states": [
+        "default",
+        "loading"
+      ],
       "accessibility": {
         "role": "main",
-        "ariaLabel": "Shopping cart"
+        "ariaLabel": "Login Page"
       }
     }
   ],
   "colorPalette": {
-    "primary": "blue-600",
-    "secondary": "gray-600",
-    "danger": "red-500",
-    "background": "gray-50",
-    "border": "gray-200"
+    "primary": "#2563EB",
+    "primaryHover": "#1D4ED8",
+    "surface": "#FFFFFF",
+    "background": "#F9FAFB",
+    "textPrimary": "#111827",
+    "textSecondary": "#4B5563",
+    "border": "#D1D5DB",
+    "error": "#EF4444"
   },
   "interactions": [
     {
-      "trigger": "click",
-      "element": "QuantitySelector Button (+)",
-      "action": "Increments item quantity and updates subtotal"
+      "trigger": "submit",
+      "action": "Validates email and password, shows loading state on PrimaryButton, and triggers authentication API call."
     },
     {
       "trigger": "click",
-      "element": "QuantitySelector Button (-)",
-      "action": "Decrements item quantity (stops at 1) and updates subtotal"
+      "action": "SocialButton click redirects to the respective OAuth provider."
     },
     {
-      "trigger": "click",
-      "element": "Remove Button",
-      "action": "Removes item from list and recalculates subtotal"
-    },
-    {
-      "trigger": "click",
-      "element": "Checkout Button",
-      "action": "Navigates to checkout flow"
+      "trigger": "focus",
+      "action": "InputField receives primary color ring to indicate active state."
     }
   ]
 }
