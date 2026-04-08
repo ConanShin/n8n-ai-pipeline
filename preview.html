@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 투두 앱</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const TodoInput = ({ onAdd }) => {
+            const [text, setText] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (text.trim()) {
+                    onAdd(text.trim());
+                    setText('');
+                }
+            };
+
+            const isEmpty = text.trim().length === 0;
+
+            return (
+                <form 
+                    onSubmit={handleSubmit} 
+                    className="flex gap-2 w-full mb-6" 
+                    role="form" 
+                    aria-label="Add new todo form"
+                >
+                    <input
+                        type="text"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Add a new todo..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
+                    />
+                    <button
+                        type="submit"
+                        disabled={isEmpty}
+                        className={`px-4 py-2 text-white font-medium rounded-lg transition-colors ${
+                            isEmpty ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+                        }`}
+                    >
+                        Add
+                    </button>
+                </form>
+            );
+        };
+
+        const TodoItem = ({ todo, onToggle, onDelete }) => {
+            return (
+                <li
+                    className={`flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow ${
+                        todo.completed ? 'opacity-75' : ''
+                    }`}
+                    role="listitem"
+                    aria-label="Todo item"
+                >
+                    <div className="flex items-center gap-3 flex-1">
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => onToggle(todo.id)}
+                            className="w-5 h-5 text-blue-500 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span
+                            className={`text-gray-800 flex-1 transition-all ${
+                                todo.completed ? 'line-through text-gray-400' : ''
+                            }`}
+                        >
+                            {todo.text}
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => onDelete(todo.id)}
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                        aria-label="Delete todo"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                </li>
+            );
+        };
+
+        const TodoList = ({ todos, onToggle, onDelete }) => {
+            if (todos.length === 0) {
+                return (
+                    <div 
+                        className="flex flex-col w-full gap-2 p-8 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg"
+                        role="list"
+                        aria-label="List of todos"
+                    >
+                        <p>No todos yet. Add one above!</p>
+                    </div>
+                );
+            }
+
+            return (
+                <ul 
+                    className="flex flex-col w-full gap-2"
+                    role="list"
+                    aria-label="List of todos"
+                >
+                    {todos.map(todo => (
+                        <TodoItem
+                            key={todo.id}
+                            todo={todo}
+                            onToggle={onToggle}
+                            onDelete={onDelete}
+                        />
+                    ))}
+                </ul>
+            );
+        };
+
+        const TodoAppPage = () => {
+            const [todos, setTodos] = useState([]);
+
+            const handleAdd = (text) => {
+                const newTodo = {
+                    id: self.crypto && self.crypto.randomUUID ? self.crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+                    text,
+                    completed: false
+                };
+                setTodos([newTodo, ...todos]);
+            };
+
+            const handleToggle = (id) => {
+                setTodos(todos.map(todo => 
+                    todo.id === id ? { ...todo, completed: !todo.completed } : todo
+                ));
+            };
+
+            const handleDelete = (id) => {
+                setTodos(todos.filter(todo => todo.id !== id));
+            };
+
+            return (
+                <main 
+                    className="min-h-screen bg-gray-50 flex flex-col items-center py-10 px-4"
+                    role="main"
+                    aria-label="Todo Application"
+                >
+                    <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                        <header className="mb-6 text-center">
+                            <h1 className="text-2xl font-bold text-gray-800">간단한 투두 앱</h1>
+                        </header>
+                        
+                        <TodoInput onAdd={handleAdd} />
+                        <TodoList 
+                            todos={todos} 
+                            onToggle={handleToggle} 
+                            onDelete={handleDelete} 
+                        />
+                    </div>
+                </main>
+            );
+        };
+
+        const App = () => {
+            return <TodoAppPage />;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
