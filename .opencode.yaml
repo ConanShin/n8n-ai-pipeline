@@ -1,0 +1,26 @@
+provider:
+  github-copilot:
+    name: GitHub Copilot
+    models:
+      claude-sonnet-4.6:
+        name: Claude 3.5 Sonnet (Copilot)
+        limit:
+          context: 200000
+          output: 8192
+        modalities:
+          input: [text, image]
+          output: [text]
+      gpt-4o:
+        name: GPT-4o (Copilot)
+        limit:
+          context: 128000
+          output: 4096
+        modalities:
+          input: [text, image]
+          output: [text]
+
+default:
+  provider: github-copilot
+  model: claude-sonnet-4.6
+
+mcpServers: {}
