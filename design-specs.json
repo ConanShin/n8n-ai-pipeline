@@ -1,213 +1,157 @@
 {
-  "ticket": "TEST-8000",
-  "title": "Shopping Cart Component",
+  "ticket": "TEST-5001",
+  "title": "GitHub Copilot 모델 테스트 - Hello World React 컴포넌트",
   "components": [
     {
-      "name": "QuantitySelector",
-      "type": "molecule",
-      "description": "Component to increment or decrement product quantity",
+      "name": "GreetingText",
+      "type": "atom",
+      "description": "화면 중앙에 크게 표시되는 Hello GitHub Copilot! 텍스트 레이블",
       "props": {
-        "quantity": {
-          "type": "number",
+        "text": {
+          "type": "string",
           "required": true,
-          "description": "Current quantity value"
-        },
-        "onIncrement": {
-          "type": "function",
-          "required": true,
-          "description": "Handler for plus button"
-        },
-        "onDecrement": {
-          "type": "function",
-          "required": true,
-          "description": "Handler for minus button"
+          "description": "표시할 인사 문구. 기본값: 'Hello GitHub Copilot!'"
         }
       },
       "layout": {
-        "display": "flex",
-        "tailwind": "flex items-center space-x-2 border rounded-md p-1"
+        "display": "block",
+        "tailwind": "text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-center"
+      },
+      "children": [],
+      "states": ["default"],
+      "accessibility": {
+        "role": "heading",
+        "ariaLevel": "1",
+        "ariaLabel": "Hello GitHub Copilot!"
+      }
+    },
+    {
+      "name": "GreetingBadge",
+      "type": "atom",
+      "description": "GitHub Copilot 브랜드를 나타내는 작은 배지 레이블 (보조 정보)",
+      "props": {
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "배지 텍스트. 기본값: 'Powered by Claude Sonnet via GitHub Copilot'"
+        }
+      },
+      "layout": {
+        "display": "inline-flex",
+        "tailwind": "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200"
       },
       "children": [
         {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Decrease quantity" }
+          "element": "span",
+          "tailwind": "w-2 h-2 rounded-full bg-green-500",
+          "description": "온라인/활성 상태를 나타내는 녹색 점"
         },
         {
           "element": "span",
-          "tailwind": "w-8 text-center font-medium",
-          "accessibility": { "role": "status" }
-        },
-        {
-          "element": "button",
-          "tailwind": "p-1 text-gray-600 hover:bg-gray-100 rounded",
-          "accessibility": { "ariaLabel": "Increase quantity" }
+          "tailwind": "text-sm",
+          "description": "배지 텍스트"
         }
       ],
-      "states": ["default", "disabled"],
+      "states": ["default"],
       "accessibility": {
-        "role": "group",
-        "ariaLabel": "Quantity controls"
+        "role": "status",
+        "ariaLabel": "Powered by Claude Sonnet via GitHub Copilot"
       }
     },
     {
-      "name": "CartItem",
+      "name": "HelloWorldCard",
       "type": "molecule",
-      "description": "Individual product item row in the cart",
+      "description": "인사 텍스트와 배지를 포함하는 중앙 정렬 카드 컨테이너",
       "props": {
-        "product": {
-          "type": "object",
+        "greetingText": {
+          "type": "string",
           "required": true,
-          "description": "Product data (id, name, price, image)"
+          "description": "메인 인사 문구"
         },
-        "quantity": {
-          "type": "number",
-          "required": true,
-          "description": "Current quantity"
+        "badgeLabel": {
+          "type": "string",
+          "required": false,
+          "description": "하단 배지에 표시할 보조 텍스트"
         }
       },
       "layout": {
         "display": "flex",
-        "tailwind": "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-b border-gray-200"
+        "tailwind": "flex flex-col items-center justify-center gap-6 bg-white rounded-2xl shadow-lg p-10 md:p-16 max-w-2xl w-full mx-auto"
       },
       "children": [
         {
-          "element": "img",
-          "tailwind": "w-20 h-20 object-cover rounded-md bg-gray-100",
-          "description": "Product thumbnail"
+          "name": "GreetingText",
+          "type": "atom",
+          "description": "메인 Hello GitHub Copilot! 헤딩"
         },
         {
-          "element": "div",
-          "tailwind": "flex-1 flex flex-col gap-1",
-          "children": [
-            { "element": "h3", "tailwind": "font-semibold text-lg" },
-            { "element": "span", "tailwind": "text-gray-500" }
-          ]
+          "element": "p",
+          "tailwind": "text-base md:text-lg text-gray-500 text-center",
+          "content": "Claude 3.5 Sonnet 모델 테스트 배포",
+          "description": "서브타이틀 텍스트"
         },
         {
-          "name": "QuantitySelector",
-          "type": "molecule"
-        },
-        {
-          "element": "button",
-          "tailwind": "text-red-500 hover:text-red-700 text-sm font-medium",
-          "content": "Remove",
-          "accessibility": { "ariaLabel": "Remove item from cart" }
+          "name": "GreetingBadge",
+          "type": "atom",
+          "description": "Copilot 브랜드 배지"
         }
       ],
-      "states": ["default", "removing"],
+      "states": ["default"],
       "accessibility": {
-        "role": "article"
+        "role": "region",
+        "ariaLabel": "Hello World greeting card"
       }
     },
     {
-      "name": "CartSummary",
-      "type": "molecule",
-      "description": "Summary section showing totals and checkout action",
-      "props": {
-        "subtotal": {
-          "type": "number",
-          "required": true,
-          "description": "Calculated total price of items"
-        }
-      },
+      "name": "HelloWorldPage",
+      "type": "page",
+      "description": "Hello GitHub Copilot! 문구를 화면 정중앙에 표시하는 풀스크린 페이지",
+      "props": {},
       "layout": {
         "display": "flex",
-        "tailwind": "flex flex-col gap-4 bg-gray-50 p-6 rounded-lg h-fit"
+        "tailwind": "min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 px-4 py-12"
       },
       "children": [
         {
-          "element": "div",
-          "tailwind": "flex justify-between items-center text-lg font-bold",
-          "children": [
-            { "element": "span", "content": "Subtotal" },
-            { "element": "span", "content": "${subtotal}" }
-          ]
-        },
-        {
-          "element": "button",
-          "tailwind": "w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold transition-colors",
-          "content": "Checkout",
-          "accessibility": { "role": "button" }
+          "name": "HelloWorldCard",
+          "type": "molecule",
+          "description": "중앙 배치된 인사 카드"
         }
       ],
-      "states": ["default", "loading"],
-      "accessibility": {
-        "role": "complementary",
-        "ariaLabel": "Order summary"
-      }
-    },
-    {
-      "name": "ShoppingCart",
-      "type": "organism",
-      "description": "Main container for the shopping cart page",
-      "props": {
-        "items": {
-          "type": "array",
-          "required": true,
-          "description": "List of cart items"
-        }
-      },
-      "layout": {
-        "display": "grid",
-        "tailwind": "grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-4 sm:p-6"
-      },
-      "children": [
-        {
-          "element": "div",
-          "tailwind": "lg:col-span-2 space-y-4",
-          "description": "List container or Empty State",
-          "states": [
-            {
-              "name": "empty",
-              "tailwind": "flex flex-col items-center justify-center py-12 text-gray-500",
-              "content": "Your cart is empty"
-            },
-            {
-              "name": "filled",
-              "children": ["CartItem list"]
-            }
-          ]
-        },
-        {
-          "name": "CartSummary",
-          "tailwind": "lg:col-span-1"
-        }
-      ],
-      "states": ["loading", "empty", "filled"],
+      "states": ["default"],
       "accessibility": {
         "role": "main",
-        "ariaLabel": "Shopping cart"
+        "ariaLabel": "Hello GitHub Copilot page"
       }
     }
   ],
   "colorPalette": {
-    "primary": "blue-600",
-    "secondary": "gray-600",
-    "danger": "red-500",
-    "background": "gray-50",
-    "border": "gray-200"
+    "primary": "#0969da",
+    "primaryLight": "#dbeafe",
+    "secondary": "#6b7280",
+    "background": "#f8fafc",
+    "backgroundAccent": "#eff6ff",
+    "surface": "#ffffff",
+    "textPrimary": "#0f172a",
+    "textSecondary": "#6b7280",
+    "border": "#e5e7eb",
+    "success": "#22c55e"
   },
   "interactions": [
     {
-      "trigger": "click",
-      "element": "QuantitySelector Button (+)",
-      "action": "Increments item quantity and updates subtotal"
+      "trigger": "load",
+      "element": "HelloWorldPage",
+      "action": "페이지 진입 시 HelloWorldCard가 중앙에 페이드인 애니메이션으로 나타남"
     },
     {
-      "trigger": "click",
-      "element": "QuantitySelector Button (-)",
-      "action": "Decrements item quantity (stops at 1) and updates subtotal"
+      "trigger": "hover",
+      "element": "HelloWorldCard",
+      "action": "카드에 살짝 확대(scale-up) 및 그림자 강조 트랜지션 효과 적용"
     },
     {
-      "trigger": "click",
-      "element": "Remove Button",
-      "action": "Removes item from list and recalculates subtotal"
-    },
-    {
-      "trigger": "click",
-      "element": "Checkout Button",
-      "action": "Navigates to checkout flow"
+      "trigger": "hover",
+      "element": "GreetingBadge",
+      "action": "배지 배경색이 gray-100 → blue-50 으로 부드럽게 전환"
     }
   ]
 }
